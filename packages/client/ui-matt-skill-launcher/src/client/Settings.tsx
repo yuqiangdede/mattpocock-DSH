@@ -49,6 +49,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   }
   return <section className={css.root}>
     <h2>{t('title')}</h2><p>{t('intro')}</p>
+    <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
     {(['skill','prompt'] as const).map(kind=><section key={kind}>
       <div className={css.head}><h3>{kind==='skill'?t('skillRow'):t('promptRow')}</h3><button type="button" onClick={()=>{ add(kind) }}>{t('add')}</button></div>
       {draft.filter(a=>a.kind===kind).sort((a,b)=>a.order-b.order).map(a=><div className={css.card} key={a.id}>
@@ -75,6 +76,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
       <button type="button" onClick={()=>{try{setDraft(parseActions(importJson));setDirty(true);setError('')}catch(err){setError(t('importFailed')+explain(err))}}}>{t('import')}</button>
     </details>
     {error&&<p role="alert" className={css.error}>{error}</p>}
+    </fieldset>
     <small>{t('state')}{form.status}{'；'}{dirty?t('dirty'):t('synced')}{t('version')}{form.revision??t('notLoaded')}</small>
   </section>
 }
