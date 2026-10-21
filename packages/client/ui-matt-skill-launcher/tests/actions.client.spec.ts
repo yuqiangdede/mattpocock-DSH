@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_ACTIONS, encodeActions, parseActions, resolveActionGroup, missingDefaultActions } from '../src/client/actions.ts'
+import { DEFAULT_ACTIONS, encodeActions, parseActions, resolveActionGroup, missingDefaultActions, displayOrder } from '../src/client/actions.ts'
 
 describe('mattpocock-DSH CodingAction document', () => {
   it('ships skill and prompt rows without automatic execution metadata', () => {
@@ -22,7 +22,10 @@ describe('mattpocock-DSH CodingAction document', () => {
     const previous = DEFAULT_ACTIONS.filter(a => !['initialize','ask','review-fix','compile','continue'].includes(a.id))
     const loaded = parseActions(encodeActions(previous))
     expect(loaded.filter(a => resolveActionGroup(a) === 'document')).toHaveLength(7)
-    expect(resolveActionGroup(loaded.find(a => a.id === 'visual')!)).toBe('development')
+    const visual = loaded.find(a => a.id === 'visual')
+    expect(visual).toBeDefined()
+    expect(resolveActionGroup(visual!)).toBe('development')
+    expect(displayOrder({ ...visual!, order: 100 })).toBe(15)
     expect(missingDefaultActions(loaded).map(a => a.id)).toEqual(['initialize','ask','review-fix','compile','continue'])
     expect(missingDefaultActions([...loaded,...missingDefaultActions(loaded)])).toEqual([])
   })
