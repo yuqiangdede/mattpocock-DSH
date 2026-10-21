@@ -326,7 +326,7 @@ jobs:
       # entry until it evicts, after which the store is cold. Self-hosted runners
       # reuse the shared persistent store instead of restoring the remote archive.
       - uses: actions/cache/restore@v6.1.0
-        if: vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
+        if: github.repository != 'deepseek-ai/deepseek-harness' || vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
           key: ${{ runner.os }}-node-${{ env.PRIMARY_NODE_VERSION }}-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
@@ -335,7 +335,7 @@ jobs:
 
       # Self-hosted runners retain their own browser cache between jobs.
       - uses: actions/cache/restore@v6.1.0
-        if: vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
+        if: github.repository != 'deepseek-ai/deepseek-harness' || vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
         with:
           path: ${{ env.PLAYWRIGHT_BROWSERS_PATH }}
           key: ${{ runner.os }}-playwright-${{ hashFiles('pnpm-lock.yaml') }}
@@ -375,7 +375,7 @@ jobs:
           PY
 
       - name: Install Playwright Chromium, WebKit, and hosted dependencies
-        if: vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
+        if: github.repository != 'deepseek-ai/deepseek-harness' || vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
         # Ephemeral runner images can carry Ubuntu mirrors whose HTTP endpoints are unreachable.
         run: |
           sudo find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name '*.sources' \) -exec sed -i -E 's@http://([a-z]{2}\.)?archive\.ubuntu\.com/ubuntu@https://archive.ubuntu.com/ubuntu@g; s@http://security\.ubuntu\.com/ubuntu@https://security.ubuntu.com/ubuntu@g' {} +
@@ -384,7 +384,7 @@ jobs:
       # The persistent VM image owns Playwright's Linux system packages; do
       # not mutate the shared host with apt on every failover run.
       - name: Install Playwright Chromium and WebKit on the failover VM
-        if: vars.DSH_CI_FAILOVER_LINUX == 'selfhosted' && github.event.pull_request.user.login != 'dependabot[bot]'
+        if: github.repository == 'deepseek-ai/deepseek-harness' && vars.DSH_CI_FAILOVER_LINUX == 'selfhosted' && github.event.pull_request.user.login != 'dependabot[bot]'
         run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install chromium webkit
 
       - name: Build and execute the Linux Office runtime
