@@ -51,6 +51,13 @@ class SharedDocumentToolTests(unittest.TestCase):
         errs, _ = inspect_text('    ## Unexpected indent\n', self.root / 'x.md', check_links=False)
         self.assertTrue(any('indented heading' in x for x in errs))
 
+    def test_links_with_balanced_parentheses(self):
+        path = self.root / 'a(b).md'
+        path.write_text('# local', encoding='utf-8')
+        errors, stats = inspect_text('[valid](a(b).md) and ![img](a(b).md#section)', self.root / 'doc.md')
+        self.assertEqual(errors, [])
+        self.assertEqual(stats['links_checked'], 2)
+
     def test_candidate_not_claimed_as_true_registration(self):
         (self.root / 'Demo.java').write_text('@RestController\nclass Demo {}\n', encoding='utf-8')
         (self.root / 'init.sql').write_text('CREATE TABLE demo(id int);\n', encoding='utf-8')
