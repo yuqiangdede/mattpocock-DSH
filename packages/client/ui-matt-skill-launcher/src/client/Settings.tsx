@@ -14,7 +14,8 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   const revision = useRef<number | undefined>(undefined)
   useEffect(() => {
     if (dirty) return
-    try { setDraft(parseActions(form.value?.actionsJson)); revision.current = form.revision; setError('') }
+    revision.current = form.revision
+    try { setDraft(parseActions(form.value?.actionsJson)); setError('') }
     catch (err) { setError(t('corrupt') + String(err)) }
   }, [form.value?.actionsJson, form.revision, dirty])
   const change = (id: string, patch: Partial<CodingAction>) => { setDraft(xs=>xs.map(x=>x.id===id?{ ...x,...patch }:x)); setDirty(true) }
