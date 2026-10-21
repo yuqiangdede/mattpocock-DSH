@@ -11,7 +11,7 @@ export function LauncherSettings({ useActionForm, saveActions }: Props) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [importJson, setImportJson] = useState('')
-  const revision = useRef<number | undefined>()
+  const revision = useRef<number | undefined>(undefined)
   useEffect(() => {
     if (dirty) return
     try { setDraft(parseActions(form.value?.actionsJson)); revision.current = form.revision; setError('') }
@@ -19,7 +19,7 @@ export function LauncherSettings({ useActionForm, saveActions }: Props) {
   }, [form.value?.actionsJson, form.revision, dirty])
   const change = (id: string, patch: Partial<CodingAction>) => { setDraft(xs=>xs.map(x=>x.id===id?{...x,...patch}:x)); setDirty(true) }
   const add = (kind: 'skill'|'prompt') => {
-    setDraft(xs=>[...xs,{ id:'custom-'+Date.now().toString(36),label:'新按钮',kind,...kind==='skill'?{skillId:'example-skill'}:{},prompt:'',enabled:true,order:xs.reduce((n,x)=>Math.max(n,x.order),0)+10,description:'',example:'' }]); setDirty(true)
+    setDraft(xs=>[...xs,{ id:'custom-'+Date.now().toString(36),label:'新按钮',kind,...(kind==='skill' ? { skillId:'example-skill' } : {}),prompt:'',enabled:true,order:xs.reduce((n,x)=>Math.max(n,x.order),0)+10,description:'',example:'' }]); setDirty(true)
   }
   const cancel = () => { try { setDraft(parseActions(form.value?.actionsJson)); setDirty(false); setError('') } catch(err) { setError(String(err)) } }
   const save = async () => {
