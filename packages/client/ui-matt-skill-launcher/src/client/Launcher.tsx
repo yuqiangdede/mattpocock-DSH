@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { parseActions, actionErrorKey, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
@@ -52,10 +53,17 @@ export function Launcher({ useInput, inputActions, useActionForm, fetchSkillName
   return <div className={css.root} data-matt-skill-launcher>
     <div className={css.row} aria-label={t('skills')}>
       {skills.filter(a => a.order < 100).map(render)}
-      {skills.some(a => a.order >= 100) && <div className={css.more}>
-        <button type="button" className={css.action} disabled={!available} onClick={() =>{  setMore(v=>!v) }} aria-expanded={more}>{t('more')}</button>
-        {more && <div className={css.menu} role="menu">{skills.filter(a => a.order >= 100).map(a=><button type="button" role="menuitem" className={css.item} key={a.id} onClick={()=>{void insert(a)}}>{a.label}</button>)}</div>}
-      </div>}
+      {skills.some(a => a.order >= 100) && <Menu
+        open={more} side="top" align="start" compact
+        anchor={<button type="button" className={css.action} disabled={!available}
+          onClick={() => { setMore(v => !v) }} aria-haspopup="menu" aria-expanded={more}>{t('more')}</button>}
+        items={skills.filter(a => a.order >= 100).map(a => ({ id: a.id, label: a.label }))}
+        onClose={() => { setMore(false) }}
+        onSelect={(id) => {
+          const selected = skills.find(a => a.id === id)
+          if (selected) void insert(selected)
+        }}
+      />}
     </div>
     <div className={css.row} aria-label={t('prompts')}>{prompts.map(render)}</div>
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
