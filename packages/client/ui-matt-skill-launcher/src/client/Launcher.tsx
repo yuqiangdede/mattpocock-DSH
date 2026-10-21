@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { parseActions, type CodingAction } from './actions.ts'
+import { parseActions, actionErrorKey, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
@@ -12,9 +12,13 @@ export function Launcher({ useInput, inputActions, useActionForm, fetchSkillName
   const [notice, setNotice] = useState('')
   const alive = useRef(true)
   useEffect(() => { alive.current = true; return () => { alive.current = false } }, [])
+  const explain = (error: unknown) => {
+    const key = actionErrorKey(error)
+    return key ? t(key) : String(error)
+  }
   let actions: CodingAction[] = []
   let invalid = ''
-  try { actions = parseActions(snapshot.value?.actionsJson) } catch (error) { invalid = String(error) }
+  try { actions = parseActions(snapshot.value?.actionsJson) } catch (error) { invalid = explain(error) }
   const skills = actions.filter(a => a.kind === 'skill' && a.enabled).sort((a,b) => a.order-b.order)
   const prompts = actions.filter(a => a.kind === 'prompt' && a.enabled).sort((a,b) => a.order-b.order)
   const available = input.phase === 'plain' && !pending && snapshot.status === 'ready'
