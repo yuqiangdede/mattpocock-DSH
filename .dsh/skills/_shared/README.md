@@ -2,10 +2,18 @@
 
 供同一 skills 资源包中的文档技能使用。此目录没有 SKILL.md，不作为独立 Skill 注入。各 Skill 仍是专业方法、证据判断和交付范围的权威入口；这里的工具只处理确定性操作。仅需 Python 3.10+ 标准库，不自动安装依赖。
 
+先在 PowerShell 中定位 DSH 实际安装的 Skill 资源目录（适用于默认安装位置或指定 DSH_HOME）：
+
+```powershell
+$SkillsRoot = if ($env:DSH_HOME) { Join-Path $env:DSH_HOME 'skills' } else { Join-Path $HOME '.dsh/skills' }
+```
+
+以下脚本路径全部从已安装的 `$SkillsRoot` 目录解析，不依赖项目源码中的旧 `apps/desktop/resources/skills` 目录。
+
 ## 任务开始与中断恢复
 
 - 确认目标项目与文档、输入版本、源文件范围、用户已有选择和已存在的输出。被中断、压缩上下文、多个 Agent 协作或外部修改后，必须重新检查目标文件当前状态，不能依据会话摘要直接续写。
-- 对已有输出，先创建快照：python apps/desktop/resources/skills/_shared/scripts/document_workspace.py snapshot "目标.md" --report "scratch/target-state.json"。
+- 对已有输出，先创建快照：python "$SkillsRoot/_shared/scripts/document_workspace.py" snapshot "目标.md" --report "scratch/target-state.json"。
 - 快照保存是否存在、SHA-256、字节数、行数和修改时间。续写前核对，变更则重新读取并审查实际状态，不直接重复追加。
 - 快照不是锁；源文件、中间成果、生成脚本及验收记录也需要检查版本和有效性。
 
@@ -28,7 +36,7 @@
 
 ## 源码预盘点（只作候选）
 
-python apps/desktop/resources/skills/_shared/scripts/source_inventory.py "项目根目录" --report "scratch/source-index.json" --quiet
+python "$SkillsRoot/_shared/scripts/source_inventory.py" "项目根目录" --report "scratch/source-index.json" --quiet
 
 - 先收集入口、DTO、SQL、部署/迁移配置文件清单；索引帮助定位候选位置，不是 AST、路由注册、DTO 字段、SQL 迁移最终结构或运行行为的证明。
 - 分配子代理前给定目标模块、输入清单、共享公共模型、产物路径和验收口径。没有明确边界或来源重叠时先由主代理提取共享事实，再决定是否并行。
@@ -42,7 +50,7 @@ python apps/desktop/resources/skills/_shared/scripts/source_inventory.py "项目
 - 对新文件，使用：
 
 ~~~text
-python apps/desktop/resources/skills/_shared/scripts/document_workspace.py assemble "输出.md" --part "scratch/01.md" --part "scratch/02.md" --required-heading "## 1 章节" --required-heading "## 2 章节"
+python "$SkillsRoot/_shared/scripts/document_workspace.py" assemble "输出.md" --part "scratch/01.md" --part "scratch/02.md" --required-heading "## 1 章节" --required-heading "## 2 章节"
 ~~~
 
 - **已有文件禁止静默覆盖**；只有明确决定替换时同时传 --overwrite 和 --snapshot "scratch/target-state.json"。如文件在中断期间已变更，工具拒绝覆盖。需先重新读取当前文件和重新取得授权范围，绝不通过重新生成快照绕过冲突。
@@ -51,8 +59,8 @@ python apps/desktop/resources/skills/_shared/scripts/document_workspace.py assem
 ## 静态校验与 Word 文本验证
 
 ~~~text
-python apps/desktop/resources/skills/_shared/scripts/document_qa.py "输出.md" --report "scratch/md-qa.json"
-python apps/desktop/resources/skills/_shared/scripts/docx_text_check.py "输出.docx" --phrase "某一必须存在的章节标题" --report "scratch/docx-text.json"
+python "$SkillsRoot/_shared/scripts/document_qa.py" "输出.md" --report "scratch/md-qa.json"
+python "$SkillsRoot/_shared/scripts/docx_text_check.py" "输出.docx" --phrase "某一必须存在的章节标题" --report "scratch/docx-text.json"
 python -m unittest discover -s apps/desktop/resources/skills/_shared/scripts -p "test_*.py"
 ~~~
 
@@ -76,10 +84,10 @@ python -m unittest discover -s apps/desktop/resources/skills/_shared/scripts -p 
 在项目根目录执行（所有输入、输出和 manifest 必须属于此项目）：
 
 ```sh
-python apps/desktop/resources/skills/_shared/scripts/job_checkpoint.py init scratch/job-manifest.json --input source.md --stage extract --stage merge --stage convert --decision format=formal
-python apps/desktop/resources/skills/_shared/scripts/job_checkpoint.py done scratch/job-manifest.json --stage extract --output scratch/extracted.md --check-result 'source inventory checked'
-python apps/desktop/resources/skills/_shared/scripts/job_checkpoint.py check scratch/job-manifest.json
-python apps/desktop/resources/skills/_shared/scripts/job_checkpoint.py fail scratch/job-manifest.json --stage convert --reason 'missing renderer'
+python "$SkillsRoot/_shared/scripts/job_checkpoint.py" init scratch/job-manifest.json --input source.md --stage extract --stage merge --stage convert --decision format=formal
+python "$SkillsRoot/_shared/scripts/job_checkpoint.py" done scratch/job-manifest.json --stage extract --output scratch/extracted.md --check-result 'source inventory checked'
+python "$SkillsRoot/_shared/scripts/job_checkpoint.py" check scratch/job-manifest.json
+python "$SkillsRoot/_shared/scripts/job_checkpoint.py" fail scratch/job-manifest.json --stage convert --reason 'missing renderer'
 ```
 
 完成步骤时要求前置阶段已完成、输入与已完成输出指纹未变化，并将阶段产物 SHA-256 记录到 manifest；`check` 发现过期文件时返回非零码，用户/Agent 必须重新检查磁盘并决定复用或重新生成。脚本只管理记录，**不自动执行任何内容处理、转换、部署，也不会把用户输入的“检查通过”描述当成独立证据**。不同任务不共享同一个 manifest；不允许通过重新初始化覆盖已有历史。
