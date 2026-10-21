@@ -1,4 +1,4 @@
-# Fork CI: Windows desktop only. Keep upstream source, docs, and skills untouched.
+# Windows-only checks for this fork. Upstream docs/skills stay unchanged.
 name: Windows CI
 
 on:
@@ -16,7 +16,6 @@ concurrency:
 
 jobs:
   windows:
-    # Preserve the stable check name used by existing PR status rules.
     name: all checks passed
     runs-on: windows-2025
     timeout-minutes: 90
@@ -46,7 +45,16 @@ jobs:
         shell: pwsh
         run: pnpm install --frozen-lockfile
 
+      # PR #1 adds the Launcher; master does not contain it yet.
+      - name: Detect Skill Launcher tests
+        id: launcher
+        shell: pwsh
+        run: |
+          $exists = Test-Path "packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts"
+          "exists=$($exists.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
+
       - name: Test Skill Launcher and DSH UI integration
+        if: steps.launcher.outputs.exists == 'true'
         shell: pwsh
         run: >-
           pnpm exec vitest run
