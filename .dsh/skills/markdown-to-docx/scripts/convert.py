@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Markdown -> Pandoc AST -> rendered assets -> DOCX; no automatic installs."""
 import argparse
+import hashlib
 from collections import Counter
 import importlib.util
 import json
@@ -78,11 +79,13 @@ def nodes(value):
 
 def local_image(target, base):
     # Windows drive letters are not URL schemes here.
+    local_target = target
     if not (len(target) > 2 and target[1] == ':'):
         parts = urlsplit(target)
         if parts.scheme or parts.netloc:
             raise ValueError(f'Localize remote/data image before conversion: {target}')
-    path = Path(unquote(target))
+        local_target = parts.path
+    path = Path(unquote(local_target))
     path = path if path.is_absolute() else base / path
     if not path.is_file():
         raise FileNotFoundError(f'Image not found: {path}')
@@ -452,6 +455,15 @@ def main():
         raise ValueError('Output must be a separate .docx file')
     if output.exists() and not args.overwrite:
         raise FileExistsError(f'Output exists; explicit --overwrite required: {output}')
+    # Protect an output edited by Word or another Agent during rendering.
+    def output_revision():
+        try:
+            st = output.stat()
+            return (st.st_dev, st.st_ino, st.st_size, st.st_mtime_ns,
+                    hashlib.sha256(output.read_bytes()).digest())
+        except FileNotFoundError:
+            return None
+    original_revision = output_revision()
     if args.reference_doc and not args.reference_doc.is_file():
         raise FileNotFoundError(args.reference_doc)
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -487,8 +499,8 @@ def main():
     report_path = work / 'report.json'
     report_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
     # All construction and structural checks succeeded before touching the target.
-    if output.exists() and not args.overwrite:
-        raise FileExistsError(output)
+    if output_revision() != original_revision:
+        raise RuntimeError(f'Output changed during conversion, refusing to overwrite: {output}')
     os.replace(temporary, output)
     print(json.dumps({'output': str(output), 'report': str(report_path)}, ensure_ascii=False))
     return 0
