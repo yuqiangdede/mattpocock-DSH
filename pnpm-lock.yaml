@@ -3090,6 +3090,9 @@ importers:
       open:
         specifier: ^11.0.2
         version: 11.0.4
+      '@yuqiangdede/dsh-client-ui-matt-skill-launcher':
+        specifier: workspace:*
+        version: link:../../client/ui-matt-skill-launcher
     devDependencies:
       '@deepseek-ai/cordis':
         specifier: workspace:~
@@ -4363,6 +4366,44 @@ importers:
       react-dom:
         specifier: ^18.2.0
         version: 18.3.1(react@18.3.1)
+
+
+  packages/client/ui-matt-skill-launcher:
+    dependencies:
+      '@deepseek-ai/schemastery':
+        specifier: workspace:~
+        version: link:../../../vendor/schemastery
+    devDependencies:
+      '@deepseek-ai/cordis':
+        specifier: workspace:~
+        version: link:../../../vendor/cordis
+      '@deepseek-ai/dsh-api-remotes':
+        specifier: workspace:*
+        version: link:../../api/remotes
+      '@deepseek-ai/dsh-api-session-controller':
+        specifier: workspace:*
+        version: link:../../api/session-controller
+      '@deepseek-ai/dsh-client-ui-conversation':
+        specifier: workspace:*
+        version: link:../ui-conversation
+      '@deepseek-ai/dsh-client-ui-renderer':
+        specifier: workspace:*
+        version: link:../ui-renderer
+      '@deepseek-ai/dsh-client-ui-session':
+        specifier: workspace:*
+        version: link:../ui-session
+      '@deepseek-ai/dsh-client-ui-settings':
+        specifier: workspace:*
+        version: link:../ui-settings
+      '@deepseek-ai/dsh-client-ui-slots':
+        specifier: workspace:*
+        version: link:../ui-slots
+      '@deepseek-ai/dsh-settings':
+        specifier: workspace:*
+        version: link:../../settings/settings
+      react:
+        specifier: ^18.2.0
+        version: 18.3.1
 
   packages/client/ui-model-selection:
     devDependencies:
