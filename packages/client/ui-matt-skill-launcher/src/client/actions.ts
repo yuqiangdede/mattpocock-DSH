@@ -1,8 +1,13 @@
 /** Portable CodingAction domain independent of the underlying Agent engine. */
+export const ACTION_GROUPS = ['development', 'document', 'utility', 'more'] as const
+export type ActionGroup = typeof ACTION_GROUPS[number]
+
 export interface CodingAction {
   id: string
   label: string
   kind: 'skill' | 'prompt'
+  /** Optional to maintain compatibility with previously saved settings. */
+  group?: ActionGroup
   skillId?: string
   prompt: string
   enabled: boolean
@@ -12,6 +17,8 @@ export interface CodingAction {
 }
 /** Initial editable actions supplied when no configuration is saved. */
 export const DEFAULT_ACTIONS: readonly CodingAction[] = [
+  { id: 'initialize', label: '初始化', kind: 'skill', skillId: 'setup-matt-pocock-skills', prompt: '核对当前项目的工程 Skills 配置，先说明现状和缺失内容，修改之前征求确认。', enabled: true, order: 5, description: '什么时候使用：首次为仓库配置工程 Skills。', example: '具体例子：初始化 Issue 跟踪与项目文档约定。' },
+  { id: 'ask', label: '咨询', kind: 'prompt', prompt: '请结合当前问题、项目上下文和实际可用的 Skills，推荐下一步最合适的方法或工具，简述原因和前提；只给建议，不直接修改工程文件。', enabled: true, order: 8, description: '什么时候使用：不确定接下来应该调用哪个 Skill。', example: '具体例子：咨询该先讨论需求还是排查 Bug。' },
   { id: 'discussion', label: '需求讨论', kind: 'skill', skillId: 'grill-with-docs', prompt: '根据当前讨论澄清真实需求与未决问题，不要擅自增加业务功能。', enabled: true, order: 10, description: '什么时候使用：刚开始讨论需求，存在不确定问题。', example: '具体例子：明确功能目标及交互流程。' },
   { id: 'spec', label: '固化需求', kind: 'skill', skillId: 'to-spec', prompt: '请将最新确认的需求固化为可验收的规格。', enabled: true, order: 20, description: '什么时候使用：需求讨论已经形成决策。', example: '具体例子：整理开发和验收依据。' },
   { id: 'plan', label: '制定计划', kind: 'skill', skillId: 'writing-plans', prompt: '拆分可独立开发和验证的任务，不要扩大范围。', enabled: true, order: 30, description: '什么时候使用：已有需求规格，准备实施。', example: '具体例子：为接口升级制定步骤。' },
@@ -22,17 +29,42 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'tickets', label: '任务拆分', kind: 'skill', skillId: 'to-tickets', prompt: '按规格拆分独立且可验收的任务。', enabled: true, order: 110, description: '什么时候使用：需求复杂，需要任务清单。', example: '具体例子：拆分前后端任务。' },
   { id: 'tdd', label: 'TDD', kind: 'skill', skillId: 'tdd', prompt: '先编写失败测试再实现最小修改。', enabled: true, order: 120, description: '什么时候使用：可以通过测试驱动的实现。', example: '具体例子：先写解析器边界测试。' },
   { id: 'api-docs', label: '接口文档', kind: 'skill', skillId: 'api-integration-docs', prompt: '依据现有源码与消息/HTTP 接口编写可对接的完整接口文档，注明所有字段与示例。', enabled: true, order: 130, description: '什么时候使用：接口文档交付任务。', example: '具体例子：调用 api-integration-docs 生成可复核的工程文档。' },
-  { id: 'requirements', label: '需求规格', kind: 'skill', skillId: 'requirements-spec', prompt: '根据当前讨论与源码产出完整的需求规格，区分明确结论与待确认内容。', enabled: true, order: 140, description: '什么时候使用：需求规格交付任务。', example: '具体例子：调用 requirements-spec 生成可复核的工程文档。' },
+  { id: 'requirements', label: '需求文档', kind: 'skill', skillId: 'requirements-spec', prompt: '根据当前讨论与源码产出完整的需求规格，区分明确结论与待确认内容。', enabled: true, order: 140, description: '什么时候使用：需求规格交付任务。', example: '具体例子：调用 requirements-spec 生成可复核的工程文档。' },
   { id: 'overview', label: '总体设计', kind: 'skill', skillId: 'overall-design', prompt: '基于当前需求编写总体设计，说明总体结构、模块和关键设计依据。', enabled: true, order: 150, description: '什么时候使用：总体设计交付任务。', example: '具体例子：调用 overall-design 生成可复核的工程文档。' },
   { id: 'outline', label: '概要设计', kind: 'skill', skillId: 'outline-design', prompt: '根据总体设计和功能约束编写概要设计，必要时绘制规范的架构图。', enabled: true, order: 160, description: '什么时候使用：概要设计交付任务。', example: '具体例子：调用 outline-design 生成可复核的工程文档。' },
   { id: 'database', label: '数据库设计', kind: 'skill', skillId: 'database-design-doc', prompt: '依据实际表结构或需求编写数据库设计说明，包含各字段含义及约束。', enabled: true, order: 170, description: '什么时候使用：数据库设计交付任务。', example: '具体例子：调用 database-design-doc 生成可复核的工程文档。' },
-  { id: 'doc-merge', label: '组件文档融合', kind: 'skill', skillId: 'component-doc-merge', prompt: '将多个组件接口资料按既有事实去重合并，保留来源与章节结构。', enabled: true, order: 180, description: '什么时候使用：组件文档融合交付任务。', example: '具体例子：调用 component-doc-merge 生成可复核的工程文档。' },
-  { id: 'docx', label: 'Markdown 转 Word', kind: 'skill', skillId: 'markdown-to-docx', prompt: '按文档内容和指定模板生成 DOCX 并检查章节完整性和内容一致性。', enabled: true, order: 190, description: '什么时候使用：Markdown 转 Word交付任务。', example: '具体例子：调用 markdown-to-docx 生成可复核的工程文档。' },
+  { id: 'doc-merge', label: '文档融合', kind: 'skill', skillId: 'component-doc-merge', prompt: '将多个组件接口资料按既有事实去重合并，保留来源与章节结构。', enabled: true, order: 180, description: '什么时候使用：组件文档融合交付任务。', example: '具体例子：调用 component-doc-merge 生成可复核的工程文档。' },
+  { id: 'docx', label: 'MD 转 Word', kind: 'skill', skillId: 'markdown-to-docx', prompt: '按文档内容和指定模板生成 DOCX 并检查章节完整性和内容一致性。', enabled: true, order: 190, description: '什么时候使用：Markdown 转 Word交付任务。', example: '具体例子：调用 markdown-to-docx 生成可复核的工程文档。' },
   { id: 'image', label: '交互提示词', kind: 'prompt', prompt: '根据当前对话已确认的需求、设计决策、页面截图及文档，生成可直接用于 AI 图像生成的 UI 交互效果图提示词。保留原页面中未要求修改的功能和布局，明确操作流程、交互状态及视觉要求，不得凭空增加业务。', enabled: true, order: 200, description: '什么时候使用：需要把设计方案转成 UI 效果图。', example: '具体例子：给新增的搜索面板生成生图提示词。' },
   { id: 'commit', label: '提交代码', kind: 'prompt', prompt: '先执行与本次改动相关的编译和测试，通过后才提交代码；兼容 Git、GitLab 和 SVN。失败则停止并报告，成功后说明提交标识和变更摘要；除非明确要求，不推送远程。', enabled: true, order: 210, description: '什么时候使用：本次编码已经完成。', example: '具体例子：编译成功后提交到版本库。' },
+  { id: 'review-fix', label: '修复', kind: 'prompt', prompt: '根据当前对话中已明确的代码审查问题或测试失败证据逐项定位并修复；若没有明确问题则先询问。仅做必要修改并运行相关回归测试。', enabled: true, order: 220, description: '什么时候使用：代码审查或测试发现了明确问题。', example: '具体例子：修复审查报告中的空指针问题。' },
+  { id: 'compile', label: '编译', kind: 'prompt', prompt: '核对当前项目的构建脚本、运行环境和依赖，执行合适的编译或构建检查；不要提交代码。失败时定位原因，未经确认不扩大修改范围。', enabled: true, order: 230, description: '什么时候使用：需要验证当前工程是否能够编译。', example: '具体例子：运行项目在 Windows 上的构建命令。' },
+  { id: 'continue', label: '继续', kind: 'prompt', prompt: '先核对本会话的未完成任务、最近改动及磁盘实际文件，识别已完成步骤和当前阻塞，再从可靠检查点继续，不覆盖现有工作。', enabled: true, order: 240, description: '什么时候使用：恢复中断的开发任务。', example: '具体例子：从上次失败的构建检查处继续。' },
 ]
+/** Resolve an unsaved or legacy action into one of the visual groups. */
+const DOCUMENT_IDS = new Set(['api-docs', 'requirements', 'overview', 'outline', 'database', 'doc-merge', 'docx'])
+const DEVELOPMENT_IDS = new Set(['initialize', 'ask', 'discussion', 'visual', 'spec', 'plan', 'execute', 'bug', 'review'])
+const MORE_IDS = new Set(['tickets', 'tdd'])
+
+export function resolveActionGroup(action: CodingAction): ActionGroup {
+  if (action.group !== undefined) return action.group
+  if (DOCUMENT_IDS.has(action.id)) return 'document'
+  if (DEVELOPMENT_IDS.has(action.id)) return 'development'
+  if (MORE_IDS.has(action.id)) return 'more'
+  // Preserve pre-existing user-defined Skill behavior: order >= 100 is under More.
+  return action.kind === 'prompt' ? 'utility' : action.order >= 100 ? 'more' : 'development'
+}
+
+/** Explicit opt-in: leave existing customized buttons untouched. */
+export function missingDefaultActions(actions: readonly CodingAction[]): CodingAction[] {
+  const ids = new Set(actions.map(action => action.id))
+  return DEFAULT_ACTIONS.filter(action => !ids.has(action.id)).map(action => ({ ...action }))
+}
+
 /** Translate presentation metadata for unsaved defaults only; persisted custom labels stay unchanged. */
 export const ENGLISH_DEFAULT_PRESENTATION: Readonly<Record<string, Pick<CodingAction, 'label' | 'description' | 'example'>>> = {
+  'initialize': { label: 'Initialize', description: 'When to use: Set up repository engineering Skills.', example: 'Example: Configure issue tracking and project docs.' },
+  'ask': { label: 'Ask', description: 'When to use: Unsure which Skill to run.', example: 'Example: Decide between requirements and debugging.' },
   'discussion': { label: 'Discuss Requirements', description: 'When to use: Requirements are still unclear.', example: 'Example: Confirm goals and interactions.' },
   'spec': { label: 'Finalize Spec', description: 'When to use: Requirements are agreed.', example: 'Example: Produce testable specifications.' },
   'plan': { label: 'Plan Work', description: 'When to use: A spec is ready for implementation.', example: 'Example: Plan a service upgrade.' },
@@ -51,6 +83,9 @@ export const ENGLISH_DEFAULT_PRESENTATION: Readonly<Record<string, Pick<CodingAc
   'docx': { label: 'Markdown to Word', description: 'When to use: Delivering a Word document.', example: 'Example: Convert Markdown with a template.' },
   'image': { label: 'UI Image Prompt', description: 'When to use: Turning agreed design into image prompts.', example: 'Example: Visualize a new search panel.' },
   'commit': { label: 'Commit Code', description: 'When to use: Changes have passed checks.', example: 'Example: Commit after a successful build.' },
+  'review-fix': { label: 'Fix Review', description: 'When to use: Tests or review found a confirmed issue.', example: 'Example: Fix and verify a reported defect.' },
+  'compile': { label: 'Build', description: 'When to use: Verify project compilation.', example: 'Example: Run the Windows build.' },
+  'continue': { label: 'Continue', description: 'When to use: Resume interrupted work.', example: 'Example: Pick up a blocked build.' },
 }
 export function presentDefaultActions(actions: CodingAction[], english: boolean): CodingAction[] {
   return english ? actions.map(a => ({ ...a, ...ENGLISH_DEFAULT_PRESENTATION[a.id] })) : actions
@@ -66,7 +101,7 @@ export const encodeActions = (actions: readonly CodingAction[]): string =>
  * @param text Saved JSON or an absent configuration.
  * @returns Validated actions.
  */
-export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip'
+export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip' | 'errorGroup'
 export class ActionConfigError extends Error {
   constructor(readonly key: ActionConfigErrorKey) { super(key); this.name = 'ActionConfigError' }
 }
@@ -92,6 +127,7 @@ export function parseActions(text: string | undefined): CodingAction[] {
     if (a.kind === 'skill' && (typeof a.skillId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.skillId))) throw new ActionConfigError('errorSkillId')
     if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new ActionConfigError('errorFields')
     if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new ActionConfigError('errorTooltip')
-    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), prompt: a.prompt, enabled: a.enabled, order: a.order, description: a.description, example: a.example } as CodingAction
+    if (a.group !== undefined && !ACTION_GROUPS.includes(a.group as ActionGroup)) throw new ActionConfigError('errorGroup')
+    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, order: a.order, description: a.description, example: a.example } as CodingAction
   })
 }
