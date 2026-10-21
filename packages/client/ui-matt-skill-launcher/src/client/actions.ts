@@ -41,24 +41,32 @@ export const encodeActions = (actions: readonly CodingAction[]): string =>
  * @param text Saved JSON or an absent configuration.
  * @returns Validated actions.
  */
+export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip'
+export class ActionConfigError extends Error {
+  constructor(readonly key: ActionConfigErrorKey) { super(key); this.name = 'ActionConfigError' }
+}
+/** Return a typed locale key without leaking internal validation messages to the UI. */
+export function actionErrorKey(error: unknown): ActionConfigErrorKey | undefined {
+  return error instanceof ActionConfigError ? error.key : undefined
+}
 export function parseActions(text: string | undefined): CodingAction[] {
   if (text === undefined || text.trim() === '') return DEFAULT_ACTIONS.map(a => ({ ...a }))
   let raw: unknown
-  try { raw = JSON.parse(text) } catch { throw new Error('JSON 格式错误') }
-  if (typeof raw !== 'object' || raw === null) throw new Error('配置根结构错误')
+  try { raw = JSON.parse(text) } catch { throw new ActionConfigError('errorJson') }
+  if (typeof raw !== 'object' || raw === null) throw new ActionConfigError('errorRoot')
   const doc = raw as { schemaVersion?: unknown; actions?: unknown }
-  if (doc.schemaVersion !== 1 || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new Error('配置版本错误或按钮数量过多')
+  if (doc.schemaVersion !== 1 || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new ActionConfigError('errorVersion')
   const ids = new Set<string>()
   return doc.actions.map((value: unknown) => {
-    if (typeof value !== 'object' || value === null) throw new Error('按钮必须是对象')
+    if (typeof value !== 'object' || value === null) throw new ActionConfigError('errorEntry')
     const a = value as Record<string, unknown>
-    if (typeof a.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(a.id) || ids.has(a.id)) throw new Error('按钮 ID 无效或重复')
+    if (typeof a.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(a.id) || ids.has(a.id)) throw new ActionConfigError('errorId')
     ids.add(a.id)
-    if (typeof a.label !== 'string' || a.label.trim() === '' || a.label.length > 80) throw new Error('按钮名称无效')
-    if (a.kind !== 'skill' && a.kind !== 'prompt') throw new Error('未知按钮类型')
-    if (a.kind === 'skill' && (typeof a.skillId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.skillId))) throw new Error('Skill ID 必须是 kebab-case')
-    if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new Error('按钮类型、提示词或排序无效')
-    if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new Error('悬浮提示无效')
+    if (typeof a.label !== 'string' || a.label.trim() === '' || a.label.length > 80) throw new ActionConfigError('errorLabel')
+    if (a.kind !== 'skill' && a.kind !== 'prompt') throw new ActionConfigError('errorKind')
+    if (a.kind === 'skill' && (typeof a.skillId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.skillId))) throw new ActionConfigError('errorSkillId')
+    if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new ActionConfigError('errorFields')
+    if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new ActionConfigError('errorTooltip')
     return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), prompt: a.prompt, enabled: a.enabled, order: a.order, description: a.description, example: a.example } as CodingAction
   })
 }
