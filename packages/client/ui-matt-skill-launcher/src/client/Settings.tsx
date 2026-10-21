@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DEFAULT_ACTIONS, parseActions, encodeActions, type CodingAction } from './actions.ts'
+import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, type CodingAction } from './actions.ts'
 import type { LauncherSettingsInjected } from './index.ts'
 import css from './Settings.module.css'
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherSettingsInjected>
 export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   const form = useActionForm(x => x)
+  const explain = (error: unknown) => {
+    const key = actionErrorKey(error)
+    return key ? t(key) : String(error)
+  }
   const [draft, setDraft] = useState<CodingAction[]>([])
   const [dirty, setDirty] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -16,13 +20,13 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
     if (dirty) return
     revision.current = form.revision
     try { setDraft(parseActions(form.value?.actionsJson)); setError('') }
-    catch (err) { setError(t('corrupt') + String(err)) }
+    catch (err) { setError(t('corrupt') + explain(err)) }
   }, [form.value?.actionsJson, form.revision, dirty])
   const change = (id: string, patch: Partial<CodingAction>) => { setDraft(xs=>xs.map(x=>x.id===id?{ ...x,...patch }:x)); setDirty(true) }
   const add = (kind: 'skill'|'prompt') => {
     setDraft(xs=>[...xs,{ id:'custom-'+Date.now().toString(36),label:t('newButton'),kind,...(kind==='skill' ? { skillId:'example-skill' } : {}),prompt:'',enabled:true,order:xs.reduce((n,x)=>Math.max(n,x.order),0)+10,description:'',example:'' }]); setDirty(true)
   }
-  const cancel = () => { try { setDraft(parseActions(form.value?.actionsJson)); setDirty(false); setError('') } catch(err) { setError(String(err)) } }
+  const cancel = () => { try { setDraft(parseActions(form.value?.actionsJson)); setDirty(false); setError('') } catch(err) { setError(explain(err)) } }
   const save = async () => {
     if (busy || !dirty) return
     if (form.status !== 'ready' || !form.writable || form.revision === undefined) { setError(t('readonly')); return }
@@ -32,7 +36,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
       setBusy(true)
       if (!await saveActions(encodeActions(normalized), revision.current)) { setError(t('rejected')); return }
       setDraft(normalized); setDirty(false); setError('')
-    } catch(err) { setError(t('unsaved')+String(err)) }
+    } catch(err) { setError(t('unsaved')+explain(err)) }
     finally { setBusy(false) }
   }
   const exportJson = () => {
@@ -41,7 +45,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
       const href = URL.createObjectURL(file), a = document.createElement('a')
       a.href = href; a.download = 'mattpocock-dsh-actions.json'; document.body.appendChild(a); a.click(); a.remove()
       URL.revokeObjectURL(href)
-    } catch(err) { setError(String(err)) }
+    } catch(err) { setError(explain(err)) }
   }
   return <section className={css.root}>
     <h2>{t('title')}</h2><p>{t('intro')}</p>
@@ -68,7 +72,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
     </div>
     <details><summary>{t('importTitle')}</summary>
       <textarea rows={6} value={importJson} onChange={(e)=>{ setImportJson(e.target.value) }}/>
-      <button type="button" onClick={()=>{try{setDraft(parseActions(importJson));setDirty(true);setError('')}catch(err){setError(t('importFailed')+String(err))}}}>{t('import')}</button>
+      <button type="button" onClick={()=>{try{setDraft(parseActions(importJson));setDirty(true);setError('')}catch(err){setError(t('importFailed')+explain(err))}}}>{t('import')}</button>
     </details>
     {error&&<p role="alert" className={css.error}>{error}</p>}
     <small>{t('state')}{form.status}{'；'}{dirty?t('dirty'):t('synced')}{t('version')}{form.revision??t('notLoaded')}</small>
