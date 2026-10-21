@@ -29,6 +29,8 @@ def paragraphs(path: Path) -> list[str]:
 
 
 def check(path: Path, phrases: list[str]):
+    if not phrases or any(not re.sub(r'\\s+', ' ', phrase).strip() for phrase in phrases):
+        raise ValueError('expected phrases must be nonempty after whitespace normalization')
     entries = paragraphs(path)
     missing = [phrase for phrase in phrases if not any(
         re.sub(r'\s+', ' ', phrase).strip() in item for item in entries
