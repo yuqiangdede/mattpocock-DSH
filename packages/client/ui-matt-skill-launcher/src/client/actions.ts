@@ -10,6 +10,7 @@ export interface CodingAction {
   description: string
   example: string
 }
+/** Initial editable actions supplied when no configuration is saved. */
 export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'discussion', label: '需求讨论', kind: 'skill', skillId: 'grill-with-docs', prompt: '根据当前讨论澄清真实需求与未决问题，不要擅自增加业务功能。', enabled: true, order: 10, description: '什么时候使用：刚开始讨论需求，存在不确定问题。', example: '具体例子：明确功能目标及交互流程。' },
   { id: 'spec', label: '固化需求', kind: 'skill', skillId: 'to-spec', prompt: '请将最新确认的需求固化为可验收的规格。', enabled: true, order: 20, description: '什么时候使用：需求讨论已经形成决策。', example: '具体例子：整理开发和验收依据。' },
@@ -30,8 +31,16 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'image', label: '交互提示词', kind: 'prompt', prompt: '根据当前对话已确认的需求、设计决策、页面截图及文档，生成可直接用于 AI 图像生成的 UI 交互效果图提示词。保留原页面中未要求修改的功能和布局，明确操作流程、交互状态及视觉要求，不得凭空增加业务。', enabled: true, order: 200, description: '什么时候使用：需要把设计方案转成 UI 效果图。', example: '具体例子：给新增的搜索面板生成生图提示词。' },
   { id: 'commit', label: '提交代码', kind: 'prompt', prompt: '先执行与本次改动相关的编译和测试，通过后才提交代码；兼容 Git、GitLab 和 SVN。失败则停止并报告，成功后说明提交标识和变更摘要；除非明确要求，不推送远程。', enabled: true, order: 210, description: '什么时候使用：本次编码已经完成。', example: '具体例子：编译成功后提交到版本库。' },
 ]
+/** Serialize a versioned action document.
+ * @param actions Actions to persist.
+ * @returns The JSON document.
+ */
 export const encodeActions = (actions: readonly CodingAction[]): string =>
   JSON.stringify({ schemaVersion: 1, actions }, null, 2)
+/** Validate a persisted action document and copy defaults when absent.
+ * @param text Saved JSON or an absent configuration.
+ * @returns Validated actions.
+ */
 export function parseActions(text: string | undefined): CodingAction[] {
   if (text === undefined || text.trim() === '') return DEFAULT_ACTIONS.map(a => ({ ...a }))
   let raw: unknown

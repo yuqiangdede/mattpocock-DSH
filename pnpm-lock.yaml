@@ -4374,6 +4374,9 @@ importers:
         specifier: link:../../../vendor/schemastery
         version: link:../../../vendor/schemastery
     devDependencies:
+      '@deepseek-ai/dsh-client-locale':
+        specifier: workspace:*
+        version: link:../locale
       '@deepseek-ai/cordis':
         specifier: workspace:~
         version: link:../../../vendor/cordis

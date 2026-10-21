@@ -5,5 +5,5 @@ import z from '@deepseek-ai/schemastery'
 export interface Config { actionsJson: Volatile<string | undefined> }
 export const Config = z.object({ actionsJson: z.string().volatile() })
 export function apply(ctx: Context): void {
-  ctx.inject(['settings'], child => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
+  ctx.inject(['settings'], (child) => { child.effect(() => child.settings.configure({ auto: false }, ctx.fiber)) })
 }

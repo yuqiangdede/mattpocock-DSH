@@ -1126,6 +1126,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
       'client-ui-conversation QueueDock id \'queue\'',
       'client-ui-conversation TodoDock id \'todo\'',
       'client-ui-goal GoalDock id \'goal\'',
+      'client-ui-matt-skill-launcher Launcher id \'matt-skill-launcher\'',
       'experimental-client-ui-claude-code-mods Band id \'claude-code-mods\'',
     ],
     replaceRisk: 'none',
@@ -3240,6 +3241,7 @@ export const CLIENT_SLOT_API: readonly ClientSlotEntry[] = [
     declaredBy: 'an entry in \'sidebar.settings\' (client-ui-settings-general), so it exists while that entry is mounted',
     occupants: [
       'client-ui-agent-preset AgentPresetSection id \'agent-presets\'',
+      'client-ui-matt-skill-launcher LauncherSettings id \'matt-skill-launcher\'',
       'client-ui-settings-account AccountSection id \'account\'',
       'client-ui-settings-general GeneralSection id \'general\'',
       'client-ui-settings-models ModelsSection id \'models\'',
