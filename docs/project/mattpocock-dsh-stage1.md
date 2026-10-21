@@ -8,7 +8,7 @@ Status: Initial implementation, **real Electron end-to-end acceptance remains in
 
 - Keep the official Agent Loop, Session, Tool Pipeline, permissions, and Electron shell; do not migrate historical PI Sessions.
 - Plugin: packages/client/ui-matt-skill-launcher, with Host Config and Client Slot layers; do not modify the native Composer.
-- Row 1: requirements discussion, specification, planning, execution, bug diagnosis, review, and More (visual discussion, task breakdown, TDD).
+- Row 1: requirements discussion, specification, planning, execution, bug diagnosis, review, and More. The More menu includes visual discussion, task breakdown, TDD, HTTP/message interface docs, requirements, overall design, outline design, database design, component document merge, and Markdown to DOCX conversion.
 - Row 2: UI-image prompt and code commit.
 - DSH loads the Skill named by the leading /skill-name only after the user explicitly clicks Send.
 - Insert using captureInsertion/insertText and inspect the result; reject stale insertion snapshots after asynchronous catalog lookup; do not damage existing attachments/references through setDraft.
@@ -40,10 +40,8 @@ By default, installation fills only missing Skill directories in DSH_HOME/skills
 - A plugin action currently enters More only through order (>=100); an explicit grouping field may be configured later.
 - DSH is a developer preview; plugin APIs may make breaking changes. Pin the baseline before evaluating upstream synchronization.
 
-## Fork CI configuration
+## Fork CI configuration (Windows only)
 
-Upstream Issue policy/lifecycle workflows depend on the deepseek-harness organization's Project and GitHub App, and run only upstream. Cloudflare preview is skipped by default on Forks; for deployment, set the repository variable `DSH_CLOUDFLARE_PREVIEW_ENABLED=true` and provide the Cloudflare and Access credentials used by the workflow. Ordinary builds, tests, and release-package installation checks still run. Launcher follows the release tooling's existing package naming and unified version, and is packed with the Web bundle instead of relying on a previously published npm package.
+Fork CI runs only on GitHub-hosted `windows-2025` with Node 24. The single Windows job installs the frozen workspace dependencies, executes the Skill Launcher / DSH UI integration tests, and builds the Windows Host/Client/Desktop/Web workspace. No Linux/macOS builds, documents/website checks, Python SDK, Issue workflows, Cloudflare preview, or release workflows are required. The upstream project's CI remains unchanged in its own repository.
 
-### PR check runners
-
-Fork PR CI schedules Linux checks and the final summary on `ubuntu-24.04`, and Windows build, native tests, and coverage on `windows-2025`. This takes precedence over the upstream Blacksmith/self-hosted selection flags. Commands, dependencies, and acceptance summaries are unchanged, while the upstream repository keeps its original runner selection. Main-branch-only self-hosted failover drills and manual performance profiles are outside this PR-check adaptation.
+The completed Windows build is a necessary check, **not** evidence of physical Windows Electron interaction acceptance. Manual verification of plugin visibility, invocation, settings persistence, and grill-with-ui browser/session writeback must be recorded separately before claiming the complete Stage 1 feature is accepted.
