@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, type CodingAction } from './actions.ts'
+import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, presentDefaultActions, type CodingAction } from './actions.ts'
 import type { LauncherSettingsInjected } from './index.ts'
 import css from './Settings.module.css'
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherSettingsInjected>
@@ -19,14 +19,14 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   useEffect(() => {
     if (dirty) return
     revision.current = form.revision
-    try { setDraft(parseActions(form.value?.actionsJson)); setError('') }
+    try { setDraft(form.value?.actionsJson ? parseActions(form.value.actionsJson) : presentDefaultActions(parseActions(undefined), t('defaultLocale') === 'en')); setError('') }
     catch (err) { setError(t('corrupt') + explain(err)) }
   }, [form.value?.actionsJson, form.revision, dirty])
   const change = (id: string, patch: Partial<CodingAction>) => { setDraft(xs=>xs.map(x=>x.id===id?{ ...x,...patch }:x)); setDirty(true) }
   const add = (kind: 'skill'|'prompt') => {
     setDraft(xs=>[...xs,{ id:'custom-'+Date.now().toString(36),label:t('newButton'),kind,...(kind==='skill' ? { skillId:'example-skill' } : {}),prompt:'',enabled:true,order:xs.reduce((n,x)=>Math.max(n,x.order),0)+10,description:'',example:'' }]); setDirty(true)
   }
-  const cancel = () => { try { setDraft(parseActions(form.value?.actionsJson)); setDirty(false); setError('') } catch(err) { setError(explain(err)) } }
+  const cancel = () => { try { setDraft(form.value?.actionsJson ? parseActions(form.value.actionsJson) : presentDefaultActions(parseActions(undefined), t('defaultLocale') === 'en')); setDirty(false); setError('') } catch(err) { setError(explain(err)) } }
   const save = async () => {
     if (busy || !dirty) return
     if (form.status !== 'ready' || !form.writable || form.revision === undefined) { setError(t('readonly')); return }
@@ -67,7 +67,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
     </section>)}
     <div className={css.head}>
       <button type="button" onClick={exportJson}>{t('export')}</button>
-      <button type="button" onClick={()=>{setDraft(DEFAULT_ACTIONS.map(x=>({ ...x })));setDirty(true)}}>{t('reset')}</button>
+      <button type="button" onClick={()=>{setDraft(presentDefaultActions(DEFAULT_ACTIONS.map(x=>({ ...x })), t('defaultLocale') === 'en'));setDirty(true)}}>{t('reset')}</button>
       <button type="button" onClick={cancel} disabled={!dirty||busy}>{t('cancel')}</button>
       <button type="button" onClick={()=>{void save()}} disabled={!dirty||busy||!form.writable}>{busy?t('saving'):t('save')}</button>
     </div>
