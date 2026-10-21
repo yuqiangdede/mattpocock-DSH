@@ -31,6 +31,31 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'image', label: '交互提示词', kind: 'prompt', prompt: '根据当前对话已确认的需求、设计决策、页面截图及文档，生成可直接用于 AI 图像生成的 UI 交互效果图提示词。保留原页面中未要求修改的功能和布局，明确操作流程、交互状态及视觉要求，不得凭空增加业务。', enabled: true, order: 200, description: '什么时候使用：需要把设计方案转成 UI 效果图。', example: '具体例子：给新增的搜索面板生成生图提示词。' },
   { id: 'commit', label: '提交代码', kind: 'prompt', prompt: '先执行与本次改动相关的编译和测试，通过后才提交代码；兼容 Git、GitLab 和 SVN。失败则停止并报告，成功后说明提交标识和变更摘要；除非明确要求，不推送远程。', enabled: true, order: 210, description: '什么时候使用：本次编码已经完成。', example: '具体例子：编译成功后提交到版本库。' },
 ]
+/** Translate presentation metadata for unsaved defaults only; persisted custom labels stay unchanged. */
+export const ENGLISH_DEFAULT_PRESENTATION: Readonly<Record<string, Pick<CodingAction, 'label' | 'description' | 'example'>>> = {
+  'discussion': { label: 'Discuss Requirements', description: 'When to use: Requirements are still unclear.', example: 'Example: Confirm goals and interactions.' },
+  'spec': { label: 'Finalize Spec', description: 'When to use: Requirements are agreed.', example: 'Example: Produce testable specifications.' },
+  'plan': { label: 'Plan Work', description: 'When to use: A spec is ready for implementation.', example: 'Example: Plan a service upgrade.' },
+  'execute': { label: 'Execute Plan', description: 'When to use: Implementation is ready to start.', example: 'Example: Build and verify planned tasks.' },
+  'bug': { label: 'Diagnose Bug', description: 'When to use: Features or tests fail.', example: 'Example: Investigate broken session state.' },
+  'review': { label: 'Code Review', description: 'When to use: Code is ready for review.', example: 'Example: Check permissions and concurrency.' },
+  'visual': { label: 'Visual Discussion', description: 'When to use: Interactive design questions need decisions.', example: 'Example: Review the layout one question at a time.' },
+  'tickets': { label: 'Split Tasks', description: 'When to use: A spec needs smaller deliverables.', example: 'Example: Split frontend and backend work.' },
+  'tdd': { label: 'TDD', description: 'When to use: Tests can drive a change.', example: 'Example: Test a parser boundary first.' },
+  'api-docs': { label: 'API Documentation', description: 'When to use: Integration docs are required.', example: 'Example: Document HTTP and message fields.' },
+  'requirements': { label: 'Requirements Spec', description: 'When to use: Delivering requirements.', example: 'Example: Generate traceable requirements.' },
+  'overview': { label: 'System Design', description: 'When to use: Explaining the system architecture.', example: 'Example: Document major modules.' },
+  'outline': { label: 'High-Level Design', description: 'When to use: Detailing system modules.', example: 'Example: Describe interfaces and diagrams.' },
+  'database': { label: 'Database Design', description: 'When to use: Defining or documenting schemas.', example: 'Example: Explain constraints and columns.' },
+  'doc-merge': { label: 'Merge Component Docs', description: 'When to use: Combining multiple documents.', example: 'Example: Merge and deduplicate interfaces.' },
+  'docx': { label: 'Markdown to Word', description: 'When to use: Delivering a Word document.', example: 'Example: Convert Markdown with a template.' },
+  'image': { label: 'UI Image Prompt', description: 'When to use: Turning agreed design into image prompts.', example: 'Example: Visualize a new search panel.' },
+  'commit': { label: 'Commit Code', description: 'When to use: Changes have passed checks.', example: 'Example: Commit after a successful build.' },
+}
+export function presentDefaultActions(actions: CodingAction[], english: boolean): CodingAction[] {
+  return english ? actions.map(a => ({ ...a, ...ENGLISH_DEFAULT_PRESENTATION[a.id] })) : actions
+}
+
 /** Serialize a versioned action document.
  * @param actions Actions to persist.
  * @returns The JSON document.
