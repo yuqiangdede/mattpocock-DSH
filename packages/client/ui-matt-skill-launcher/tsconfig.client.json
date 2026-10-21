@@ -29,6 +29,9 @@
       "path": "../ui-settings/tsconfig.client.json"
     },
     {
+      "path": "../ui-primitives"
+    },
+    {
       "path": "../../api/remotes/tsconfig.client.json"
     },
     {
