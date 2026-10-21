@@ -259,6 +259,7 @@ const CHECK = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="1
 
 let S = null, raw = null, selected = null, storeKey = null;
 let posting = false; // Shared guard across Send, Finish, Visualize and Explore.
+let sendFailure = ''; // Retained across polling and render until the next successful send.
 let lastOk = Date.now(), gone = false, confirmFinish = false, intentOpen = false;
 let local = fresh();
 function fresh() { return { staged: {}, pending: [], drafts: {}, view: "questions", vfeedback: [], subagent: true }; }
@@ -396,10 +397,10 @@ async function post(actions) {
   try {
     r = await fetch("/send", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ actions }) });
     j = await r.json().catch(() => ({}));
-    if (!j.ok) $("send-why").textContent = "Send failed: " + (j.error || r.status || "no server");
+    sendFailure = j.ok ? '' : "Send failed: " + (j.error || r.status || "no server");
     return j.ok ? j : null;
   } catch {
-    $("send-why").textContent = "Send failed: no server";
+    sendFailure = "Send failed: no server";
     return null;
   } finally { posting = false; }
 }
@@ -687,7 +688,7 @@ function renderFooter() {
 function renderSend() {
   const { disabled, why } = sendState(); const n = stagedCount(); const b = $("send");
   b.disabled = disabled; b.textContent = n ? `Send ${n} to Agent` : "Send to Agent";
-  $("send-why").textContent = why;
+  $("send-why").textContent = sendFailure || why;
 }
 
 $("send").onclick = send;
