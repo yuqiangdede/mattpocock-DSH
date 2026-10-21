@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { parseActions, actionErrorKey, type CodingAction } from './actions.ts'
+import { parseActions, actionErrorKey, presentDefaultActions, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
@@ -20,6 +20,7 @@ export function Launcher({ useInput, inputActions, useActionForm, fetchSkillName
   let actions: CodingAction[] = []
   let invalid = ''
   try { actions = parseActions(snapshot.value?.actionsJson) } catch (error) { invalid = explain(error) }
+  actions = snapshot.value?.actionsJson ? actions : presentDefaultActions(actions, t('defaultLocale') === 'en')
   const skills = actions.filter(a => a.kind === 'skill' && a.enabled).sort((a,b) => a.order-b.order)
   const prompts = actions.filter(a => a.kind === 'prompt' && a.enabled).sort((a,b) => a.order-b.order)
   const available = input.phase === 'plain' && !pending && snapshot.status === 'ready'
