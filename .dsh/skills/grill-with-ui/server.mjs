@@ -140,6 +140,30 @@ function cmdServe(o) {
   const events = path.join(session, "events.jsonl");
   const stateFile = path.join(session, "state.json");
   const serverFile = path.join(session, "server.json");
+  // Only one writer may allocate send seq values for a session.
+  const lockFile = path.join(session, "server.lock");
+  try {
+    const owner = JSON.parse(fs.readFileSync(serverFile, "utf8"));
+    if (Number.isInteger(owner.pid) && alive(owner.pid)) die(`session already served: ${owner.url || owner.pid}`, 1);
+  } catch (err) { if (!(err instanceof SyntaxError) && err.code !== "ENOENT") throw err; }
+  let acquired = false;
+  for (let n = 0; n < 2 && !acquired; n++) {
+    try {
+      const fd = fs.openSync(lockFile, "wx");
+      try { fs.writeFileSync(fd, String(process.pid)); } finally { fs.closeSync(fd); }
+      acquired = true;
+    } catch (err) {
+      if (err.code !== "EEXIST") throw err;
+      let pid = 0;
+      try { pid = Number(fs.readFileSync(lockFile, "utf8")); } catch { /* stale lock */ }
+      if (pid > 0 && alive(pid)) die(`session is already served by process ${pid}`, 1);
+      if (n === 1) die("server lock is busy", 1);
+      try { fs.rmSync(lockFile); } catch (removeErr) { if (removeErr.code !== "ENOENT") throw removeErr; }
+    }
+  }
+  process.once("exit", () => {
+    try { if (fs.readFileSync(lockFile, "utf8") === String(process.pid)) fs.rmSync(lockFile); } catch { /* stale/removed */ }
+  });
   const page = path.join(HERE, "page.html");
   let seq = lastSeq(events);
   let lastGoodState = null;
@@ -212,7 +236,10 @@ function cmdWait(o) {
   // that lands while this process is still booting is therefore waited past rather than
   // returned, which is why wait mode passes --after <agent.handled> explicitly.
   const after = o.after !== undefined && o.after !== true ? Number(o.after) : lastSeq(events);
-  const deadline = Date.now() + Number(o.timeout !== undefined && o.timeout !== true ? o.timeout : 480) * 1000;
+  const timeout = Number(o.timeout !== undefined && o.timeout !== true ? o.timeout : 480);
+  if (!Number.isFinite(timeout) || timeout < 0) die("--timeout must be a finite nonnegative number");
+  if (!Number.isSafeInteger(after) || after < 0) die("--after must be a nonnegative integer");
+  const deadline = Date.now() + timeout * 1000;
   const tick = () => {
     for (const { line, ev } of readEvents(events)) {
       if ((Number(ev.seq) || 0) > after) { process.stdout.write(line + "\n"); process.exit(0); }
@@ -375,24 +402,27 @@ function validateState(s) {
   const need = (ok, msg) => { if (!ok) bad(msg); };
   const str = (v) => typeof v === "string";
   const strs = (v) => Array.isArray(v) && v.every(str);
+  const iso = (v) => str(v) && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(v) && Number.isFinite(Date.parse(v));
   const bool = (v) => typeof v === "boolean";
   const count = (v) => Number.isInteger(v) && v >= 0;
   const check = (o, k, ok, msg) => { if (k in o) need(ok(o[k]), msg); };
   const texts = (o, keys, where) => { for (const k of keys) check(o, k, str, `${where}.${k} must be a string`); };
   const messages = (list, where) => {
     need(Array.isArray(list), `${where} must be an array`);
-    list.forEach((m, i) => need(isObj(m) && (m.who === "user" || m.who === "agent") && str(m.text) && (m.at === undefined || str(m.at)),
+    list.forEach((m, i) => need(isObj(m) && (m.who === "user" || m.who === "agent") && str(m.text) && (m.at === undefined || iso(m.at)),
       `${where}[${i}] must be {"who":"user"|"agent","text":"…","at":"ISO"}`));
   };
-  for (const k of ["topic", "intent", "doc", "project", "created", "note"]) check(s, k, str, `${k} must be a string`);
+  for (const k of ["topic", "intent", "doc", "project", "note"]) check(s, k, str, `${k} must be a string`);
+  check(s, "created", iso, "created must be an ISO time string");
   if ("finished" in s) {
     need(isObj(s.finished), 'finished must be an object ({"doc","visual","at"})');
-    texts(s.finished, ["doc", "visual", "at"], "finished");
+    texts(s.finished, ["doc", "visual"], "finished");
+    check(s.finished, "at", iso, "finished.at must be an ISO time string");
   }
   if ("agent" in s) {
     need(isObj(s.agent), "agent must be an object");
     check(s.agent, "status", (v) => v === "waiting" || v === "working", 'agent.status must be "waiting" or "working"');
-    check(s.agent, "since", str, "agent.since must be an ISO time string");
+    check(s.agent, "since", iso, "agent.since must be an ISO time string");
     check(s.agent, "handled", count, "agent.handled must be a whole number (the seq of the last handled send)");
   }
   if ("terms" in s) {
@@ -429,7 +459,7 @@ function validateState(s) {
     if ("explore" in q) {
       const e = q.explore;
       need(isObj(e) && Array.isArray(e.rows), `${w}.explore must be {"at","rows":[…]}`);
-      check(e, "at", str, `${w}.explore.at must be an ISO time string`);
+      check(e, "at", iso, `${w}.explore.at must be an ISO time string`);
       e.rows.forEach((r, i) => {
         const where = `${w}.explore.rows[${i}]`;
         need(isObj(r), `${where} must be {"option","pros":[…],"cons":[…]}`);
@@ -447,8 +477,9 @@ function validateState(s) {
     check(v, "version", count, "visual.version must be a whole number");
     need("kind" in v && "version" in v, "visual needs kind and version; the first Visualize draw creates it (version 0)");
     check(v, "stale", bool, "visual.stale must be true or false");
-    texts(v, ["note", "at"], "visual");
-    check(v, "drawing", (x) => isObj(x) && (!("since" in x) || str(x.since)), 'visual.drawing must be {"since":"ISO","seq":N}');
+    texts(v, ["note"], "visual");
+    check(v, "at", iso, "visual.at must be an ISO time string");
+    check(v, "drawing", (x) => isObj(x) && (!("since" in x) || iso(x.since)), 'visual.drawing must be {"since":"ISO","seq":N}');
     check(v, "queued", strs, "visual.queued must be an array of strings");
     if ("thread" in v) messages(v.thread, "visual.thread");
   }
