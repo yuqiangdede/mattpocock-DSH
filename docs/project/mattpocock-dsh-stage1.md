@@ -41,3 +41,7 @@
 ## Fork CI 配置
 
 上游 Issue policy / lifecycle 依赖 deepseek-harness 组织的 Project 和 GitHub App，仅在上游仓库执行。Fork 的 Cloudflare 预览默认跳过；需要部署时设置仓库变量 `DSH_CLOUDFLARE_PREVIEW_ENABLED=true`，并配置工作流使用的 Cloudflare 与 Access 凭据。常规构建、测试、发布包安装验证仍执行。Launcher 采用现有发布工具要求的包命名和统一版本，随 Web bundle 一同打包验证，不依赖 npm 上预先存在该插件。
+
+### PR 检查运行器
+
+Fork 的 PR CI 将 Linux 检查与最终汇总调度到 `ubuntu-24.04`，将 Windows 构建、原生测试及覆盖率调度到 `windows-2025`；此选择优先于上游的 Blacksmith / self-hosted 切换变量。检查命令、依赖关系和验收汇总保持不变，上游仓库继续使用原有运行器选择。主分支专用的自托管备用演练和手动性能档位测试不属于此 PR 检查适配范围。
