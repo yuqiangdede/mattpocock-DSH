@@ -43,6 +43,16 @@ export const zh = {
   'synced': '已同步',
   'version': '；Host 版本：',
   'notLoaded': '未加载',
+  'errorJson': 'JSON 格式错误',
+  'errorRoot': '配置根结构错误',
+  'errorVersion': '配置版本错误或按钮数量过多',
+  'errorEntry': '按钮必须是对象',
+  'errorId': '按钮 ID 无效或重复',
+  'errorLabel': '按钮名称无效',
+  'errorKind': '未知按钮类型',
+  'errorSkillId': 'Skill ID 必须是 kebab-case',
+  'errorFields': '按钮状态、提示词或排序无效',
+  'errorTooltip': '悬浮提示无效',
 } as const
 
 /** Keys accepted by the launcher locale seat. */
@@ -92,4 +102,14 @@ export const en: Record<LauncherLocaleKey, string> = {
   'synced': 'Synchronized',
   'version': '; Host revision: ',
   'notLoaded': 'Not loaded',
+  'errorJson': 'Invalid JSON syntax',
+  'errorRoot': 'Invalid configuration root',
+  'errorVersion': 'Unsupported version or too many buttons',
+  'errorEntry': 'Each button must be an object',
+  'errorId': 'Invalid or duplicate button ID',
+  'errorLabel': 'Invalid button name',
+  'errorKind': 'Unknown button type',
+  'errorSkillId': 'Skill ID must be kebab-case',
+  'errorFields': 'Invalid button state, prompt or order',
+  'errorTooltip': 'Invalid tooltip description',
 }
