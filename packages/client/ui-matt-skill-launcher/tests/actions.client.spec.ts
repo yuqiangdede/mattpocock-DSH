@@ -1,13 +1,42 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_ACTIONS, encodeActions, parseActions } from '../src/client/actions.ts'
+import { DEFAULT_ACTIONS, encodeActions, parseActions, resolveActionGroup, missingDefaultActions, displayOrder } from '../src/client/actions.ts'
 
 describe('mattpocock-DSH CodingAction document', () => {
   it('ships skill and prompt rows without automatic execution metadata', () => {
     const actions = parseActions(undefined)
     expect(actions.filter(a => a.kind === 'skill').length).toBeGreaterThan(4)
-    expect(actions.filter(a => a.kind === 'prompt').map(a => a.id)).toEqual(['image','commit'])
+    expect(actions.filter(a => a.kind === 'prompt').map(a => a.id)).toEqual(['ask','image','commit','review-fix','compile','continue'])
     expect(actions.every(a => a.enabled)).toBe(true)
     expect(new Set(actions.map(a => a.id)).size).toBe(actions.length)
+  })
+  it('exposes both discussion modes and all seven document Skills', () => {
+    const actions = parseActions(undefined)
+    expect(actions.filter(a => resolveActionGroup(a) === 'development').map(a => a.id))
+      .toEqual(['initialize', 'ask', 'discussion', 'spec', 'plan', 'execute', 'bug', 'review', 'visual'])
+    expect(actions.filter(a => resolveActionGroup(a) === 'document').map(a => a.id))
+      .toEqual(['api-docs','requirements','overview','outline','database','doc-merge','docx'])
+    expect(actions.filter(a => resolveActionGroup(a) === 'more').map(a => a.id))
+      .toEqual(['tickets','tdd'])
+  })
+  it('supports legacy saved config without forcing reset', () => {
+    const previous = DEFAULT_ACTIONS.filter(a => !['initialize','ask','review-fix','compile','continue'].includes(a.id))
+    const loaded = parseActions(encodeActions(previous))
+    expect(loaded.filter(a => resolveActionGroup(a) === 'document')).toHaveLength(7)
+    const visual = loaded.find(a => a.id === 'visual')
+    expect(visual).toBeDefined()
+    expect(resolveActionGroup(visual!)).toBe('development')
+    expect(displayOrder({ ...visual!, order: 100 })).toBe(15)
+    expect(missingDefaultActions(loaded).map(a => a.id)).toEqual(['initialize','ask','review-fix','compile','continue'])
+    expect(missingDefaultActions([...loaded,...missingDefaultActions(loaded)])).toEqual([])
+  })
+  it('honors explicit groups for custom actions and rejects invalid groups', () => {
+    const base = DEFAULT_ACTIONS[0]!
+    const custom = { ...base, id: 'custom-one', order: 300, group: 'utility' as const }
+    expect(resolveActionGroup(parseActions(encodeActions([custom]))[0]!)).toBe('utility')
+    const { group: ignoredGroup, ...ungrouped } = custom
+    expect(ignoredGroup).toBe('utility')
+    expect(resolveActionGroup(ungrouped)).toBe('more')
+    expect(() => parseActions(encodeActions([{...custom, group: 'unexpected' as typeof custom.group}]))).toThrow()
   })
   it('roundtrips saved config without changing user-defined labels', () => {
     const actions = DEFAULT_ACTIONS.map((a, index) => ({ ...a, label: index === 0 ? '自定义' : a.label }))

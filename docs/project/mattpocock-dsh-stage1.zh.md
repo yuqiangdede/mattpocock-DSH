@@ -8,11 +8,14 @@
 
 - 保留官方 Agent Loop、Session、Tool Pipeline、权限和 Electron 壳，不迁移 PI 的历史会话。
 - 插件：packages/client/ui-matt-skill-launcher，Host Config 和 Client Slot 两层；不要修改原生 Composer。
-- 第 1 排：需求讨论、固化需求、计划、执行、Bug、审查、更多（可视化讨论、任务拆分、TDD）。
-- 第 2 排：交互提示词、提交代码。
+- 开发流程组：初始化、咨询、需求讨论、可视化讨论、固化需求、制定计划、执行开发、Bug 排查、代码审查、更多（任务拆分、TDD）。
+- 文档生成组：需求文档、总体设计、概要设计、接口文档、数据库设计、文档融合、MD 转 Word，全部直接显示。
+- 辅助操作组：交互提示词、提交代码、修复、编译、继续。
+- 初始化绑定 setup-matt-pocock-skills；咨询、修复、编译和继续使用纯提示词，不冒充 PI 原生宿主命令。
 - 用户明确点击 Send 后，才由 DSH 根据位于开头的 /skill-name 加载 Skill。
 - 插入用 captureInsertion/insertText 并检查返回值；异步目录加载造成草稿版本失效时拒绝写入；现有附件/引用不被 setDraft 破坏。
-- 配置由 Host Settings 持久化为版本化 JSON，支持显式保存、取消、恢复默认和导入导出。对损坏 JSON 不进行自动覆盖。
+- 配置由 Host Settings 持久化为版本化 JSON，支持分组、排序、显式保存、取消、恢复默认和导入导出。对损坏 JSON 不进行自动覆盖。
+- 旧版 schemaVersion 1 的配置不自动覆盖：原内置 ID 推导默认显示分组；已保存的旧可视化讨论按钮按视觉顺序与文字讨论相邻；新增按钮需在设置中点击「补齐缺失预设」并保存。
 - 默认绑定的 Skill 必须真实安装；没有对应目录时提示，不偷偷改为通用提示词执行。
 
 ## 交付路径
@@ -26,7 +29,7 @@
 ## 验收门禁
 
 1. npm/pnpm 依赖冻结安装与两个 TS aggregate 编译通过。
-2. Web 与 Windows Electron 均能显示两排按钮，启停插件后 UI 正确释放；默认按钮顺序及 tooltip 验证。
+2. Web 与 Windows Electron 均能显示三组按钮，文本与可视化需求讨论并排，启停插件后 UI 正确释放；验证顺序、窄窗口换行和 tooltip。
 3. 选中原有草稿不被覆盖；有图片/文件引用时添加指令，数据仍然存在；异步查目录时切换会话，不串写。
 4. 未安装 Skill 显示错误，不修改草稿；安装后 /skill-name 位于消息最前，并且在用户手动发送后才执行。
 5. Host Settings 保存、重启恢复、重复导入、空列表、配置错误与并发修改冲突均能处理。

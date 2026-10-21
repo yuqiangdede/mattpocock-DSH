@@ -22,10 +22,11 @@ kind: "package-reference"
 <a id="behavior"></a>
 ## 行为
 
-- 原生 Composer 上方显示两排按钮和一个“更多”菜单。
+- 原生 Composer 上方显示开发流程、文档生成、辅助操作三组按钮及“更多”菜单；“需求讨论”“可视化讨论”独立并列，窗口较窄时自动换行。
+- 旧配置按内置按钮 ID 兼容分组，已有用户自定义操作不被重置；在设置中手动补齐新增预设按钮并保存。
 - Skill 按钮在插入 /skill-name 之前，查询*当前有效 Session* 的 Skill 目录。用户明确发送后，DSH 才确定性地加载完整的 SKILL.md。
 - 纯提示词按钮直接插入文本，不绑定 Skill。
-- 原生 DSH Host Settings 持久化带版本的 CodingAction JSON，包括可编辑的名称、提示词、启停状态、排序和帮助文本。设置页面支持导入和导出。
+- 原生 DSH Host Settings 持久化带版本的 CodingAction JSON，包括可编辑的名称、提示词、启停状态、显示分组、排序和帮助文本。设置页面支持导入和导出。
 - 不自动发送，也不迁移旧 Pi Session。受修订版本保护的文本插入不会替换图片或文件标记。
 
 Skills 不会通过猜测或静默生成。应安装在 <DSH_HOME>/skills/<name>/SKILL.md 或当前项目的 .dsh/skills/<name>/SKILL.md。具体安装说明参见本 Fork 的文档。缺失 Skill 时显示非破坏性错误。
