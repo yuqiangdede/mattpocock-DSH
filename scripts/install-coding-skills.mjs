@@ -4,7 +4,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { cp, mkdir, readdir, rename, stat } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readdir, rename, rm, stat } from 'node:fs/promises'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const source = path.join(root, '.dsh', 'skills')
@@ -34,13 +34,30 @@ for (const entry of await readdir(source, { withFileTypes: true })) {
     skipped++
     continue
   }
-  if (exists) {
-    const backup = to + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-')
-    await rename(to, backup)
-    console.log('BACKUP:', backup)
+  // Fully stage the replacement before touching a working installation.
+  const stagingRoot = await mkdtemp(path.join(destination, '.skill-install-'))
+  const staged = path.join(stagingRoot, entry.name)
+  let backup
+  try {
+    await cp(from, staged, { recursive: true, force: false, errorOnExist: true })
+    if (exists) {
+      backup = to + '.backup-' + new Date().toISOString().replace(/[:.]/g, '-') + '-' + Math.random().toString(36).slice(2)
+      await rename(to, backup)
+    }
+    try {
+      await rename(staged, to)
+    } catch (error) {
+      if (backup) {
+        await rename(backup, to)
+        backup = undefined
+      }
+      throw error
+    }
+    if (backup) console.log('BACKUP:', backup)
+    console.log('INSTALLED:', entry.name)
+  } finally {
+    await rm(stagingRoot, { recursive: true, force: true })
   }
-  await cp(from, to, { recursive: true, force: false, errorOnExist: true })
-  console.log('INSTALLED:', entry.name)
   copied++
 }
 console.log('DSH Skills:', destination)
