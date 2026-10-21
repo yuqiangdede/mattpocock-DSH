@@ -103,10 +103,23 @@ jobs:
       - name: Install (immutable)
         run: pnpm install --frozen-lockfile
 
+      # The upstream static aggregate includes full-repo documentation/archival
+      # checks that intentionally remain upstream-owned. Forks check their
+      # workspace integration without modifying upstream test expectations.
       - name: Run static gates
+        if: github.repository == 'deepseek-ai/deepseek-harness'
         env:
           DSH_ARCHIVE_BASE_REF: ${{ github.event.pull_request.base.sha }}
         run: pnpm run check:ci:static
+
+      - name: Validate Fork workspace and Skill Launcher
+        if: github.repository != 'deepseek-ai/deepseek-harness'
+        run: |
+          pnpm run constraints
+          pnpm run verify-package-meta
+          pnpm run verify-client-packages
+          pnpm run verify-cordis-config
+          pnpm exec vitest run scripts/ci-workflow.spec.ts scripts/preview-workflow.spec.ts scripts/release/families.spec.ts packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts
 
   node-24-coverage:
     if: github.event_name == 'pull_request'
@@ -197,7 +210,12 @@ jobs:
           exit "$sandbox_status"
 
       - name: Run exhaustive coverage
+        if: github.repository == 'deepseek-ai/deepseek-harness'
         run: pnpm run check:ci:coverage
+
+      - name: Test Fork Skill Launcher on Linux
+        if: github.repository != 'deepseek-ai/deepseek-harness'
+        run: pnpm exec vitest run packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx
 
       - name: Save coverage duration history
         if: ${{ !cancelled() }}
@@ -375,7 +393,7 @@ jobs:
           PY
 
       - name: Install Playwright Chromium, WebKit, and hosted dependencies
-        if: github.repository != 'deepseek-ai/deepseek-harness' || vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]'
+        if: github.repository == 'deepseek-ai/deepseek-harness' && (vars.DSH_CI_FAILOVER_LINUX != 'selfhosted' || github.event.pull_request.user.login == 'dependabot[bot]')
         # Ephemeral runner images can carry Ubuntu mirrors whose HTTP endpoints are unreachable.
         run: |
           sudo find /etc/apt -maxdepth 2 -type f \( -name '*.list' -o -name '*.sources' \) -exec sed -i -E 's@http://([a-z]{2}\.)?archive\.ubuntu\.com/ubuntu@https://archive.ubuntu.com/ubuntu@g; s@http://security\.ubuntu\.com/ubuntu@https://security.ubuntu.com/ubuntu@g' {} +
@@ -388,10 +406,18 @@ jobs:
         run: pnpm --filter @deepseek-ai/dsh-web-frontend exec playwright install chromium webkit
 
       - name: Build and execute the Linux Office runtime
+        if: github.repository == 'deepseek-ai/deepseek-harness'
         run: CI=true pnpm run prepare:primary-runtime --target linux-x64 --output "$RUNNER_TEMP/office-runtime" --cache "$RUNNER_TEMP/office-runtime-downloads"
 
       - name: Run compatibility, snapshot, and artifact gates
+        if: github.repository == 'deepseek-ai/deepseek-harness'
         run: pnpm run check:ci:consumers
+
+      # This is the real Linux build, including Host/Client compilation and
+      # bundling. Keep this blocking; only upstream snapshots/docs are omitted.
+      - name: Build Fork application and Launcher
+        if: github.repository != 'deepseek-ai/deepseek-harness'
+        run: pnpm run build
 
 
   node-compat:
@@ -672,8 +698,13 @@ jobs:
       # transform-corpus, client ui-trajectory client-bundle) self-skip on
       # unbuilt checkouts.
       - name: Run Windows coverage
+        if: github.repository == 'deepseek-ai/deepseek-harness'
         shell: pwsh
         run: pnpm run check:ci:coverage
+      - name: Test Fork Skill Launcher on Windows
+        if: github.repository != 'deepseek-ai/deepseek-harness'
+        shell: pwsh
+        run: pnpm exec vitest run packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts
       - name: Save coverage duration history
         # Coverage flakes must not prevent the cache from building; the
         # measured durations remain useful even when a partition failed. The
