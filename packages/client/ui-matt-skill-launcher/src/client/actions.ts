@@ -25,7 +25,7 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'execute', label: '执行开发', kind: 'skill', skillId: 'executing-plans', prompt: '按已确认计划实现，分步验证并报告失败。', enabled: true, order: 40, description: '什么时候使用：需要开始实际编码。', example: '具体例子：按计划完成编码测试。' },
   { id: 'bug', label: 'Bug 排查', kind: 'skill', skillId: 'diagnosing-bugs', prompt: '先复现和定位根因，再最小修复并验证。', enabled: true, order: 50, description: '什么时候使用：功能异常或测试失败。', example: '具体例子：排查会话状态错误。' },
   { id: 'review', label: '代码审查', kind: 'skill', skillId: 'code-review', prompt: '审查正确性、数据安全和可维护性，给出有证据的问题。', enabled: true, order: 60, description: '什么时候使用：代码完成，准备合并。', example: '具体例子：检查权限和并发处理。' },
-  { id: 'visual', label: '可视化讨论', kind: 'skill', skillId: 'grill-with-ui', prompt: '基于最新已确认需求开展可视化讨论，并把最终结果写回当前对话。', enabled: true, order: 100, description: '什么时候使用：需要交互式问答讨论。', example: '具体例子：逐个确认界面问题。' },
+  { id: 'visual', label: '可视化讨论', kind: 'skill', skillId: 'grill-with-ui', prompt: '基于最新已确认需求开展可视化讨论，并把最终结果写回当前对话。', enabled: true, order: 15, description: '什么时候使用：需要交互式问答讨论。', example: '具体例子：逐个确认界面问题。' },
   { id: 'tickets', label: '任务拆分', kind: 'skill', skillId: 'to-tickets', prompt: '按规格拆分独立且可验收的任务。', enabled: true, order: 110, description: '什么时候使用：需求复杂，需要任务清单。', example: '具体例子：拆分前后端任务。' },
   { id: 'tdd', label: 'TDD', kind: 'skill', skillId: 'tdd', prompt: '先编写失败测试再实现最小修改。', enabled: true, order: 120, description: '什么时候使用：可以通过测试驱动的实现。', example: '具体例子：先写解析器边界测试。' },
   { id: 'api-docs', label: '接口文档', kind: 'skill', skillId: 'api-integration-docs', prompt: '依据现有源码与消息/HTTP 接口编写可对接的完整接口文档，注明所有字段与示例。', enabled: true, order: 130, description: '什么时候使用：接口文档交付任务。', example: '具体例子：调用 api-integration-docs 生成可复核的工程文档。' },
@@ -53,6 +53,11 @@ export function resolveActionGroup(action: CodingAction): ActionGroup {
   if (MORE_IDS.has(action.id)) return 'more'
   // Preserve pre-existing user-defined Skill behavior: order >= 100 is under More.
   return action.kind === 'prompt' ? 'utility' : action.order >= 100 ? 'more' : 'development'
+}
+
+/** Keep the old built-in visual action adjacent to text discussion without rewriting saved order. */
+export function displayOrder(action: CodingAction): number {
+  return action.id === 'visual' && action.order === 100 && action.group === undefined ? 15 : action.order
 }
 
 /** Explicit opt-in: leave existing customized buttons untouched. */
