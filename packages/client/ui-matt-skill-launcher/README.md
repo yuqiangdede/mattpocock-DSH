@@ -5,6 +5,8 @@ kind: "package-reference"
 
 # mattpocock-DSH / Skill Launcher
 
+English | [中文](README.zh.md)
+
 ## Summary
 
 This fork-only first-stage extension is independent of the DSH Agent Loop and Session store.
