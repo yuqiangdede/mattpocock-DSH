@@ -3090,7 +3090,7 @@ importers:
       open:
         specifier: ^11.0.2
         version: 11.0.4
-      '@yuqiangdede/dsh-client-ui-matt-skill-launcher':
+      '@deepseek-ai/dsh-client-ui-matt-skill-launcher':
         specifier: workspace:*
         version: link:../../client/ui-matt-skill-launcher
     devDependencies:

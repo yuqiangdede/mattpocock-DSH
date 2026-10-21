@@ -37,3 +37,7 @@
 - 已把原 PI 的七项自定义文档 Skill 及其 references/scripts/_shared 随仓库复制，但外部 Python/Pandoc/绘图依赖和 DSH 执行兼容性尚待逐项验收。
 - 单个插件目前只能按 order 进入“更多”（>=100），后续可配置显式分组字段。
 - DSH 正处开发者预览，插件 API 可能破坏兼容；固定基线再评估上游同步。
+
+## Fork CI 配置
+
+上游 Issue policy / lifecycle 依赖 deepseek-harness 组织的 Project 和 GitHub App，仅在上游仓库执行。Fork 的 Cloudflare 预览默认跳过；需要部署时设置仓库变量 `DSH_CLOUDFLARE_PREVIEW_ENABLED=true`，并配置工作流使用的 Cloudflare 与 Access 凭据。常规构建、测试、发布包安装验证仍执行。Launcher 采用现有发布工具要求的包命名和统一版本，随 Web bundle 一同打包验证，不依赖 npm 上预先存在该插件。
