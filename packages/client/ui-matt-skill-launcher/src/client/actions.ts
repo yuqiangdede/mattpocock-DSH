@@ -1,0 +1,48 @@
+/** Portable CodingAction domain independent of the underlying Agent engine. */
+export interface CodingAction {
+  id: string
+  label: string
+  kind: 'skill' | 'prompt'
+  skillId?: string
+  prompt: string
+  enabled: boolean
+  order: number
+  description: string
+  example: string
+}
+export const DEFAULT_ACTIONS: readonly CodingAction[] = [
+  { id: 'discussion', label: '需求讨论', kind: 'skill', skillId: 'grill-with-docs', prompt: '根据当前讨论澄清真实需求与未决问题，不要擅自增加业务功能。', enabled: true, order: 10, description: '什么时候使用：刚开始讨论需求，存在不确定问题。', example: '具体例子：明确功能目标及交互流程。' },
+  { id: 'spec', label: '固化需求', kind: 'skill', skillId: 'to-spec', prompt: '请将最新确认的需求固化为可验收的规格。', enabled: true, order: 20, description: '什么时候使用：需求讨论已经形成决策。', example: '具体例子：整理开发和验收依据。' },
+  { id: 'plan', label: '制定计划', kind: 'skill', skillId: 'writing-plans', prompt: '拆分可独立开发和验证的任务，不要扩大范围。', enabled: true, order: 30, description: '什么时候使用：已有需求规格，准备实施。', example: '具体例子：为接口升级制定步骤。' },
+  { id: 'execute', label: '执行开发', kind: 'skill', skillId: 'executing-plans', prompt: '按已确认计划实现，分步验证并报告失败。', enabled: true, order: 40, description: '什么时候使用：需要开始实际编码。', example: '具体例子：按计划完成编码测试。' },
+  { id: 'bug', label: 'Bug 排查', kind: 'skill', skillId: 'diagnosing-bugs', prompt: '先复现和定位根因，再最小修复并验证。', enabled: true, order: 50, description: '什么时候使用：功能异常或测试失败。', example: '具体例子：排查会话状态错误。' },
+  { id: 'review', label: '代码审查', kind: 'skill', skillId: 'code-review', prompt: '审查正确性、数据安全和可维护性，给出有证据的问题。', enabled: true, order: 60, description: '什么时候使用：代码完成，准备合并。', example: '具体例子：检查权限和并发处理。' },
+  { id: 'visual', label: '可视化讨论', kind: 'skill', skillId: 'grill-with-ui', prompt: '基于最新已确认需求开展可视化讨论，并把最终结果写回当前对话。', enabled: true, order: 100, description: '什么时候使用：需要交互式问答讨论。', example: '具体例子：逐个确认界面问题。' },
+  { id: 'tickets', label: '任务拆分', kind: 'skill', skillId: 'to-tickets', prompt: '按规格拆分独立且可验收的任务。', enabled: true, order: 110, description: '什么时候使用：需求复杂，需要任务清单。', example: '具体例子：拆分前后端任务。' },
+  { id: 'tdd', label: 'TDD', kind: 'skill', skillId: 'tdd', prompt: '先编写失败测试再实现最小修改。', enabled: true, order: 120, description: '什么时候使用：可以通过测试驱动的实现。', example: '具体例子：先写解析器边界测试。' },
+  { id: 'image', label: '交互提示词', kind: 'prompt', prompt: '根据当前对话已确认的需求、设计决策、页面截图及文档，生成可直接用于 AI 图像生成的 UI 交互效果图提示词。保留原页面中未要求修改的功能和布局，明确操作流程、交互状态及视觉要求，不得凭空增加业务。', enabled: true, order: 200, description: '什么时候使用：需要把设计方案转成 UI 效果图。', example: '具体例子：给新增的搜索面板生成生图提示词。' },
+  { id: 'commit', label: '提交代码', kind: 'prompt', prompt: '先执行与本次改动相关的编译和测试，通过后才提交代码；兼容 Git、GitLab 和 SVN。失败则停止并报告，成功后说明提交标识和变更摘要；除非明确要求，不推送远程。', enabled: true, order: 210, description: '什么时候使用：本次编码已经完成。', example: '具体例子：编译成功后提交到版本库。' },
+]
+export const encodeActions = (actions: readonly CodingAction[]): string =>
+  JSON.stringify({ schemaVersion: 1, actions }, null, 2)
+export function parseActions(text: string | undefined): CodingAction[] {
+  if (text === undefined || text.trim() === '') return DEFAULT_ACTIONS.map(a => ({ ...a }))
+  let raw: unknown
+  try { raw = JSON.parse(text) } catch { throw new Error('JSON 格式错误') }
+  if (typeof raw !== 'object' || raw === null) throw new Error('配置根结构错误')
+  const doc = raw as { schemaVersion?: unknown; actions?: unknown }
+  if (doc.schemaVersion !== 1 || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new Error('配置版本错误或按钮数量过多')
+  const ids = new Set<string>()
+  return doc.actions.map((value: unknown) => {
+    if (typeof value !== 'object' || value === null) throw new Error('按钮必须是对象')
+    const a = value as Record<string, unknown>
+    if (typeof a.id !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(a.id) || ids.has(a.id)) throw new Error('按钮 ID 无效或重复')
+    ids.add(a.id)
+    if (typeof a.label !== 'string' || a.label.trim() === '' || a.label.length > 80) throw new Error('按钮名称无效')
+    if (a.kind !== 'skill' && a.kind !== 'prompt') throw new Error('未知按钮类型')
+    if (a.kind === 'skill' && (typeof a.skillId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.skillId))) throw new Error('Skill ID 必须是 kebab-case')
+    if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new Error('按钮类型、提示词或排序无效')
+    if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new Error('悬浮提示无效')
+    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), prompt: a.prompt, enabled: a.enabled, order: a.order, description: a.description, example: a.example } as CodingAction
+  })
+}
