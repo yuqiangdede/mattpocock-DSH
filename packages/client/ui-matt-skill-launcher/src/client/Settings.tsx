@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, presentDefaultActions, resolveActionGroup, missingDefaultActions, ACTION_GROUPS, type CodingAction } from './actions.ts'
+import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, presentDefaultActions, resolveActionGroup, missingDefaultActions, ACTION_GROUPS, type CodingAction, type ActionGroup } from './actions.ts'
 import type { LauncherSettingsInjected } from './index.ts'
 import css from './Settings.module.css'
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherSettingsInjected>
@@ -63,7 +63,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
           <label><input type="checkbox" checked={a.enabled} onChange={(e)=>{ change(a.id,{ enabled:e.target.checked }) }}/>{t('enabled')}</label>
           <label>{t('buttonName')}<input value={a.label} onChange={(e)=>{ change(a.id,{ label:e.target.value }) }}/></label>
           {kind==='skill'&&<label>{t('skillId')}<input value={a.skillId??''} onChange={(e)=>{ change(a.id,{ skillId:e.target.value }) }}/></label>}
-          <label>{t('group')}<select value={resolveActionGroup(a)} onChange={(e)=>{ change(a.id,{ group:e.target.value as CodingAction['group'] }) }}>
+          <label>{t('group')}<select value={resolveActionGroup(a)} onChange={(e)=>{ change(a.id,{ group:e.target.value as ActionGroup }) }}>
             {ACTION_GROUPS.map(group => <option key={group} value={group}>{t(group === 'development' ? 'developmentGroup' : group === 'document' ? 'documentGroup' : group === 'utility' ? 'utilityGroup' : 'moreGroup')}</option>)}
           </select></label>
           <label>{t('order')}<input type="number" value={a.order} onChange={(e)=>{ change(a.id,{ order:Number(e.target.value) }) }}/></label>
