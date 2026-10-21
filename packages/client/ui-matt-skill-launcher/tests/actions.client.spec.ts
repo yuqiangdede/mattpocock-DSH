@@ -33,7 +33,9 @@ describe('mattpocock-DSH CodingAction document', () => {
     const base = DEFAULT_ACTIONS[0]!
     const custom = { ...base, id: 'custom-one', order: 300, group: 'utility' as const }
     expect(resolveActionGroup(parseActions(encodeActions([custom]))[0]!)).toBe('utility')
-    expect(resolveActionGroup({ ...custom, group: undefined })).toBe('more')
+    const { group: ignoredGroup, ...ungrouped } = custom
+    expect(ignoredGroup).toBe('utility')
+    expect(resolveActionGroup(ungrouped)).toBe('more')
     expect(() => parseActions(encodeActions([{...custom, group: 'unexpected' as typeof custom.group}]))).toThrow()
   })
   it('roundtrips saved config without changing user-defined labels', () => {
