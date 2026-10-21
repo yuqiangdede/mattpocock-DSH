@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, presentDefaultActions, type CodingAction } from './actions.ts'
+import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, presentDefaultActions, resolveActionGroup, missingDefaultActions, ACTION_GROUPS, type CodingAction } from './actions.ts'
 import type { LauncherSettingsInjected } from './index.ts'
 import css from './Settings.module.css'
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherSettingsInjected>
@@ -24,7 +24,13 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   }, [form.value?.actionsJson, form.revision, dirty])
   const change = (id: string, patch: Partial<CodingAction>) => { setDraft(xs=>xs.map(x=>x.id===id?{ ...x,...patch }:x)); setDirty(true) }
   const add = (kind: 'skill'|'prompt') => {
-    setDraft(xs=>[...xs,{ id:'custom-'+Date.now().toString(36),label:t('newButton'),kind,...(kind==='skill' ? { skillId:'example-skill' } : {}),prompt:'',enabled:true,order:xs.reduce((n,x)=>Math.max(n,x.order),0)+10,description:'',example:'' }]); setDirty(true)
+    setDraft(xs=>[...xs,{ id:'custom-'+Date.now().toString(36),label:t('newButton'),kind,group:kind==='skill'?'development':'utility',...(kind==='skill' ? { skillId:'example-skill' } : {}),prompt:'',enabled:true,order:xs.reduce((n,x)=>Math.max(n,x.order),0)+10,description:'',example:'' }]); setDirty(true)
+  }
+  const fillMissing = () => {
+    const missing = missingDefaultActions(draft)
+    if (missing.length === 0) return
+    setDraft(xs => [...xs, ...missingDefaultActions(xs)])
+    setDirty(true)
   }
   const cancel = () => { try { setDraft(form.value?.actionsJson ? parseActions(form.value.actionsJson) : presentDefaultActions(parseActions(undefined), t('defaultLocale') === 'en')); setDirty(false); setError('') } catch(err) { setError(explain(err)) } }
   const save = async () => {
@@ -57,6 +63,9 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
           <label><input type="checkbox" checked={a.enabled} onChange={(e)=>{ change(a.id,{ enabled:e.target.checked }) }}/>{t('enabled')}</label>
           <label>{t('buttonName')}<input value={a.label} onChange={(e)=>{ change(a.id,{ label:e.target.value }) }}/></label>
           {kind==='skill'&&<label>{t('skillId')}<input value={a.skillId??''} onChange={(e)=>{ change(a.id,{ skillId:e.target.value }) }}/></label>}
+          <label>{t('group')}<select value={resolveActionGroup(a)} onChange={(e)=>{ change(a.id,{ group:e.target.value as CodingAction['group'] }) }}>
+            {ACTION_GROUPS.map(group => <option key={group} value={group}>{t(group === 'development' ? 'developmentGroup' : group === 'document' ? 'documentGroup' : group === 'utility' ? 'utilityGroup' : 'moreGroup')}</option>)}
+          </select></label>
           <label>{t('order')}<input type="number" value={a.order} onChange={(e)=>{ change(a.id,{ order:Number(e.target.value) }) }}/></label>
           <button type="button" onClick={()=>{setDraft(xs=>xs.filter(x=>x.id!==a.id));setDirty(true)}}>{t('delete')}</button>
         </div>
@@ -66,6 +75,7 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
       </div>)}
     </section>)}
     <div className={css.head}>
+      <button type="button" disabled={missingDefaultActions(draft).length===0} onClick={fillMissing}>{t('fillMissing')}</button>
       <button type="button" onClick={exportJson}>{t('export')}</button>
       <button type="button" onClick={()=>{setDraft(presentDefaultActions(DEFAULT_ACTIONS.map(x=>({ ...x })), t('defaultLocale') === 'en'));setDirty(true)}}>{t('reset')}</button>
       <button type="button" onClick={cancel} disabled={!dirty||busy}>{t('cancel')}</button>
