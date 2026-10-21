@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { parseActions, actionErrorKey, presentDefaultActions, resolveActionGroup, type CodingAction } from './actions.ts'
+import { parseActions, actionErrorKey, presentDefaultActions, resolveActionGroup, displayOrder, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
@@ -21,7 +21,7 @@ export function Launcher({ useInput, inputActions, useActionForm, fetchSkillName
   let invalid = ''
   try { actions = parseActions(snapshot.value?.actionsJson) } catch (error) { invalid = explain(error) }
   actions = snapshot.value?.actionsJson ? actions : presentDefaultActions(actions, t('defaultLocale') === 'en')
-  const enabledActions = actions.filter(a => a.enabled).sort((a, b) => a.order - b.order)
+  const enabledActions = actions.filter(a => a.enabled).sort((a, b) => displayOrder(a) - displayOrder(b))
   const byGroup = (group: ReturnType<typeof resolveActionGroup>) => enabledActions.filter(a => resolveActionGroup(a) === group)
   const development = byGroup('development')
   const documents = byGroup('document')
