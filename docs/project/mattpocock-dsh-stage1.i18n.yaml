@@ -3,8 +3,8 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/project/mattpocock-dsh-stage1.md
 /mattpocock-dsh-stage-1-implementation-notes:
-  en: a07ebabbcde7f487
-  zh: f3c568c1d604529e
+  en: 6b0cc80d3193b2e2
+  zh: ae734350467437a9
 /mattpocock-dsh-stage-1-implementation-notes/boundaries:
   en: bec11e508521f5fc
   zh: 8d3ac56227017e68
