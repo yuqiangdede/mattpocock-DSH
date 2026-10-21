@@ -1,4 +1,6 @@
-# Windows-only checks for this fork. Upstream docs/skills stay unchanged.
+# Fork-specific Windows CI. Only this file intentionally diverges from upstream.
+# Other upstream workflows are preserved, avoiding destructive deletions at sync.
+# Documentation gates and exhaustive repository coverage are not run here.
 name: Windows CI
 
 on:
