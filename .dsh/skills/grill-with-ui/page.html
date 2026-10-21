@@ -258,6 +258,7 @@ const GONE_AFTER_MS = 3000;
 const CHECK = '<svg viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="10" fill="currentColor"/><path d="M6 10.4l2.6 2.6L14 7.4" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 let S = null, raw = null, selected = null, storeKey = null;
+let posting = false; // Shared guard across Send, Finish, Visualize and Explore.
 let lastOk = Date.now(), gone = false, confirmFinish = false, intentOpen = false;
 let local = fresh();
 function fresh() { return { staged: {}, pending: [], drafts: {}, view: "questions", vfeedback: [], subagent: true }; }
@@ -371,7 +372,7 @@ function buildActions() {
 }
 function sendState(needStaged = true) {
   const a = (S && S.agent) || {};
-  if (locked()) return { disabled: true, why: "" };
+  if (locked() || posting) return { disabled: true, why: "" };
   if (gone) return { disabled: true, why: "server gone" };
   if (needStaged && !stagedCount()) return { disabled: true, why: "" };
   if (a.status === "working") {
@@ -388,10 +389,19 @@ function sendState(needStaged = true) {
   return { disabled: false, why: "" };
 }
 async function post(actions) {
+  // Set the flag synchronously before awaiting the network, so a double click is inert.
+  if (posting) return null;
+  posting = true;
   let r, j = {};
-  try { r = await fetch("/send", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ actions }) }); j = await r.json().catch(() => ({})); } catch { r = null; }
-  if (!j.ok) $("send-why").textContent = "Send failed: " + (j.error || (r && r.status) || "no server");
-  return j.ok ? j : null;
+  try {
+    r = await fetch("/send", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ actions }) });
+    j = await r.json().catch(() => ({}));
+    if (!j.ok) $("send-why").textContent = "Send failed: " + (j.error || r.status || "no server");
+    return j.ok ? j : null;
+  } catch {
+    $("send-why").textContent = "Send failed: no server";
+    return null;
+  } finally { posting = false; }
 }
 async function send() {
   const { disabled } = sendState(); if (disabled) return;
