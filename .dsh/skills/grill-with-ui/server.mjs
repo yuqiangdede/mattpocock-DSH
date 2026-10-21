@@ -23,6 +23,7 @@ import path from "node:path";
 import os from "node:os";
 import tty from "node:tty";
 import { execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
@@ -62,7 +63,7 @@ function projectRoot(cwd) {
     return fs.realpathSync(path.dirname(common));
   } catch { return fs.realpathSync(cwd); }
 }
-const keyOf = (root) => root.replace(/^[\\/]+/, "").replace(/[\\/:]+/g, "-");
+const keyOf = (root) => root.replace(/^[\\/]+/, "").replace(/[\\/:]+/g, "-").slice(0, 90) + "-" + createHash("sha256").update(root).digest("hex").slice(0, 16);
 function stamp(d = new Date()) {
   const p = (n) => String(n).padStart(2, "0");
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}-${p(d.getHours())}${p(d.getMinutes())}${p(d.getSeconds())}`;
@@ -451,6 +452,10 @@ function validateState(s) {
     check(q, "deps", strs, `${w}.deps must be an array of question ids`);
     check(q, "options", (v) => Array.isArray(v) && v.every((x) => isObj(x) && str(x.k) && (!("text" in x) || str(x.text))),
       `${w}.options must be an array of {"k","text"} with string k and text`);
+    if (q.status === "answered") {
+      need(isObj(q.answer) && ANSWER_KINDS.includes(q.answer.kind),
+        `${w}: answered questions require a valid answer`);
+    }
     if ("answer" in q) {
       need(isObj(q.answer) && ANSWER_KINDS.includes(q.answer.kind), `${w}.answer.kind must be one of ${ANSWER_KINDS.join("|")}`);
       texts(q.answer, ["option", "text"], `${w}.answer`);
