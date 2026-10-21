@@ -2,6 +2,7 @@
 /** Simplified Chinese copy. */
 export const zh = {
   'skills': '编码 Skills',
+  'defaultLocale': 'zh',
   'prompts': '其他提示词',
   'more': '更多 ▾',
   'invalid': '按钮设置无效，请在设置中修复：',
@@ -61,6 +62,7 @@ export type LauncherLocaleKey = keyof typeof zh
 /** English copy with the same keys. */
 export const en: Record<LauncherLocaleKey, string> = {
   'skills': 'Coding Skills',
+  'defaultLocale': 'en',
   'prompts': 'Other prompts',
   'more': 'More ▾',
   'invalid': 'Invalid button settings. Fix them in Settings: ',
