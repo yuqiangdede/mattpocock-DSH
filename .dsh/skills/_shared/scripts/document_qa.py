@@ -7,7 +7,30 @@ from collections import Counter
 from urllib.parse import unquote, urlsplit
 
 FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
-LINK = re.compile(r'!?\[[^\]\n]*\]\((<?[^)\n]+>?)\)')
+LINK = re.compile(r'!?\[[^\]\n]*\]\(')
+
+def link_targets(line: str):
+    """Yield Markdown destinations while retaining nested balanced parentheses."""
+    for match in LINK.finditer(line):
+        start = match.end()
+        if start < len(line) and line[start] == '<':
+            close = line.find('>', start + 1)
+            if close >= 0 and close + 1 < len(line) and line[close + 1] == ')':
+                yield line[start + 1:close]
+            continue
+        depth, pos = 1, start
+        while pos < len(line) and depth:
+            char = line[pos]
+            if char == '\\':
+                pos += 2
+                continue
+            if char == '(':
+                depth += 1
+            elif char == ')':
+                depth -= 1
+            pos += 1
+        if depth == 0:
+            yield line[start:pos - 1]
 
 
 def expected_headings(path: Path) -> list[str]:
@@ -56,8 +79,8 @@ def inspect_text(content: str, path: Path, *, check_links=True, headings=None):
             errors.append(f'Line {i}: indented heading; check accidental leading spaces')
         if not check_links:
             continue
-        for found in LINK.finditer(line):
-            raw = found.group(1).strip().strip('<>')
+        for link_target in link_targets(line):
+            raw = link_target.strip().strip('<>')
             raw = re.split(r'\s+["\']', raw, maxsplit=1)[0]
             parts = urlsplit(raw)
             if parts.scheme or parts.netloc or not parts.path or raw.startswith('#'):
