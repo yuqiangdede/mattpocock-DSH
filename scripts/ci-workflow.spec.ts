@@ -6,7 +6,10 @@ import { describe, expect, it } from 'vitest'
 
 function evaluateRunsOn(selector: unknown, context: Record<string, unknown>): unknown {
   if (typeof selector !== 'string') throw new TypeError('Runner selector must be a string')
-  return runInNewContext(selector.trim().slice(3, -2), context, { timeout: 1000 })
+  const github = isRecord(context.github) ? context.github : {}
+  return runInNewContext(selector.trim().slice(3, -2), {
+    ...context, github: { repository: 'deepseek-harness/deepseek-harness', ...github },
+  }, { timeout: 1000 })
 }
 
 const root = resolve(import.meta.dirname, '..')
@@ -14,6 +17,28 @@ const runnerPrivatePnpmDestination = /^\$\{\{ runner\.temp \}\}\/setup-pnpm-\$\{
 const nativeWindowsPnpmDestination = '${{ runner.temp }}/setup-pnpm-js-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.job }}'
 
 describe('CI workflow', () => {
+  it('routes every fleet-backed PR job to standard hosted runners in forks', () => {
+    const ci = loadWorkflow('.github/workflows/ci.yml')
+    const jobs = [
+      ['node-24', 'ubuntu-24.04'],
+      ['node-24-coverage', 'ubuntu-24.04'],
+      ['node-24-consumers', 'ubuntu-24.04'],
+      ['node-compat', 'ubuntu-24.04'],
+      ['all-checks-passed', 'ubuntu-24.04'],
+      ['windows-build', 'windows-2025'],
+      ['windows-native-tests', 'windows-2025'],
+      ['windows-coverage', 'windows-2025'],
+    ] as const
+    for (const [name, runner] of jobs) {
+      for (const mode of ['', 'selfhosted', 'blacksmith']) {
+        expect(evaluateRunsOn(workflowJob(ci, name)['runs-on'], {
+          github: { repository: 'yuqiangdede/mattpocock-DSH' },
+          vars: { DSH_CI_FAILOVER_LINUX: mode, DSH_CI_FAILOVER_WINDOWS: mode },
+        }), `${name}: ${mode}`).toBe(runner)
+      }
+    }
+  })
+
   it('keeps at most ten worker jobs active while runtime targets follow the SDK suite', () => {
     const ci = loadWorkflow('.github/workflows/ci.yml')
     const compatibility = workflowJob(ci, 'node-compat')
@@ -1380,7 +1405,7 @@ describe('Issue lifecycle workflow', () => {
     expect(preflightStep?.run).toContain('if [ -f .github/issue-management/selective-preflight.json ]; then')
     expect(preflightStep?.run).toContain('node .github/issue-management/policy.mjs pr-preflight')
     expect(preflightStep?.if).toBeUndefined()
-    expect(policyJob.if).toBeUndefined()
+    expect(policyJob.if).toBe("github.repository == 'deepseek-harness/deepseek-harness'")
     expect(validateStep?.if).toBe("${{ steps.preflight.outputs.legacy-automated != 'true' }}")
 
     expect(tokenStep).toMatchObject({

@@ -43,6 +43,18 @@ afterEach(() => {
 })
 
 describe('release families', () => {
+  it('includes the launcher runtime dependency in the shared release family', () => {
+    const family = releaseFamily('dsh')
+    const members = family.members(resolve(import.meta.dirname, '../..'))
+    const launcher = members.find(member => member.directory === 'packages/client/ui-matt-skill-launcher')
+    expect(launcher?.name).toBe('@deepseek-ai/dsh-client-ui-matt-skill-launcher')
+    expect(launcher?.version).toBe(members.find(member => member.name === '@deepseek-ai/dsh')?.version)
+    expect(launcher?.manifest.files).toEqual(['lib/index.js', 'lib/client.js', 'lib/types/**/*.d.ts'])
+    expect(members.find(member => member.directory === 'packages/bundle/web-app')?.manifest.dependencies)
+      .toHaveProperty('@deepseek-ai/dsh-client-ui-matt-skill-launcher', 'workspace:*')
+    expect(() => family.verifyVersions(members)).not.toThrow()
+  })
+
   it('publishes all current experimental packages', () => {
     const members = releaseFamily('dsh').members(resolve(import.meta.dirname, '../..'))
 

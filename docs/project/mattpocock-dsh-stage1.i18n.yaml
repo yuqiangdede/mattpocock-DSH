@@ -1,0 +1,25 @@
+# Bilingual-pair consistency record for mattpocock-dsh-stage1.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/project/mattpocock-dsh-stage1.md
+/mattpocock-dsh-stage-1-implementation-notes:
+  en: 6b0cc80d3193b2e2
+  zh: ae734350467437a9
+/mattpocock-dsh-stage-1-implementation-notes/boundaries:
+  en: bec11e508521f5fc
+  zh: 8d3ac56227017e68
+/mattpocock-dsh-stage-1-implementation-notes/delivery-path:
+  en: 83a278dfb963cec9
+  zh: 3b96a480b77b3a79
+/mattpocock-dsh-stage-1-implementation-notes/acceptance-gates:
+  en: 699744d67ecd104d
+  zh: d5c6b274a14e2f90
+/mattpocock-dsh-stage-1-implementation-notes/incomplete-work-and-targeted-integrations:
+  en: 5eb85c6d5d59703b
+  zh: 2dc925144c365456
+/mattpocock-dsh-stage-1-implementation-notes/fork-ci-configuration:
+  en: bcea1e6a11f2d0ea
+  zh: 4ce87515d8cd34c0
+/mattpocock-dsh-stage-1-implementation-notes/fork-ci-configuration/pr-check-runners:
+  en: 791746165bd89a89
+  zh: 72480ac9f5f8aec5
