@@ -26,6 +26,8 @@ class ConversionTests(unittest.TestCase):
         image = self.root / '中文 图片.png'
         image.write_bytes(b'fixture')
         self.assertEqual(local_image('中文%20图片.png', self.root), image.resolve())
+        self.assertEqual(local_image('中文%20图片.png#preview', self.root), image.resolve())
+        self.assertEqual(local_image('中文%20图片.png?raw=1', self.root), image.resolve())
         for path in ['https://example.test/a.png', 'data:image/png;base64,abc', 'missing.png']:
             with self.assertRaises((ValueError, FileNotFoundError)):
                 local_image(path, self.root)
