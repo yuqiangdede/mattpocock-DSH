@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { parseActions, actionErrorKey, presentDefaultActions, type CodingAction } from './actions.ts'
+import { parseActions, actionErrorKey, presentDefaultActions, resolveActionGroup, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
@@ -21,8 +21,12 @@ export function Launcher({ useInput, inputActions, useActionForm, fetchSkillName
   let invalid = ''
   try { actions = parseActions(snapshot.value?.actionsJson) } catch (error) { invalid = explain(error) }
   actions = snapshot.value?.actionsJson ? actions : presentDefaultActions(actions, t('defaultLocale') === 'en')
-  const skills = actions.filter(a => a.kind === 'skill' && a.enabled).sort((a,b) => a.order-b.order)
-  const prompts = actions.filter(a => a.kind === 'prompt' && a.enabled).sort((a,b) => a.order-b.order)
+  const enabledActions = actions.filter(a => a.enabled).sort((a, b) => a.order - b.order)
+  const byGroup = (group: ReturnType<typeof resolveActionGroup>) => enabledActions.filter(a => resolveActionGroup(a) === group)
+  const development = byGroup('development')
+  const documents = byGroup('document')
+  const utilities = byGroup('utility')
+  const extra = byGroup('more')
   const available = input.phase === 'plain' && !pending && snapshot.status === 'ready'
   const insert = async (action: CodingAction) => {
     setMore(false)
@@ -52,21 +56,31 @@ export function Launcher({ useInput, inputActions, useActionForm, fetchSkillName
   const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={css.action}
     title={a.description + '\n' + a.example} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
-    <div className={css.row} aria-label={t('skills')}>
-      {skills.filter(a => a.order < 100).map(render)}
-      {skills.some(a => a.order >= 100) && <Menu
-        open={more} side="top" align="start" compact
-        anchor={<button type="button" className={css.action} disabled={!available}
-          onClick={() => { setMore(v => !v) }} aria-haspopup="menu" aria-expanded={more}>{t('more')}</button>}
-        items={skills.filter(a => a.order >= 100).map(a => ({ id: a.id, label: a.label }))}
-        onClose={() => { setMore(false) }}
-        onSelect={(id) => {
-          const selected = skills.find(a => a.id === id)
-          if (selected) void insert(selected)
-        }}
-      />}
-    </div>
-    <div className={css.row} aria-label={t('prompts')}>{prompts.map(render)}</div>
+    {(development.length > 0 || extra.length > 0) && <section className={css.group}>
+      <span className={css.groupLabel}>{t('developmentGroup')}</span>
+      <div className={css.row} aria-label={t('developmentGroup')}>
+        {development.map(render)}
+        {extra.length > 0 && <Menu
+          open={more} side="top" align="start" compact
+          anchor={<button type="button" className={css.action} disabled={!available}
+            onClick={() => { setMore(v => !v) }} aria-haspopup="menu" aria-expanded={more}>{t('more')}</button>}
+          items={extra.map(a => ({ id: a.id, label: a.label }))}
+          onClose={() => { setMore(false) }}
+          onSelect={(id) => {
+            const selected = extra.find(a => a.id === id)
+            if (selected) void insert(selected)
+          }}
+        />}
+      </div>
+    </section>}
+    {documents.length > 0 && <section className={css.group}>
+      <span className={css.groupLabel}>{t('documentGroup')}</span>
+      <div className={css.row} aria-label={t('documentGroup')}>{documents.map(render)}</div>
+    </section>}
+    {utilities.length > 0 && <section className={css.group}>
+      <span className={css.groupLabel}>{t('utilityGroup')}</span>
+      <div className={css.row} aria-label={t('utilityGroup')}>{utilities.map(render)}</div>
+    </section>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
 }
