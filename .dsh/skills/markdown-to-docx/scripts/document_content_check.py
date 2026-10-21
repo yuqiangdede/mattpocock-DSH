@@ -121,12 +121,12 @@ def compare(ast, docx_path):
     expected_counts = Counter(expected_heads)
     actual_counts = Counter(actual_heads)
     heading_differences = [
-        {'heading': key, 'expected': count, 'actual': actual_counts[key]}
-        for key, count in expected_counts.items()
-        if actual_counts[key] != count
+        {'heading': key, 'expected': expected_counts[key], 'actual': actual_counts[key]}
+        for key in dict.fromkeys([*expected_heads, *actual_heads])
+        if actual_counts[key] != expected_counts[key]
     ]
-    filtered_actual = [text for text in actual_heads if text in expected_counts]
-    heading_order_ok = filtered_actual == expected_heads
+    # Never drop unexpected Heading-style paragraphs before comparing sequences.
+    heading_order_ok = actual_heads == expected_heads
     tables_expected = count_nodes(ast.get('blocks', []), 'Table')
     # Equations are represented in OMML and intentionally excluded from text parity.
     excluded = {
