@@ -27,7 +27,9 @@ kind: "package-reference"
 - Skill 按钮在插入 /skill-name 之前，查询*当前有效 Session* 的 Skill 目录。用户明确发送后，DSH 才确定性地加载完整的 SKILL.md。
 - 纯提示词按钮直接插入文本，不绑定 Skill。
 - 原生 DSH Host Settings 持久化带版本的 CodingAction JSON，包括可编辑的名称、提示词、启停状态、显示分组、排序和帮助文本。设置页面支持导入和导出。
-- 不自动发送，也不迁移旧 Pi Session。受修订版本保护的文本插入不会替换图片或文件标记。
+- 最新已完成对话明确显示下一步时，对应的启用按钮会高亮，并显示本地化的推荐说明。
+- 选择被推荐的操作时，会把上一条助手结果的限长摘录加入可编辑草稿；由用户检查并发送，Launcher 不会自动发送或执行。
+- 推荐只分析最新一组已完成的用户请求与助手回复；不可用或已禁用的按钮不会被推荐。对话中断和明确错误可以推荐 Bug 排查或继续。
 
 Skills 不会通过猜测或静默生成。应安装在 <DSH_HOME>/skills/<name>/SKILL.md 或当前项目的 .dsh/skills/<name>/SKILL.md。具体安装说明参见本 Fork 的文档。缺失 Skill 时显示非破坏性错误。
 
@@ -57,6 +59,7 @@ Launcher 不改变已有的模型前缀。普通 Session 提交和 Skill 加载�
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制和延期工作
 
+- 推荐提示是基于文本的保守判断，不代表工作流阶段已被权威确认；不会搜索未加载或更早的历史消息。
 - Windows Electron 交互、浏览器讨论结果写回、外部文档生成依赖均需要端到端验收。
 
 <a id="dev-note"></a>

@@ -25,7 +25,9 @@ This fork-only first-stage extension is independent of the DSH Agent Loop and Se
 - Skill buttons look up the *effective current Session* catalog before inserting /skill-name. DSH deterministically loads the full SKILL.md when the user explicitly sends.
 - Plain-prompt buttons insert text without a Skill binding.
 - Native DSH Host Settings persist the versioned CodingAction JSON (with editable labels, prompts, enabled state, sort order and help copy). Settings supports export/import.
-- No auto-send and no migration of historical Pi Sessions. The revision-guarded text insertion does not replace image/file chips.
+- When the latest completed exchange clearly indicates a next workflow step, the matching enabled button is highlighted and a localized hint explains the recommendation.
+- Selecting a recommended action adds a bounded excerpt of the preceding assistant result to the editable draft. The user reviews and sends it; the launcher never sends or executes automatically.
+- Recommendations use only the latest completed user/assistant exchange and skip unavailable or disabled actions. Interrupted turns and explicit errors can recommend Bug diagnosis or Continue.
 
 Skills are deliberately not guessed or silently synthesized. Install their bundles in <DSH_HOME>/skills/<name>/SKILL.md or the current project's .dsh/skills/<name>/SKILL.md. See docs in this fork for specific installation instructions. Missing skills are shown as a non-destructive error.
 
@@ -52,6 +54,7 @@ The launcher changes no existing model prefix. The normal Session submission and
 
 ## Known Limitations and Deferred Work
 
+- Recommendations are conservative text-based hints, not authoritative workflow-completion events; old or unloaded history is not searched.
 - Windows Electron interaction, browser discussion writeback, and external document-generation dependencies require end-to-end acceptance.
 
 ### Dev Note
