@@ -1,5 +1,4 @@
 import { useEffect, useId, useRef, useState } from 'react'
-import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { ACTION_GROUPS, parseActions, actionErrorKey, presentDefaultActions, resolveActionGroup, displayOrder, type ActionGroup, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
@@ -15,7 +14,6 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   const recommendation = recommend(entries)
   const [collapsed, setCollapsed] = useState(false)
   const groupsId = useId()
-  const [more, setMore] = useState(false)
   const [selectedGroup, setSelectedGroup] = useState<ActionGroup>('development')
   const [pending, setPending] = useState(false)
   const [notice, setNotice] = useState('')
@@ -34,19 +32,14 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     ? enabledActions.filter(action => recommendation.ids.includes(action.id))
     : []
   const visibleRecommendation = recommendedActions.length ? recommendation : null
-  const byGroup = (group: ReturnType<typeof resolveActionGroup>) => enabledActions.filter(a => resolveActionGroup(a) === group)
+  const byGroup = (group: ActionGroup) => enabledActions.filter(a => resolveActionGroup(a) === group)
   const hiddenGroups = (snapshot.value?.hiddenGroups ?? []).filter((g): g is ActionGroup => ACTION_GROUPS.includes(g as ActionGroup))
   const pinned = enabledActions.filter(a => a.pinned)
   const categories = ACTION_GROUPS.filter(g => !hiddenGroups.includes(g) && byGroup(g).some(a => !a.pinned))
   const activeCategory = categories.includes(selectedGroup) ? selectedGroup : categories[0]
   const categoryActions = activeCategory ? byGroup(activeCategory).filter(a => !a.pinned) : []
-  const development = byGroup('development')
-  const documents = byGroup('document')
-  const utilities = byGroup('utility')
-  const extra = byGroup('more')
   const available = input.phase === 'plain' && !pending && snapshot.status === 'ready'
   const insert = async (action: CodingAction) => {
-    setMore(false)
     if (!available) return
     setNotice('')
     const span = inputActions.captureInsertion()
@@ -83,7 +76,7 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
       </section>}
     </div>
     {enabledActions.length > 0 && <button type="button" className={css.toggle} aria-expanded={!collapsed} aria-controls={groupsId}
-      onClick={() => { setMore(false); setCollapsed(v => !v) }}>{collapsed ? t('expandActions') : t('collapseActions')}</button>}
+      onClick={() => { setCollapsed(v => !v) }}>{collapsed ? t('expandActions') : t('collapseActions')}</button>}
     {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
