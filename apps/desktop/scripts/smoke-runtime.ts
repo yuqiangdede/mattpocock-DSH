@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import { fileURLToPath } from 'node:url'
 import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
+import { runtimeArchivePath } from '../../desktop-host/src/office-engine.ts'
 import { DesktopHostProcess } from '../src/host-process.ts'
 import { createPluginProfile } from '../src/project-manager.ts'
 import { BUNDLED_SIDE_CHAT, DESKTOP_OPERATOR_PRESET_BUNDLE, DESKTOP_OPERATOR_PRESET_ID } from '../src/bundled-plugins.ts'
@@ -43,29 +44,31 @@ export async function smokeDesktopRuntime(
   try {
     writeFileSync(join(home, 'npmrc'), '')
     createPluginProfile(profile)
-    {
+    // This process is plain Node, which reads no path inside the application ASAR.
+    const archive = runtimeArchivePath(root)
+    if (archive === undefined) {
       const loaded = loadProfileDirectory('dsh', profile,
         join(root, 'package.json'))
       if (loaded.skippedBundles.length !== 0
         || !loaded.layers.some(layer => layer.packageName === BUNDLED_SIDE_CHAT.name)) {
         throw new Error(`desktop side chat: bundle not resolved: ${JSON.stringify(loaded.skippedBundles)}`)
       }
-    }
-    if (process.platform === 'win32') {
-      const loaded = loadProfileDirectory('dsh', profile,
-        join(root, 'package.json'))
-      if (loaded.skippedBundles.length !== 0
-        || !loaded.layers.some(layer => layer.packageName === DESKTOP_OPERATOR_PRESET_BUNDLE)) {
-        throw new Error(`desktop Computer Use: offline bundle missing: ${JSON.stringify(loaded.skippedBundles)}`)
+      if (process.platform === 'win32') {
+        if (!loaded.layers.some(layer => layer.packageName === DESKTOP_OPERATOR_PRESET_BUNDLE)) {
+          throw new Error(`desktop Computer Use: offline bundle missing: ${JSON.stringify(loaded.skippedBundles)}`)
+        }
+        const adapter = readFileSync(join(root, 'node_modules',
+          ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/'), 'cordis.patch.yml'), 'utf8')
+        if (!adapter.includes(`id: ${DESKTOP_OPERATOR_PRESET_ID}`)
+          || !adapter.includes('name: \'dsh-desktop-operator\'')
+          || !adapter.includes('highRiskActionPolicy: confirm')) {
+          throw new Error('desktop Computer Use: offline Agent Preset not mounted')
+        }
+        console.log('desktop runtime: bundled Computer Use preset and native package passed')
       }
-      const adapter = readFileSync(join(root, 'node_modules',
-        ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/'), 'cordis.patch.yml'), 'utf8')
-      if (!adapter.includes(`id: ${DESKTOP_OPERATOR_PRESET_ID}`)
-        || !adapter.includes('name: \'dsh-desktop-operator\'')
-        || !adapter.includes('highRiskActionPolicy: confirm')) {
-        throw new Error('desktop Computer Use: offline Agent Preset not mounted')
-      }
-      console.log('desktop runtime: bundled Computer Use preset and native package passed')
+    } else {
+      // The Host boot below resolves the same bundles through Electron, which reads the archive.
+      console.log(`desktop runtime: packaged archive ${archive}; bundle resolution is checked by the Host boot`)
     }
     const pluginName = 'desktop-runtime-smoke-plugin'
     const plugin = join(home, pluginName)
