@@ -48,8 +48,6 @@ describe.skipIf(process.platform !== 'win32')('Windows offline bundle recorded S
       }
     }
     await linkDeepseekPackages(modules)
-    await mkdir(join(modules, '@deepseek-ai/dsh-web-app/presets'), { recursive: true })
-    await cp(join(repo, 'packages/bundle/web-app/presets/standard.patch.yml'), join(modules, '@deepseek-ai/dsh-web-app/presets/standard.patch.yml'))
     for (const release of [BUNDLED_DESKTOP_OPERATOR, BUNDLED_LLM_RETRY, BUNDLED_SIDE_CHAT]) {
       const destination = join(modules, release.name)
       await mkdir(destination, { recursive: true })
