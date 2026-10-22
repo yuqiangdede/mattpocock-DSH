@@ -8,7 +8,8 @@ import { tmpdir } from 'node:os'
 import { delimiter, join, relative, resolve } from 'node:path'
 import { desktopNodeEnvironment } from '../src/node-environment.ts'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
-import { BUNDLED_SIDE_CHAT } from '../src/bundled-plugins.ts'
+import { BUNDLED_SIDE_CHAT, BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE } from '../src/bundled-plugins.ts'
+import { stageDesktopOperatorTarball, verifyBundledDesktopOperator, writeDesktopOperatorPresetBundle } from './bundled-desktop-operator.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { parseDesktopRelease, type DesktopRelease } from '../src/release.ts'
 import {
@@ -146,6 +147,7 @@ async function main(): Promise<void> {
     const patches = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:stage-packages', async () => {
       copyFileSync(join(PACKAGE_SET_ROOT, DESKTOP_PACKAGE_SET_FILE), join(BUILD_ROOT, DESKTOP_PACKAGE_SET_FILE))
       cpSync(join(PACKAGE_SET_ROOT, DESKTOP_PACKAGES_DIR), join(BUILD_ROOT, DESKTOP_PACKAGES_DIR), { recursive: true })
+      if (process.platform === 'win32') await stageDesktopOperatorTarball(BUILD_ROOT, PNPM_BUILD_STATE)
       createRuntimeProjectMetadata(BUILD_ROOT, release)
       return prepareRuntimePatches(BUILD_ROOT, resolve(APP_ROOT, '..', '..'))
     })
@@ -168,10 +170,18 @@ async function main(): Promise<void> {
       join(DSH_OUTPUT_ROOT, 'node_modules'),
       source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
     ))
+    if (process.platform === 'win32') {
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-computer-use', async () => {
+        verifyBundledDesktopOperator(DSH_OUTPUT_ROOT)
+        writeDesktopOperatorPresetBundle(DSH_OUTPUT_ROOT)
+      })
+    }
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',
       dependencies: { ...Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
-        [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version },
+        [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+        ...(process.platform === 'win32' ? { [BUNDLED_DESKTOP_OPERATOR.name]: BUNDLED_DESKTOP_OPERATOR.version,
+          [DESKTOP_OPERATOR_PRESET_BUNDLE]: BUNDLED_DESKTOP_OPERATOR.version } : {}) },
     }, undefined, 2)}\n`)
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-side-chat', async () => verifyBundledSideChat(DSH_OUTPUT_ROOT))
     for (const file of DESKTOP_HOST_RUNTIME_FILES) {
@@ -189,7 +199,8 @@ async function main(): Promise<void> {
     }
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:manifests', () => prepareRuntimeManifests(DSH_OUTPUT_ROOT))
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:primary-smoke', async () => smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime')))
-    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name), BUNDLED_SIDE_CHAT.name], target))
+    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name), BUNDLED_SIDE_CHAT.name,
+      ...(process.platform === 'win32' ? [BUNDLED_DESKTOP_OPERATOR.name, DESKTOP_OPERATOR_PRESET_BUNDLE] : [])], target))
     const descriptor = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-before-smoke', () => verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target))
     if (!process.argv.includes('--defer-runtime-smoke')) {
       await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:smoke', () => smokePreparedRuntime(DSH_OUTPUT_ROOT, NODE, RUNTIME_ROOT, descriptor))

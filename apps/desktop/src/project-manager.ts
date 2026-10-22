@@ -19,7 +19,10 @@ import {
   desktopCorePackageOverrides,
   verifyDesktopCorePackageSet,
 } from './core-package-set.ts'
-import { BUNDLED_SIDE_CHAT } from './bundled-plugins.ts'
+import {
+  BUNDLED_SIDE_CHAT, BUNDLED_DESKTOP_OPERATOR,
+  WINDOWS_OPERATOR_BUNDLES,
+} from './bundled-plugins.ts'
 import type { DesktopPaths } from './paths.ts'
 import type { DesktopRelease } from './release.ts'
 import { readDesktopRuntime } from './runtime-tree.ts'
@@ -33,6 +36,7 @@ const CORE_BUILD_PACKAGE = '@deepseek-ai/dsh-subprocess-local'
 const WEB_PROFILE = PROFILE_TEMPLATES.web as ProfileTemplate
 const WORKSPACE_SETTINGS = 'nodeLinker: hoisted\nautoInstallPeers: false\n'
 const SIDE_CHAT_DEFAULT_MARKER = '.bundled-side-chat-v1'
+const COMPUTER_USE_DEFAULT_MARKER = '.bundled-desktop-operator-v1'
 function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, undefined, 2)}\n`, { mode: 0o600 })
 }
@@ -83,6 +87,31 @@ function migrateBundledSideChat(projectDir: string): void {
   }
   // Write only after the manifest update; retry safely if the process is interrupted.
   writeFileSync(marker, BUNDLED_SIDE_CHAT.version + '\n', { mode: 0o600 })
+}
+
+
+/** First-use migration only: never turn Computer Use back on after user disable/recovery. */
+function migrateBundledDesktopOperator(projectDir: string): void {
+  if (process.platform !== 'win32') return
+  const marker = join(projectDir, COMPUTER_USE_DEFAULT_MARKER)
+  if (existsSync(marker)) return
+  const path = join(projectDir, 'package.json')
+  const manifest = readProfileManifest('dsh', projectDir)
+  const bundles = manifest.dsh?.profile?.bundles
+  if (!Array.isArray(bundles) || !bundles.every(bundle => typeof bundle === 'string')) {
+    throw new Error('desktop Computer Use: invalid profile bundle list')
+  }
+  // Existing user-installed or disabled Computer Use configurations are authoritative.
+  if (!bundles.includes(WINDOWS_OPERATOR_BUNDLES[0])
+    && !Object.hasOwn(manifest.dependencies ?? {}, BUNDLED_DESKTOP_OPERATOR.name)
+    && !Object.hasOwn(manifest.dependencies ?? {}, WINDOWS_OPERATOR_BUNDLES[0])) {
+    writeJson(path, {
+      ...manifest,
+      dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile,
+        bundles: [...bundles, ...WINDOWS_OPERATOR_BUNDLES] } },
+    })
+  }
+  writeFileSync(marker, BUNDLED_DESKTOP_OPERATOR.version + '\n', { mode: 0o600 })
 }
 
 /** Initializes the Desktop profile and disables third-party bundles during recovery. */
@@ -166,7 +195,8 @@ export function createRuntimeProjectMetadata(projectDir: string, release: Deskto
     name: PROJECT_NAME,
     private: true,
     version: '0.0.0',
-    dependencies: { ...desktopCorePackageOverrides(packageSet), [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version },
+    dependencies: { ...desktopCorePackageOverrides(packageSet), [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+      ...(process.platform === 'win32' ? { [BUNDLED_DESKTOP_OPERATOR.name]: `file:./vendor/${BUNDLED_DESKTOP_OPERATOR.name}-${BUNDLED_DESKTOP_OPERATOR.version}.tgz` } : {}) },
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
   }
   writeJson(join(projectDir, 'package.json'), manifest)
@@ -200,6 +230,8 @@ export function createDevelopmentProjectMetadata(projectDir: string, release: De
 
 /** Create the first external plugin profile without running a package manager. */
 export function createPluginProfile(projectDir: string): void {
-  initProfile(projectDir, [...WEB_PROFILE.bundles, BUNDLED_SIDE_CHAT.name])
+  initProfile(projectDir, [...WEB_PROFILE.bundles, BUNDLED_SIDE_CHAT.name,
+    ...(process.platform === 'win32' ? WINDOWS_OPERATOR_BUNDLES : [])])
   migrateBundledSideChat(projectDir)
+  migrateBundledDesktopOperator(projectDir)
 }

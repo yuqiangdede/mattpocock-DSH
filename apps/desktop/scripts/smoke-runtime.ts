@@ -10,7 +10,8 @@ import { fileURLToPath } from 'node:url'
 import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
 import { DesktopHostProcess } from '../src/host-process.ts'
 import { createPluginProfile } from '../src/project-manager.ts'
-import { BUNDLED_SIDE_CHAT } from '../src/bundled-plugins.ts'
+import { BUNDLED_SIDE_CHAT, DESKTOP_OPERATOR_PRESET_BUNDLE, DESKTOP_OPERATOR_PRESET_ID } from '../src/bundled-plugins.ts'
+import { loadProfileDirectory } from '@deepseek-ai/dsh-app-boot'
 import type { DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 
 /**
@@ -42,6 +43,22 @@ export async function smokeDesktopRuntime(
   try {
     writeFileSync(join(home, 'npmrc'), '')
     createPluginProfile(profile)
+    if (process.platform === 'win32') {
+      const loaded = loadProfileDirectory('dsh', profile,
+        join(root, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))
+      if (loaded.skippedBundles.length !== 0
+        || !loaded.layers.some(layer => layer.packageName === DESKTOP_OPERATOR_PRESET_BUNDLE)) {
+        throw new Error(`desktop Computer Use: offline bundle missing: ${JSON.stringify(loaded.skippedBundles)}`)
+      }
+      const adapter = readFileSync(join(root, 'node_modules',
+        ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/'), 'cordis.patch.yml'), 'utf8')
+      if (!adapter.includes(`id: ${DESKTOP_OPERATOR_PRESET_ID}`)
+        || !adapter.includes('name: \'dsh-desktop-operator\'')
+        || !adapter.includes('highRiskActionPolicy: confirm')) {
+        throw new Error('desktop Computer Use: offline Agent Preset not mounted')
+      }
+      console.log('desktop runtime: bundled Computer Use preset and native package passed')
+    }
     const pluginName = 'desktop-runtime-smoke-plugin'
     const plugin = join(home, pluginName)
     mkdirSync(plugin, { recursive: true })

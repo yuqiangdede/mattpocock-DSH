@@ -65,6 +65,6 @@ jobs:
         shell: pwsh
         run: pnpm run build
 
-      - name: Test offline side chat desktop profile defaults
+      - name: Test offline Desktop bundled plugin defaults and Computer Use preset
         shell: pwsh
-        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts
+        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts

@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
-import { BUNDLED_SIDE_CHAT } from '../src/bundled-plugins.ts'
+import { BUNDLED_SIDE_CHAT, BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE, WINDOWS_OPERATOR_BUNDLES } from '../src/bundled-plugins.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
 import { loadProfileDirectory, readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
@@ -37,6 +37,15 @@ function setup(): { root: string; manager: DesktopProjectManager } {
   const root = temporaryRoot()
   const dsh = join(root, 'resources', 'dsh')
   runtimeFixture(dsh)
+  if (process.platform === 'win32') {
+    const adapter = join(dsh, 'node_modules', ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/'))
+    mkdirSync(adapter, { recursive: true })
+    writeFileSync(join(adapter, 'package.json'), JSON.stringify({
+      name: DESKTOP_OPERATOR_PRESET_BUNDLE, version: BUNDLED_DESKTOP_OPERATOR.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(adapter, 'cordis.patch.yml'), '[]\n')
+  }
   return { root, manager: new DesktopProjectManager(resolveDesktopPaths(join(root, '.dsh')), { dsh }) }
 }
 afterEach(() => {
@@ -53,9 +62,14 @@ describe('desktop external plugin profile', () => {
     }
     expect(manifest.dsh.profile.bundles).toEqual([
       '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', BUNDLED_SIDE_CHAT.name,
+      ...(process.platform === 'win32' ? WINDOWS_OPERATOR_BUNDLES : []),
     ])
     expect(manifest.dependencies).not.toHaveProperty(BUNDLED_SIDE_CHAT.name)
     expect(existsSync(join(manager.paths.profile, 'node_modules'))).toBe(false)
+    if (process.platform === 'win32') {
+      expect(readFileSync(join(manager.paths.profile, '.bundled-desktop-operator-v1'), 'utf8'))
+        .toBe(BUNDLED_DESKTOP_OPERATOR.version + '\n')
+    }
     expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\n')
     await manager.disableAllPlugins()
     await manager.applyRelease()
@@ -63,6 +77,7 @@ describe('desktop external plugin profile', () => {
       dsh: { profile: { bundles: string[] } }
     }
     expect(disabled.dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
+    expect(disabled.dsh.profile.bundles).not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
   })
 
   it('resolves a bundled plugin from the installation without local dependency installation', async () => {
@@ -98,12 +113,29 @@ describe('desktop external plugin profile', () => {
     expect(updated.dependencies).toEqual({ 'my-plugin': '1.0.0' })
     expect(updated.dsh.profile.bundles).toEqual([
       '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin', BUNDLED_SIDE_CHAT.name,
+      ...(process.platform === 'win32' ? WINDOWS_OPERATOR_BUNDLES : []),
     ])
     updated.dsh.profile.bundles = updated.dsh.profile.bundles.filter(name => name !== BUNDLED_SIDE_CHAT.name)
     writeFileSync(path, JSON.stringify(updated))
     await manager.applyRelease()
     expect((JSON.parse(readFileSync(path, 'utf8')) as typeof updated).dsh.profile.bundles)
       .not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+
+  it.skipIf(process.platform !== 'win32')('never re-enables a disabled bundled Computer Use preset', async () => {
+    const { manager } = setup()
+    await manager.applyRelease()
+    const file = join(manager.paths.profile, 'package.json')
+    const manifest = JSON.parse(readFileSync(file, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(
+      name => name !== DESKTOP_OPERATOR_PRESET_BUNDLE)
+    writeFileSync(file, JSON.stringify(manifest))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(file, 'utf8')) as typeof manifest).dsh.profile.bundles)
+      .not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
   })
 
   it('respects an older manually installed and disabled side chat', async () => {
