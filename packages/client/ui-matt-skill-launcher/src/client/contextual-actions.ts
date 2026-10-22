@@ -21,7 +21,8 @@ function textBlocks(value: unknown): string {
 export function chatEntries(view: unknown): ChatEntry[] {
   const snapshot = record(view)
   if (!snapshot) return []
-  const candidates = [snapshot.nodes, snapshot.items, snapshot.entries, snapshot.messages]
+  const legacy = record(snapshot.legacy)
+  const candidates = [legacy?.nodes, snapshot.items, snapshot.entries, snapshot.messages]
   const values = candidates.find(Array.isArray)
   if (!Array.isArray(values)) return []
   const entries: ChatEntry[] = []
@@ -58,10 +59,12 @@ const negative = /没有(发现|检测到).{0,12}(问题|缺陷)|未发现.{0,12
  */
 export function recommend(entries: readonly ChatEntry[], running = false): Recommendation | null {
   if (running) return null
-  const assistantIndex = entries.findLastIndex(x => x.role === 'assistant')
+  let assistantIndex = -1
+  for (let i = entries.length - 1; i >= 0; i--) if (entries[i]?.role === 'assistant') { assistantIndex = i; break }
   if (assistantIndex < 0 || assistantIndex !== entries.length - 1) return null
   const response = entries[assistantIndex]!.text
-  const userIndex = entries.slice(0, assistantIndex).findLastIndex(x => x.role === 'user')
+  let userIndex = -1
+  for (let i = assistantIndex - 1; i >= 0; i--) if (entries[i]?.role === 'user') { userIndex = i; break }
   if (userIndex < 0) return null
   const request = entries[userIndex]!.text
   if (failures.test(response)) return { ids: ['bug', 'continue'], evidence: response.slice(0, 5000), reason: '上一操作存在失败或中断' }
