@@ -140,6 +140,25 @@ export function apply(ctx) {
       response.setHeader('content-type', 'application/json')
       response.end(JSON.stringify({ missing, entries }))
     } }))
+  ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-computer-use',
+    async handler(_request, response) {
+      try {
+        const presetId = "desktop-computer-use"
+        const resolved = await ctx.agentPresets.resolve(presetId)
+        const inventory = await ctx.agentPresets.compositionInventory()
+        const rows = inventory.find(row => row.id === presetId)?.rows
+        response.setHeader('content-type', 'application/json')
+        response.end(JSON.stringify({
+          id: resolved.id,
+          broken: resolved.broken ?? null,
+          defaultId: ctx.agentPresets.defaultId,
+          operatorMounted: JSON.stringify(rows ?? []).includes('dsh-desktop-operator'),
+        }))
+      } catch (error) {
+        response.statusCode = 500
+        response.end(inspect(error, { depth: 5 }))
+      }
+    } }))
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-install',
     async handler(_request, response) {
       try {
@@ -183,7 +202,7 @@ export function apply(ctx) {
   }
 }
 `)
-    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager]\n')
+    writeFileSync(join(plugin, 'bundle.yml'), '- insert:\n    - id: desktop-runtime-smoke-plugin\n      name: desktop-runtime-smoke-plugin\n      inject: [webServer, officeToPdf, skills, pluginManager, agentPresets]\n')
     cpSync(plugin, join(profile, 'node_modules', pluginName), { recursive: true })
     const manifest = JSON.parse(readFileSync(join(profile, 'package.json'), 'utf8')) as {
       dependencies?: Record<string, string>
@@ -230,6 +249,24 @@ export function apply(ctx) {
           + ` hostStderr=${JSON.stringify(host.getRecentStderr().replace(/(?:token=)[A-Za-z0-9_-]+/gu, 'token=[redacted]').slice(-2800))}`)
       }
       console.log('desktop runtime: bundled side chat host routes passed')
+    }
+    if (process.platform === 'win32') {
+      // Validate that the preset is actually registered and its tool plugin
+      // mounted, rather than merely checking the generated YAML text.
+      const presetResponse = await fetch(new URL('/desktop-smoke-computer-use', ready.url), {
+        headers: { cookie }, signal: AbortSignal.timeout(30_000),
+      })
+      if (!presetResponse.ok) {
+        throw new Error(`desktop Computer Use: preset activation failed: ${await presetResponse.text()}`)
+      }
+      const preset = await presetResponse.json() as {
+        id: string; broken: string | null; defaultId: string; operatorMounted: boolean
+      }
+      if (preset.id !== DESKTOP_OPERATOR_PRESET_ID || preset.broken !== null
+        || preset.defaultId !== DESKTOP_OPERATOR_PRESET_ID || !preset.operatorMounted) {
+        throw new Error(`desktop Computer Use: preset not active: ${JSON.stringify(preset)}`)
+      }
+      console.log('desktop runtime: Computer Use preset registered and tool mounted')
     }
     const pluginResponse = await fetch(new URL('/desktop-smoke', ready.url), { headers: { cookie } })
     if (await pluginResponse.text() !== 'plugin route ready') throw new Error('desktop runtime: plugin HTTP route failed')
