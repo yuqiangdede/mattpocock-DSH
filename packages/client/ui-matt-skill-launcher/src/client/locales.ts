@@ -2,6 +2,10 @@
 /** Simplified Chinese copy. */
 export const zh = {
   'skills': '编码 Skills',
+  'shortcuts': '常用快捷栏',
+  'categories': '按钮分类',
+  'categoryVisibility': '显示哪些分类',
+  'pinShortcut': '固定快捷栏',
   'defaultLocale': 'zh',
   'prompts': '其他提示词',
   'developmentGroup': '开发流程',
@@ -88,6 +92,10 @@ export type LauncherLocaleKey = keyof typeof zh
 /** English copy with the same keys. */
 export const en: Record<LauncherLocaleKey, string> = {
   'skills': 'Coding Skills',
+  'shortcuts': 'Pinned shortcuts',
+  'categories': 'Button categories',
+  'categoryVisibility': 'Visible categories',
+  'pinShortcut': 'Pin shortcut',
   'defaultLocale': 'en',
   'prompts': 'Other prompts',
   'developmentGroup': 'Development workflow',
