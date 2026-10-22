@@ -61,6 +61,17 @@ export const zh = {
   'errorFields': '按钮状态、提示词或排序无效',
   'errorTooltip': '悬浮提示无效',
   'errorGroup': '未知显示分组',
+  'recommendNext': '推荐下一步',
+  'recommended': '推荐',
+  'reasonReviewFindings': '代码审查发现待修复问题',
+  'reasonReviewClean': '代码审查未发现问题',
+  'reasonRequirementsReady': '需求结论可固化',
+  'reasonSpecReady': '规格可用于制定计划',
+  'reasonPlanReady': '已有实施计划',
+  'reasonImplementationReady': '建议验证实现结果',
+  'reasonRepairReady': '建议对修复执行回归验证',
+  'reasonBuildReady': '构建通过，可检查后提交',
+  'reasonPreviousFailed': '上一操作存在失败或中断',
 } as const
 
 /** Keys accepted by the launcher locale seat. */
@@ -128,4 +139,15 @@ export const en: Record<LauncherLocaleKey, string> = {
   'errorFields': 'Invalid button state, prompt or order',
   'errorTooltip': 'Invalid tooltip description',
   'errorGroup': 'Unknown display group',
+  'recommendNext': 'Recommended next step',
+  'recommended': 'Recommended',
+  'reasonReviewFindings': 'Code review found issues to fix',
+  'reasonReviewClean': 'Code review found no issues',
+  'reasonRequirementsReady': 'Requirements are ready to formalize',
+  'reasonSpecReady': 'The specification is ready for planning',
+  'reasonPlanReady': 'An implementation plan is available',
+  'reasonImplementationReady': 'Verify the implementation',
+  'reasonRepairReady': 'Run regression checks on the fix',
+  'reasonBuildReady': 'Build passed; review before committing',
+  'reasonPreviousFailed': 'The previous action failed or stopped',
 }

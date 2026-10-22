@@ -9,9 +9,9 @@ type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLau
 export function Launcher({ useInput, useConversation, useSession, inputActions, useActionForm, fetchSkillNames, t }: Props) {
   const snapshot = useActionForm(x => x)
   const input = useInput(x => x)
-  const chat = useConversation(x => x.views.get('chat' as never) as unknown)
+  const chat = useConversation(x => x.views.get('chat'))
   const sessionRunning = useSession(x => x.running)
-  const recommendation = recommend(chatEntries(chat), sessionRunning)
+  const recommendation = sessionRunning ? null : recommend(chatEntries(chat))
   const [more, setMore] = useState(false)
   const [pending, setPending] = useState(false)
   const [notice, setNotice] = useState('')
@@ -26,6 +26,10 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   try { actions = parseActions(snapshot.value?.actionsJson) } catch (error) { invalid = explain(error) }
   actions = snapshot.value?.actionsJson ? actions : presentDefaultActions(actions, t('defaultLocale') === 'en')
   const enabledActions = actions.filter(a => a.enabled).sort((a, b) => displayOrder(a) - displayOrder(b))
+  const recommendedActions = recommendation
+    ? enabledActions.filter(action => recommendation.ids.includes(action.id))
+    : []
+  const visibleRecommendation = recommendedActions.length ? recommendation : null
   const byGroup = (group: ReturnType<typeof resolveActionGroup>) => enabledActions.filter(a => resolveActionGroup(a) === group)
   const development = byGroup('development')
   const documents = byGroup('document')
@@ -49,7 +53,7 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
         const names = await fetchSkillNames()
         if (!alive.current) return
         if (!names.includes(skillId)) { setNotice(t('missing') + skillId + t('install')); return }
-        value = '/' + skillId + ' ' + action.prompt + (input.draft.length ? '\n\n' : '')
+        value = '/' + skillId + ' ' + value + (input.draft.length ? '\n\n' : '')
       } catch (error) { if (alive.current) setNotice(t('readFailed') + String(error)); return }
       finally { if (alive.current) setPending(false) }
     } else if (input.draft.length) value = '\n\n' + value
@@ -57,8 +61,8 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     if (!inputActions.insertText(value, span)) { setNotice(t('draftChanged')); return }
     inputActions.persistDraft()
   }
-  const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={recommendation?.ids.includes(a.id) ? css.recommended : css.action}
-    title={a.description + '\n' + a.example + (recommendation?.ids.includes(a.id) ? '\n推荐：' + recommendation.reason : '')} onClick={() => { void insert(a) }}>{a.label}</button>
+  const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={visibleRecommendation?.ids.includes(a.id) ? css.recommended : css.action}
+    title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommended') + ': ' + t(visibleRecommendation.reason) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
     {(development.length > 0 || extra.length > 0) && <section className={css.group}>
       <span className={css.groupLabel}>{t('developmentGroup')}</span>
@@ -85,7 +89,7 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
       <span className={css.groupLabel}>{t('utilityGroup')}</span>
       <div className={css.row} aria-label={t('utilityGroup')}>{utilities.map(render)}</div>
     </section>}
-    {recommendation && <div className={css.hint} aria-live="polite">推荐下一步：{recommendation.ids.filter(id => enabledActions.some(a => a.id === id)).map(id => enabledActions.find(a => a.id === id)?.label).join('、')}（{recommendation.reason}）</div>}
+    {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendNext')}: {recommendedActions.map(action => action.label).join('、')}（{t(visibleRecommendation.reason)}）</div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
 }
