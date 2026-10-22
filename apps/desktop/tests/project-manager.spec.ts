@@ -102,7 +102,7 @@ describe('desktop external plugin profile', () => {
       name: BUNDLED_SIDE_CHAT.name, version: BUNDLED_SIDE_CHAT.version,
       dsh: { bundle: { patch: './cordis.patch.yml' } },
     }))
-    writeFileSync(join(bundled, 'cordis.patch.yml'), '- insert:\\n    - id: sidechat\\n      name: dsh-side-chat-plus\\n'.replaceAll('\\\\n', '\\n'))
+    writeFileSync(join(bundled, 'cordis.patch.yml'), '- insert:\\n    - id: sidechat\\n      name: dsh-side-chat-plus\\n')
     createPluginProfile(manager.paths.profile)
     const profile = loadProfileDirectory('dsh', manager.paths.profile, manifestPath)
     expect(profile.skippedBundles).toEqual([])
