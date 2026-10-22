@@ -20,7 +20,7 @@ import {
   verifyDesktopCorePackageSet,
 } from './core-package-set.ts'
 import {
-  BUNDLED_SIDE_CHAT, BUNDLED_DESKTOP_OPERATOR,
+  BUNDLED_SIDE_CHAT, BUNDLED_LLM_RETRY, BUNDLED_DESKTOP_OPERATOR,
   WINDOWS_OPERATOR_BUNDLES,
 } from './bundled-plugins.ts'
 import type { DesktopPaths } from './paths.ts'
@@ -37,6 +37,7 @@ const WEB_PROFILE = PROFILE_TEMPLATES.web as ProfileTemplate
 const WORKSPACE_SETTINGS = 'nodeLinker: hoisted\nautoInstallPeers: false\n'
 const SIDE_CHAT_DEFAULT_MARKER = '.bundled-side-chat-v1'
 const COMPUTER_USE_DEFAULT_MARKER = '.bundled-desktop-operator-v1'
+const LLM_RETRY_DEFAULT_MARKER = '.bundled-llm-retry-v1'
 function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, undefined, 2)}\n`, { mode: 0o600 })
 }
@@ -90,6 +91,28 @@ function migrateBundledSideChat(projectDir: string): void {
   writeFileSync(marker, BUNDLED_SIDE_CHAT.version + '\n', { mode: 0o600 })
 }
 
+
+/** Enable the shipped retry settings card once, without overriding user opt-out. */
+function migrateBundledLlmRetry(projectDir: string): void {
+  if (process.platform !== 'win32') return
+  const marker = join(projectDir, LLM_RETRY_DEFAULT_MARKER)
+  if (existsSync(marker)) return
+  const path = join(projectDir, 'package.json')
+  const manifest = readProfileManifest('dsh', projectDir)
+  const bundles = manifest.dsh?.profile?.bundles
+  if (!Array.isArray(bundles) || !bundles.every(bundle => typeof bundle === 'string')) {
+    throw new Error('desktop LLM retry: invalid profile bundle list')
+  }
+  if (!bundles.includes(BUNDLED_LLM_RETRY.name)
+    && !Object.hasOwn(manifest.dependencies ?? {}, BUNDLED_LLM_RETRY.name)) {
+    writeJson(path, {
+      ...manifest,
+      dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile,
+        bundles: [...bundles, BUNDLED_LLM_RETRY.name] } },
+    })
+  }
+  writeFileSync(marker, BUNDLED_LLM_RETRY.version + '\n', { mode: 0o600 })
+}
 
 /** First-use migration only: never turn Computer Use back on after user disable/recovery. */
 function migrateBundledDesktopOperator(projectDir: string): void {
@@ -198,6 +221,7 @@ export function createRuntimeProjectMetadata(projectDir: string, release: Deskto
     version: '0.0.0',
     dependencies: { ...desktopCorePackageOverrides(packageSet),
       ...(process.platform === 'win32' ? { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+        [BUNDLED_LLM_RETRY.name]: `file:./vendor/${BUNDLED_LLM_RETRY.name}-${BUNDLED_LLM_RETRY.version}.tgz`,
         [BUNDLED_DESKTOP_OPERATOR.name]: `file:./vendor/${BUNDLED_DESKTOP_OPERATOR.name}-${BUNDLED_DESKTOP_OPERATOR.version}.tgz` } : {}) },
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
   }
@@ -233,7 +257,8 @@ export function createDevelopmentProjectMetadata(projectDir: string, release: De
 /** Create the first external plugin profile without running a package manager. */
 export function createPluginProfile(projectDir: string): void {
   initProfile(projectDir, [...WEB_PROFILE.bundles,
-    ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, ...WINDOWS_OPERATOR_BUNDLES] : [])])
+    ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, ...WINDOWS_OPERATOR_BUNDLES] : [])])
   migrateBundledSideChat(projectDir)
+  migrateBundledLlmRetry(projectDir)
   migrateBundledDesktopOperator(projectDir)
 }

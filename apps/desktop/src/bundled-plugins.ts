@@ -4,6 +4,13 @@ export const BUNDLED_SIDE_CHAT = {
   version: '0.5.0',
 } as const
 
+/** Windows-only offline LLM retry settings plugin, pinned to a verified Release. */
+export const BUNDLED_LLM_RETRY = {
+  name: 'dsh-llm-retry-settings',
+  version: '0.1.18',
+  sha256: 'f7eee54b5ddcdc1f0b85225a818f2c23b290f5c1b355874b3fc8db35216cf563',
+} as const
+
 /**
  * Offline Windows Computer Use release. Updating requires its upstream release
  * tarball SHA-256 and Windows x64 binary SHA-256 from the same signed-off release.

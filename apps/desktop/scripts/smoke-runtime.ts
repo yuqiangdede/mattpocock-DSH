@@ -11,7 +11,7 @@ import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/
 import { runtimeArchivePath } from '../../desktop-host/src/office-engine.ts'
 import { DesktopHostProcess } from '../src/host-process.ts'
 import { createPluginProfile } from '../src/project-manager.ts'
-import { BUNDLED_SIDE_CHAT, DESKTOP_OPERATOR_PRESET_BUNDLE, DESKTOP_OPERATOR_PRESET_ID } from '../src/bundled-plugins.ts'
+import { BUNDLED_SIDE_CHAT, BUNDLED_LLM_RETRY, DESKTOP_OPERATOR_PRESET_BUNDLE, DESKTOP_OPERATOR_PRESET_ID } from '../src/bundled-plugins.ts'
 import { loadProfileDirectory } from '@deepseek-ai/dsh-app-boot'
 import type { DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 
@@ -54,6 +54,9 @@ export async function smokeDesktopRuntime(
         throw new Error(`desktop side chat: bundle not resolved: ${JSON.stringify(loaded.skippedBundles)}`)
       }
       if (process.platform === 'win32') {
+        if (!loaded.layers.some(layer => layer.packageName === BUNDLED_LLM_RETRY.name)) {
+          throw new Error(`desktop LLM retry: offline settings bundle missing: ${JSON.stringify(loaded.skippedBundles)}`)
+        }
         if (!loaded.layers.some(layer => layer.packageName === DESKTOP_OPERATOR_PRESET_BUNDLE)) {
           throw new Error(`desktop Computer Use: offline bundle missing: ${JSON.stringify(loaded.skippedBundles)}`)
         }
@@ -128,8 +131,9 @@ export function apply(ctx) {
         'sessionQuery', 'permissionPresets', 'agentPresets', 'llm', 'attachments', 'commands']
       const missing = services.filter(name => ctx.get(name) === undefined)
       const entries = [...(ctx.get('loader')?.entries?.() ?? [])]
-        .filter(entry => String(entry.options?.id ?? entry.id ?? '').includes('side-chat')
-          || String(entry.options?.name ?? '').includes('side-chat'))
+        .filter(entry => ['side-chat', 'llm-retry-settings'].some(key =>
+          String(entry.options?.id ?? entry.id ?? '').includes(key)
+          || String(entry.options?.name ?? '').includes(key)))
         .map(entry => ({
           id: entry.options?.id, name: entry.options?.name,
           disabled: entry.disabled, state: String(entry.fiber?.state ?? entry.state ?? ''),
@@ -258,6 +262,19 @@ export function apply(ctx) {
           + ` hostStderr=${JSON.stringify(host.getRecentStderr().replace(/(?:token=)[A-Za-z0-9_-]+/gu, 'token=[redacted]').slice(-2800))}`)
       }
       console.log('desktop runtime: bundled side chat host routes passed')
+      // A bundled package is not enough: the actual Host loader must activate it.
+      const retryProbe = await fetch(new URL('/desktop-smoke-diagnostics', ready.url), {
+        headers: { cookie }, signal: AbortSignal.timeout(15_000),
+      })
+      if (!retryProbe.ok) throw new Error(`desktop LLM retry: diagnostics failed HTTP ${retryProbe.status}`)
+      const retryState = await retryProbe.json() as {
+        entries?: Array<{ id?: string; name?: string; disabled?: boolean; moduleLoaded?: boolean; error?: string }>
+      }
+      if (!retryState.entries?.some(entry => entry.name === BUNDLED_LLM_RETRY.name
+        && entry.disabled !== true && entry.moduleLoaded === true && !entry.error)) {
+        throw new Error(`desktop LLM retry: Host settings plugin not active: ${JSON.stringify(retryState.entries)}`)
+      }
+      console.log('desktop runtime: bundled LLM retry settings Host active')
     }
     if (process.platform === 'win32') {
       // Validate that the preset is actually registered and its tool plugin
