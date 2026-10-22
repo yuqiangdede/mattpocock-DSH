@@ -6,6 +6,11 @@ import { installLlmReplay } from '@deepseek-ai/dsh-llm-replay'
 export const inject = ['webServer', 'llm', 'agents', 'agentPresets']
 
 export function apply(ctx, config) {
+  ctx.effect(() => {
+    const stop = (message) => { if (message === 'desktop-snapshot-shutdown') process.emit('SIGTERM') }
+    process.on('message', stop)
+    return () => process.off('message', stop)
+  })
   const scenario = config.scenario
   const fixture = config.fixture
   const observed = []

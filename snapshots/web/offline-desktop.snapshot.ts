@@ -98,7 +98,11 @@ describe.skipIf(process.platform !== 'win32')('Windows offline bundle recorded S
     const launch = resolveExampleLaunch({
       srcBin: join(repo, 'apps/cli/src/bin.ts'), mode: 'lib',
       configArgs: ['--profile', 'web', '--patch', join(repo, 'apps/web/tests/pin-browse-picker.overlay.yml'), '--no-open', '--host', '127.0.0.1', '--port', '0'],
-      env: { DSH_HOME: home, DSH_AGENTS_HOME: join(world, 'agents'), DSH_TELEMETRY_DISABLED: '1', NODE_OPTIONS: '' },
+      env: {
+        DSH_HOME: home, DSH_AGENTS_HOME: join(world, 'agents'), DSH_TELEMETRY_DISABLED: '1', NODE_OPTIONS: '',
+        HOME: home, USERPROFILE: home, APPDATA: home, LOCALAPPDATA: home,
+        XDG_CONFIG_HOME: home, XDG_CACHE_HOME: home, XDG_STATE_HOME: home,
+      },
     })
     const child = spawn(launch.command, launch.args, { cwd: world, env: { ...process.env, ...launch.env }, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe', 'ipc'] })
     const deadline = AbortSignal.timeout(90_000)
@@ -117,8 +121,10 @@ describe.skipIf(process.platform !== 'win32')('Windows offline bundle recorded S
     child.stderr.on('data', receive)
     const timer = setTimeout(() => ready.reject(new Error(`dsh readiness timed out\n${output}`)), 45_000)
     let observed: unknown
+    let started = false
     try {
       const url = await ready.promise
+      started = true
       clearTimeout(timer)
       const login = await fetch(url, { redirect: 'manual', signal: AbortSignal.any([deadline, AbortSignal.timeout(30_000)]) })
       const cookie = login.headers.getSetCookie().map(value => value.split(';')[0]).join('; ')
@@ -150,10 +156,15 @@ describe.skipIf(process.platform !== 'win32')('Windows offline bundle recorded S
       let forced = false
       const kill = setTimeout(() => { forced = true; child.kill('SIGKILL') }, 20_000)
       try {
-        if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM')
+        if (child.connected) child.send('desktop-snapshot-shutdown')
+        else if (child.exitCode === null && child.signalCode === null) child.kill('SIGTERM')
         await exited
       } finally { clearTimeout(kill) }
       expect(forced, output).toBe(false)
+      if (started) {
+        expect(child.exitCode, output).toBe(0)
+        expect(child.signalCode, output).toBeNull()
+      }
     }
     const paths = latestPersistedSessionPaths((await readdir(join(home, 'sessions'), { recursive: true }))
       .map(path => join(home, 'sessions', path)))
