@@ -1,23 +1,10 @@
-import type { ActionGroup } from './actions.ts'
-
 /** Launcher-owned UI dictionaries. */
 /** Simplified Chinese copy. */
 export const zh = {
-  'skills': '编码 Skills',
-  'shortcuts': '常用快捷栏',
-  'categories': '按钮分类',
-  'categoryVisibility': '显示哪些分类',
-  'pinShortcut': '固定快捷栏',
+  'more': '更多',
+  'showButton': '显示在快捷栏',
   'defaultLocale': 'zh',
-  'prompts': '其他提示词',
-  'developmentGroup': '开发流程',
-  'documentGroup': '文档生成',
-  'utilityGroup': '辅助操作',
-  'moreGroup': '更多',
-  'group': '显示分组',
   'fillMissing': '补齐缺失预设（待保存）',
-  'expandActions': '展开编码按钮 ▴',
-  'collapseActions': '收起编码按钮 ▾',
   'invalid': '按钮设置无效，请在设置中修复：',
   'selection': '已选中草稿内容：请先取消选区，避免覆盖原文。',
   'start': 'DSH Skill 必须位于消息最开头。请将光标移至开头后点击。',
@@ -32,7 +19,7 @@ export const zh = {
   'rejected': 'DSH Host 拒绝保存；编辑内容已保留',
   'unsaved': '未保存：',
   'title': '编码按钮 / Skill Launcher',
-  'intro': '固定快捷栏始终显示在分类标签上方，每次只显示一个分类。点击只插入草稿，不会自动发送。可以调整按钮分类、固定状态和顺序。',
+  'intro': '勾选要直接显示的按钮；未勾选的启用按钮收进「更多」。点击只插入草稿，不会自动发送。可以调整显示状态和顺序。',
   'skillRow': 'Skill 类型按钮',
   'promptRow': '提示词类型按钮',
   'add': '新增',
@@ -67,7 +54,6 @@ export const zh = {
   'errorSkillId': 'Skill ID 必须是 kebab-case',
   'errorFields': '按钮状态、提示词或排序无效',
   'errorTooltip': '悬浮提示无效',
-  'errorGroup': '未知显示分组',
   'recommendationHint': '推荐下一步：{actions}（{reason}）',
   'recommendationTooltip': '推荐：{reason}',
   'recommendationSeparator': '、',
@@ -90,31 +76,12 @@ export const zh = {
 /** Keys accepted by the launcher locale seat. */
 export type LauncherLocaleKey = keyof typeof zh
 
-/** Category name for each action group, shared by the launcher tabs and the settings controls. */
-export const categoryLabelKeys: Readonly<Record<ActionGroup, LauncherLocaleKey>> = {
-  development: 'developmentGroup',
-  document: 'documentGroup',
-  utility: 'utilityGroup',
-  more: 'moreGroup',
-}
-
 /** English copy with the same keys. */
 export const en: Record<LauncherLocaleKey, string> = {
-  'skills': 'Coding Skills',
-  'shortcuts': 'Pinned shortcuts',
-  'categories': 'Button categories',
-  'categoryVisibility': 'Visible categories',
-  'pinShortcut': 'Pin shortcut',
+  'more': 'More',
+  'showButton': 'Show in launcher',
   'defaultLocale': 'en',
-  'prompts': 'Other prompts',
-  'developmentGroup': 'Development workflow',
-  'documentGroup': 'Documents',
-  'utilityGroup': 'Utilities',
-  'moreGroup': 'More',
-  'group': 'Display group',
   'fillMissing': 'Add missing presets (unsaved)',
-  'expandActions': 'Expand coding buttons ▴',
-  'collapseActions': 'Collapse coding buttons ▾',
   'invalid': 'Invalid button settings. Fix them in Settings: ',
   'selection': 'Clear the draft selection before inserting to preserve existing text.',
   'start': 'Move the cursor to the start of the message before inserting a Skill.',
@@ -129,7 +96,7 @@ export const en: Record<LauncherLocaleKey, string> = {
   'rejected': 'The Host rejected the save. Your edits have been preserved.',
   'unsaved': 'Not saved: ',
   'title': 'Coding buttons / Skill Launcher',
-  'intro': 'Pinned shortcuts stay above the category tabs and one category is shown at a time. Clicking inserts draft text without sending it. You can edit each button category, pin state and order.',
+  'intro': 'Check the buttons to show directly; every other enabled button stays under More. Clicking inserts draft text without sending it. You can edit each show state and order.',
   'skillRow': 'Skill buttons',
   'promptRow': 'Prompt buttons',
   'add': 'Add',
@@ -164,7 +131,6 @@ export const en: Record<LauncherLocaleKey, string> = {
   'errorSkillId': 'Skill ID must be kebab-case',
   'errorFields': 'Invalid button state, prompt or order',
   'errorTooltip': 'Invalid tooltip description',
-  'errorGroup': 'Unknown display group',
   'recommendationHint': 'Recommended next step: {actions} ({reason})',
   'recommendationTooltip': 'Recommended: {reason}',
   'recommendationSeparator': ', ',

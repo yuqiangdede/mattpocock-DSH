@@ -1,19 +1,14 @@
 import { LEGACY_ACTIONS, LEGACY_ENGLISH_PRESENTATION } from './legacy-actions.ts'
 
 /** Portable CodingAction domain independent of the underlying Agent engine. */
-export const ACTION_GROUPS = ['development', 'document', 'utility', 'more'] as const
-export type ActionGroup = typeof ACTION_GROUPS[number]
-
 export interface CodingAction {
   id: string
   label: string
   kind: 'skill' | 'prompt'
-  /** Optional to maintain compatibility with previously saved settings. */
-  group?: ActionGroup
   skillId?: string
   prompt: string
   enabled: boolean
-  /** Pinned shortcuts remain visible above the selected category. */
+  /** Show this button directly in the launcher; every other enabled button sits under More. */
   pinned?: boolean
   order: number
   description: string
@@ -31,8 +26,8 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'review', label: '代码审查', kind: 'skill', skillId: 'code-review', prompt: '审查正确性、数据安全和可维护性，给出有证据的问题。', enabled: true, pinned: true, order: 60, description: '什么时候使用：代码完成，准备合并。', example: '具体例子：检查权限和并发处理。' },
   { id: 'visual', label: '可视化讨论', kind: 'skill', skillId: 'grill-with-ui', prompt: '基于最新已确认需求开展可视化讨论，并把最终结果写回当前对话。', enabled: true, order: 15, description: '什么时候使用：需要交互式问答讨论。', example: '具体例子：逐个确认界面问题。' },
   { id: 'tdd', label: '测试驱动开发', kind: 'skill', skillId: 'tdd', prompt: '先编写失败测试再实现最小修改。', enabled: true, order: 120, description: '什么时候使用：可以通过测试驱动的实现。', example: '具体例子：先写解析器边界测试。' },
-  { id: 'prototype', label: '制作原型', kind: 'skill', skillId: 'prototype', group: 'more', prompt: '围绕当前未决设计问题制作可运行原型，记录结论及适用限制。', enabled: true, order: 125, description: '什么时候使用：需要运行原型来验证设计。', example: '具体例子：验证交互流程或状态模型。' },
-  { id: 'architecture', label: '架构优化', kind: 'skill', skillId: 'improve-codebase-architecture', group: 'more', prompt: '在指定范围内寻找有证据的架构优化机会，先呈现候选方案供选择。', enabled: true, order: 126, description: '什么时候使用：模块难以理解、修改或测试。', example: '具体例子：分析最近常改模块的简化机会。' },
+  { id: 'prototype', label: '制作原型', kind: 'skill', skillId: 'prototype', prompt: '围绕当前未决设计问题制作可运行原型，记录结论及适用限制。', enabled: true, order: 125, description: '什么时候使用：需要运行原型来验证设计。', example: '具体例子：验证交互流程或状态模型。' },
+  { id: 'architecture', label: '架构优化', kind: 'skill', skillId: 'improve-codebase-architecture', prompt: '在指定范围内寻找有证据的架构优化机会，先呈现候选方案供选择。', enabled: true, order: 126, description: '什么时候使用：模块难以理解、修改或测试。', example: '具体例子：分析最近常改模块的简化机会。' },
   { id: 'api-docs', label: '接口文档', kind: 'skill', skillId: 'api-integration-docs', prompt: '依据现有源码与消息/HTTP 接口编写可对接的完整接口文档，注明所有字段与示例。', enabled: true, order: 130, description: '什么时候使用：接口文档交付任务。', example: '具体例子：调用 api-integration-docs 生成可复核的工程文档。' },
   { id: 'requirements', label: '需求文档', kind: 'skill', skillId: 'requirements-spec', prompt: '根据当前讨论与源码产出完整的需求规格，区分明确结论与待确认内容。', enabled: true, order: 140, description: '什么时候使用：需求规格交付任务。', example: '具体例子：调用 requirements-spec 生成可复核的工程文档。' },
   { id: 'overview', label: '总体设计', kind: 'skill', skillId: 'overall-design', prompt: '基于当前需求编写总体设计，说明总体结构、模块和关键设计依据。', enabled: true, order: 150, description: '什么时候使用：总体设计交付任务。', example: '具体例子：调用 overall-design 生成可复核的工程文档。' },
@@ -45,28 +40,15 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'review-fix', label: '修复审核问题', kind: 'prompt', prompt: '根据当前对话中已明确的代码审查问题或测试失败证据逐项定位并修复；若没有明确问题则先询问。仅做必要修改并运行相关回归测试。', enabled: true, order: 220, description: '什么时候使用：代码审查或测试发现了明确问题。', example: '具体例子：修复审查报告中的空指针问题。' },
   { id: 'compile', label: '编译', kind: 'prompt', prompt: '核对当前项目的构建脚本、运行环境和依赖，执行合适的编译或构建检查；不要提交代码。失败时定位原因，未经确认不扩大修改范围。', enabled: true, order: 230, description: '什么时候使用：需要验证当前工程是否能够编译。', example: '具体例子：运行项目在 Windows 上的构建命令。' },
   { id: 'continue', label: '继续', kind: 'prompt', prompt: '先核对本会话的未完成任务、最近改动及磁盘实际文件，识别已完成步骤和当前阻塞，再从可靠检查点继续，不覆盖现有工作。', enabled: true, order: 240, description: '什么时候使用：恢复中断的开发任务。', example: '具体例子：从上次失败的构建检查处继续。' },
-  { id: 'domain', label: '领域建模', kind: 'skill', skillId: 'domain-modeling', group: 'utility', prompt: '澄清当前范围内的领域术语和关系，遵循项目现有术语表和决策记录。', enabled: true, order: 250, description: '什么时候使用：领域概念含糊或命名存在冲突。', example: '具体例子：明确用户与客户的区别。' },
-  { id: 'research', label: '资料研究', kind: 'skill', skillId: 'research', group: 'utility', prompt: '围绕当前问题研究可信一手资料，记录来源、结论和未验证事项。', enabled: true, order: 260, description: '什么时候使用：需要查证技术资料或外部事实。', example: '具体例子：研究 SDK 的官方兼容性要求。' },
-  { id: 'retro', label: '复盘', kind: 'skill', skillId: 'retro', group: 'utility', prompt: '复盘当前任务中的问题和验证记录，提出工程环境或工作流程改进建议。', enabled: true, order: 270, description: '什么时候使用：任务结束或出现值得总结的失败。', example: '具体例子：找出可自动检查的重复错误。' },
-  { id: 'handoff', label: '上下文交接', kind: 'skill', skillId: 'handoff', group: 'utility', prompt: '为接手者编写上下文交接文档，引用已有规格、工单和代码记录，明确未完成事项及下一步。', enabled: true, order: 280, description: '什么时候使用：需要换会话、工作目录或接手者。', example: '具体例子：把当前阻塞及验证情况交给下一会话。' },
+  { id: 'domain', label: '领域建模', kind: 'skill', skillId: 'domain-modeling', prompt: '澄清当前范围内的领域术语和关系，遵循项目现有术语表和决策记录。', enabled: true, order: 250, description: '什么时候使用：领域概念含糊或命名存在冲突。', example: '具体例子：明确用户与客户的区别。' },
+  { id: 'research', label: '资料研究', kind: 'skill', skillId: 'research', prompt: '围绕当前问题研究可信一手资料，记录来源、结论和未验证事项。', enabled: true, order: 260, description: '什么时候使用：需要查证技术资料或外部事实。', example: '具体例子：研究 SDK 的官方兼容性要求。' },
+  { id: 'retro', label: '复盘', kind: 'skill', skillId: 'retro', prompt: '复盘当前任务中的问题和验证记录，提出工程环境或工作流程改进建议。', enabled: true, order: 270, description: '什么时候使用：任务结束或出现值得总结的失败。', example: '具体例子：找出可自动检查的重复错误。' },
+  { id: 'handoff', label: '上下文交接', kind: 'skill', skillId: 'handoff', prompt: '为接手者编写上下文交接文档，引用已有规格、工单和代码记录，明确未完成事项及下一步。', enabled: true, order: 280, description: '什么时候使用：需要换会话、工作目录或接手者。', example: '具体例子：把当前阻塞及验证情况交给下一会话。' },
 ]
-/** Resolve an unsaved or legacy action into one of the visual groups. */
-const DOCUMENT_IDS = new Set(['api-docs', 'requirements', 'overview', 'outline', 'database', 'doc-merge', 'docx'])
-const DEVELOPMENT_IDS = new Set(['initialize', 'ask', 'discussion', 'visual', 'spec', 'plan', 'execute', 'bug', 'review'])
-const MORE_IDS = new Set(['tickets', 'tdd', 'prototype', 'architecture'])
-
-export function resolveActionGroup(action: CodingAction): ActionGroup {
-  if (action.group !== undefined) return action.group
-  if (DOCUMENT_IDS.has(action.id)) return 'document'
-  if (DEVELOPMENT_IDS.has(action.id)) return 'development'
-  if (MORE_IDS.has(action.id)) return 'more'
-  // Preserve pre-existing user-defined Skill behavior: order >= 100 is under More.
-  return action.kind === 'prompt' ? 'utility' : action.order >= 100 ? 'more' : 'development'
-}
 
 /** Keep the old built-in visual action adjacent to text discussion without rewriting saved order. */
 export function displayOrder(action: CodingAction): number {
-  return action.id === 'visual' && action.order === 100 && action.group === undefined ? 15 : action.order
+  return action.id === 'visual' && action.order === 100 ? 15 : action.order
 }
 
 /** Explicit opt-in: leave existing customized buttons untouched. */
@@ -119,7 +101,7 @@ export const ACTION_SCHEMA_VERSION = 3
 export const encodeActions = (actions: readonly CodingAction[]): string =>
   JSON.stringify({ schemaVersion: ACTION_SCHEMA_VERSION, actions }, null, 2)
 /** Locale key naming why an action document failed validation. */
-export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip' | 'errorGroup'
+export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip'
 export class ActionConfigError extends Error {
   constructor(readonly key: ActionConfigErrorKey) { super(key); this.name = 'ActionConfigError' }
 }
@@ -128,7 +110,8 @@ export function actionErrorKey(error: unknown): ActionConfigErrorKey | undefined
   return error instanceof ActionConfigError ? error.key : undefined
 }
 /** Validate a persisted action document and copy defaults when absent.
- * Versions 1 and 2 load as saved; version 1 also upgrades unchanged preset fields.
+ * Versions 1, 2, and 3 load as saved; version 1 also upgrades unchanged preset fields.
+ * The retired `group` field is ignored and omitted from the parsed actions.
  * @param text Saved JSON or an absent configuration.
  * @returns Validated actions.
  */
@@ -151,8 +134,7 @@ export function parseActions(text: string | undefined): CodingAction[] {
     if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new ActionConfigError('errorFields')
     if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new ActionConfigError('errorTooltip')
     if (a.pinned !== undefined && typeof a.pinned !== 'boolean') throw new ActionConfigError('errorFields')
-    if (a.group !== undefined && !ACTION_GROUPS.includes(a.group as ActionGroup)) throw new ActionConfigError('errorGroup')
-    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, ...(a.pinned === undefined ? {} : { pinned: a.pinned }), order: a.order, description: a.description, example: a.example } as CodingAction
+    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), prompt: a.prompt, enabled: a.enabled, ...(a.pinned === undefined ? {} : { pinned: a.pinned }), order: a.order, description: a.description, example: a.example } as CodingAction
   })
   return doc.schemaVersion === 1 ? migrateActions(actions) : actions
 }
@@ -177,7 +159,7 @@ function migrateActions(actions: CodingAction[]): CodingAction[] {
     const wasEnglish = usesEnglish(action)
     if (action.id === 'tickets') {
       const isPreset = fields.every(key => matches(action, legacy, key))
-      return isPreset && (action.group === undefined || action.group === 'more') ? [] : [action]
+      return isPreset ? [] : [action]
     }
     const current = DEFAULT_ACTIONS.find(a => a.id === action.id)
     if (!current) return [action]

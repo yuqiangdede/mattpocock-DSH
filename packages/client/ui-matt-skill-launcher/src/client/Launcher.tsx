@@ -1,10 +1,8 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { ACTION_GROUPS, parseActions, actionErrorKey, presentDefaultActions, resolveActionGroup, displayOrder, type ActionGroup, type CodingAction } from './actions.ts'
-import { CategoryTabs } from './CategoryTabs.tsx'
+import { parseActions, actionErrorKey, presentDefaultActions, displayOrder, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
-import { categoryLabelKeys } from './locales.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
 export function Launcher({ useInput, useConversation, useSession, inputActions, useActionForm, fetchSkillNames, t }: Props) {
@@ -14,11 +12,8 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   const sessionRunning = useSession(x => x.running)
   const entries = sessionRunning ? [] : chatEntries(chat)
   const recommendation = recommend(entries)
-  const [collapsed, setCollapsed] = useState(false)
-  const groupsId = useId()
-  const tabsId = useId()
-  const panelId = useId()
-  const [selectedGroup, setSelectedGroup] = useState<ActionGroup>('development')
+  const morePanelId = useId()
+  const [moreOpen, setMoreOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [notice, setNotice] = useState('')
   const alive = useRef(true)
@@ -36,14 +31,10 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     ? enabledActions.filter(action => recommendation.ids.includes(action.id))
     : []
   const visibleRecommendation = recommendedActions.length ? recommendation : null
-  const byGroup = (group: ActionGroup) => enabledActions.filter(a => resolveActionGroup(a) === group)
-  const hiddenGroups = (snapshot.value?.hiddenGroups ?? []).filter((g): g is ActionGroup => ACTION_GROUPS.includes(g as ActionGroup))
-  const pinned = enabledActions.filter(a => a.pinned)
-  const categories = ACTION_GROUPS.filter(g => !hiddenGroups.includes(g) && byGroup(g).some(a => !a.pinned))
-  const activeCategory = categories.includes(selectedGroup) ? selectedGroup : categories[0]
-  const categoryActions = activeCategory ? byGroup(activeCategory).filter(a => !a.pinned) : []
-  const tabs = categories.map(group => ({ value: group, label: t(categoryLabelKeys[group]), id: tabsId + group }))
-  const hasActions = pinned.length > 0 || categories.length > 0
+  const shownActions = enabledActions.filter(a => a.pinned)
+  const moreActions = enabledActions.filter(a => !a.pinned)
+  const hasActions = enabledActions.length > 0
+  const moreRecommended = recommendedActions.some(a => !a.pinned)
   const available = input.phase === 'plain' && !pending && snapshot.status === 'ready'
   const insert = async (action: CodingAction) => {
     if (!available) return
@@ -72,15 +63,15 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={visibleRecommendation?.ids.includes(a.id) ? css.recommended : css.action}
     title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommendationTooltip').replace('{reason}', t(visibleRecommendation.reason)) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
-    {hasActions && <div id={groupsId} hidden={collapsed} className={css.groups}>
-      {pinned.length > 0 && <section className={css.group}><span className={css.groupLabel}>{t('shortcuts')}</span><div className={css.row}>{pinned.map(render)}</div></section>}
-      {activeCategory !== undefined && <section className={css.group}>
-        <CategoryTabs items={tabs} value={activeCategory} onChange={setSelectedGroup} label={t('categories')} panelId={panelId}/>
-        <div className={css.row} id={panelId} role="tabpanel" aria-labelledby={tabsId + activeCategory}>{categoryActions.map(render)}</div>
-      </section>}
+    {hasActions && <div className={css.row}>
+      {shownActions.map(render)}
+      {moreActions.length > 0 && <button type="button" className={moreRecommended ? css.recommended : css.action}
+        aria-expanded={moreOpen} aria-controls={morePanelId}
+        onClick={() => { setMoreOpen(open => !open) }}>{t('more')}</button>}
     </div>}
-    {hasActions && <button type="button" className={css.toggle} aria-expanded={!collapsed} aria-controls={groupsId}
-      onClick={() => { setCollapsed(v => !v) }}>{collapsed ? t('expandActions') : t('collapseActions')}</button>}
+    {moreActions.length > 0 && <div id={morePanelId} hidden={!moreOpen} className={css.morePanel}>
+      <div className={css.row}>{moreActions.map(render)}</div>
+    </div>}
     {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>

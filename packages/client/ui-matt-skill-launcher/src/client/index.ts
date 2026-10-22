@@ -11,11 +11,11 @@ import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import { Launcher } from './Launcher.tsx'
 import { LauncherSettings } from './Settings.tsx'
 /** Host-persisted launcher configuration. */
-export interface ActionSettings { actionsJson?: string; hiddenGroups?: string[] }
+export interface ActionSettings { actionsJson?: string }
 /** Settings form and revision-checked save operation. */
 export interface LauncherSettingsInjected {
   hooks: { actionForm: ConfigForm<ActionSettings> }
-  saveActions: (json:string, hiddenGroups: string[], revision?:number)=>Promise<boolean>
+  saveActions: (json:string, revision?:number)=>Promise<boolean>
 }
 /** Launcher form and session-scoped Skill catalog access. */
 export interface LauncherInjected {
@@ -55,7 +55,7 @@ export function apply(ctx: ClientContext): void {
     name: 'settings.section', locale: 'mattSkillLauncher', id: 'matt-skill-launcher', order: 80, label: () => t('title'),
     inject: (): LauncherSettingsInjected => ({
       hooks: { actionForm: form },
-      saveActions: (json, groups, rev)=>form.mutate([{ op:'set',path:['actionsJson'],value:json },{ op:'set',path:['hiddenGroups'],value:groups }],rev),
+      saveActions: (json, rev)=>form.mutate([{ op:'set',path:['actionsJson'],value:json }],rev),
     }),
   }, LauncherSettings))
 }

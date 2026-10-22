@@ -1,0 +1,7 @@
+# Bilingual-pair consistency record for skill-launcher-buttons.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/fork/skill-launcher-buttons.md
+/stage-1-launcher-buttons-and-more:
+  en: 2932dd6c5c26f8d6
+  zh: db1314a087884128

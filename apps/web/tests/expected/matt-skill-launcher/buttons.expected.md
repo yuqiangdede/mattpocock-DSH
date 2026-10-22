@@ -1,18 +1,7 @@
-- text: Pinned shortcuts
 - button "Discuss Requirements"
 - button "Finalize Spec"
 - button "Develop"
 - button "Diagnose Bug"
 - button "Code Review"
 - button "Commit Code"
-- tablist "Button categories":
-  - tab "Development workflow" [selected]
-  - tab "Documents"
-  - tab "Utilities"
-  - tab "More"
-- tabpanel "Development workflow":
-  - button "Initialize"
-  - button "Ask"
-  - button "Visual Discussion"
-  - button "Split into Tickets"
-- button "Collapse coding buttons ▾" [expanded]
+- button "More"
