@@ -69,6 +69,7 @@ function migrateProfileSettings(projectDir: string): void {
  * An explicitly installed but disabled plugin is also respected.
  */
 function migrateBundledSideChat(projectDir: string): void {
+  if (process.platform !== 'win32') return
   const marker = join(projectDir, SIDE_CHAT_DEFAULT_MARKER)
   if (existsSync(marker)) return
   const path = join(projectDir, 'package.json')
@@ -195,8 +196,9 @@ export function createRuntimeProjectMetadata(projectDir: string, release: Deskto
     name: PROJECT_NAME,
     private: true,
     version: '0.0.0',
-    dependencies: { ...desktopCorePackageOverrides(packageSet), [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
-      ...(process.platform === 'win32' ? { [BUNDLED_DESKTOP_OPERATOR.name]: `file:./vendor/${BUNDLED_DESKTOP_OPERATOR.name}-${BUNDLED_DESKTOP_OPERATOR.version}.tgz` } : {}) },
+    dependencies: { ...desktopCorePackageOverrides(packageSet),
+      ...(process.platform === 'win32' ? { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+        [BUNDLED_DESKTOP_OPERATOR.name]: `file:./vendor/${BUNDLED_DESKTOP_OPERATOR.name}-${BUNDLED_DESKTOP_OPERATOR.version}.tgz` } : {}) },
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
   }
   writeJson(join(projectDir, 'package.json'), manifest)
@@ -230,8 +232,8 @@ export function createDevelopmentProjectMetadata(projectDir: string, release: De
 
 /** Create the first external plugin profile without running a package manager. */
 export function createPluginProfile(projectDir: string): void {
-  initProfile(projectDir, [...WEB_PROFILE.bundles, BUNDLED_SIDE_CHAT.name,
-    ...(process.platform === 'win32' ? WINDOWS_OPERATOR_BUNDLES : [])])
+  initProfile(projectDir, [...WEB_PROFILE.bundles,
+    ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, ...WINDOWS_OPERATOR_BUNDLES] : [])])
   migrateBundledSideChat(projectDir)
   migrateBundledDesktopOperator(projectDir)
 }
