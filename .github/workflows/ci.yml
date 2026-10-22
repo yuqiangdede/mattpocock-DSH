@@ -65,9 +65,9 @@ jobs:
         shell: pwsh
         run: pnpm run build
 
-      - name: Test offline Desktop bundled plugin defaults and Computer Use preset
+      - name: Test offline Desktop bundled plugin defaults, Computer Use, and LLM retry
         shell: pwsh
-        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts
+        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts apps/desktop/tests/bundled-llm-retry.spec.ts
 
       # Packaging reads apps/desktop/.env.windows even for unsigned builds.
       # Use an isolated loopback-only test configuration; never put release
