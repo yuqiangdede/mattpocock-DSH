@@ -59,39 +59,43 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   return <section className={css.root}>
     <h2>{t('title')}</h2><p>{t('intro')}</p>
     <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-    <section><h3>{t('categoryVisibility')}</h3><div className={css.row}>{ACTION_GROUPS.map(group=><label key={group}><input type="checkbox" checked={!hiddenGroups.includes(group)} onChange={(e)=>{setHiddenGroups(xs=>e.target.checked?xs.filter(g=>g!==group):[...xs,group]);setDirty(true)}} />{t(categoryLabelKeys[group])}</label>)}</div></section>
-    {(['skill','prompt'] as const).map(kind=><section key={kind}>
-      <div className={css.head}><h3>{kind==='skill'?t('skillRow'):t('promptRow')}</h3><button type="button" onClick={()=>{ add(kind) }}>{t('add')}</button></div>
-      {draft.filter(a=>a.kind===kind).sort((a,b)=>a.order-b.order).map(a=><div className={css.card} key={a.id}>
-        <div className={css.row}>
-          <label><input type="checkbox" checked={a.pinned ?? false} onChange={(e)=>{ change(a.id,{ pinned: e.target.checked }) }}/>{t('pinShortcut')}</label>
-          <label><input type="checkbox" checked={a.enabled} onChange={(e)=>{ change(a.id,{ enabled:e.target.checked }) }}/>{t('enabled')}</label>
-          <label>{t('buttonName')}<input value={a.label} onChange={(e)=>{ change(a.id,{ label:e.target.value }) }}/></label>
-          {kind==='skill'&&<label>{t('skillId')}<input value={a.skillId??''} onChange={(e)=>{ change(a.id,{ skillId:e.target.value }) }}/></label>}
-          <label>{t('group')}<select value={resolveActionGroup(a)} onChange={(e)=>{ change(a.id,{ group:e.target.value as ActionGroup }) }}>
-            {ACTION_GROUPS.map(group => <option key={group} value={group}>{t(categoryLabelKeys[group])}</option>)}
-          </select></label>
-          <label>{t('order')}<input type="number" value={a.order} onChange={(e)=>{ change(a.id,{ order:Number(e.target.value) }) }}/></label>
-          <button type="button" onClick={()=>{setDraft(xs=>xs.filter(x=>x.id!==a.id));setDirty(true)}}>{t('delete')}</button>
-        </div>
-        <label>{t('prompt')}<textarea rows={2} value={a.prompt} onChange={(e)=>{ change(a.id,{ prompt:e.target.value }) }}/></label>
-        <label>{t('when')}<input value={a.description} onChange={(e)=>{ change(a.id,{ description:e.target.value }) }}/></label>
-        <label>{t('example')}<input value={a.example} onChange={(e)=>{ change(a.id,{ example:e.target.value }) }}/></label>
-      </div>)}
-    </section>)}
-    <div className={css.head}>
-      <button type="button" disabled={missingDefaultActions(draft).length===0} onClick={fillMissing}>{t('fillMissing')}</button>
-      <button type="button" onClick={exportJson}>{t('export')}</button>
-      <button type="button" onClick={()=>{setDraft(presentDefaultActions(DEFAULT_ACTIONS.map(x=>({ ...x })), t('defaultLocale') === 'en'));setHiddenGroups([]);setDirty(true)}}>{t('reset')}</button>
-      <button type="button" onClick={cancel} disabled={!dirty||busy}>{t('cancel')}</button>
-      <button type="button" onClick={()=>{void save()}} disabled={!dirty||busy||!form.writable}>{busy?t('saving'):t('save')}</button>
-    </div>
-    <details><summary>{t('importTitle')}</summary>
-      <textarea rows={6} value={importJson} onChange={(e)=>{ setImportJson(e.target.value) }}/>
-      <button type="button" onClick={()=>{try{setDraft(parseActions(importJson));setDirty(true);setError('')}catch(err){setError(t('importFailed')+explain(err))}}}>{t('import')}</button>
-    </details>
-    {error&&<p role="alert" className={css.error}>{error}</p>}
+      <section><h3>{t('categoryVisibility')}</h3><div className={css.row}>{ACTION_GROUPS.map(group=><label key={group}><input type="checkbox" checked={!hiddenGroups.includes(group)} onChange={(e)=>{setHiddenGroups(xs=>e.target.checked?xs.filter(g=>g!==group):[...xs,group]);setDirty(true)}} />{t(categoryLabelKeys[group])}</label>)}</div></section>
+      {(['skill','prompt'] as const).map(kind=><section key={kind}>
+        <div className={css.head}><h3>{kind==='skill'?t('skillRow'):t('promptRow')}</h3><button type="button" onClick={()=>{ add(kind) }}>{t('add')}</button></div>
+        {draft.filter(a=>a.kind===kind).sort((a,b)=>a.order-b.order).map(a=><div className={css.card} key={a.id}>
+          <div className={css.row}>
+            <label><input type="checkbox" checked={a.pinned ?? false} onChange={(e)=>{ change(a.id,{ pinned: e.target.checked }) }}/>{t('pinShortcut')}</label>
+            <label><input type="checkbox" checked={a.enabled} onChange={(e)=>{ change(a.id,{ enabled:e.target.checked }) }}/>{t('enabled')}</label>
+            <label>{t('buttonName')}<input value={a.label} onChange={(e)=>{ change(a.id,{ label:e.target.value }) }}/></label>
+            {kind==='skill'&&<label>{t('skillId')}<input value={a.skillId??''} onChange={(e)=>{ change(a.id,{ skillId:e.target.value }) }}/></label>}
+            <label>{t('group')}<select value={resolveActionGroup(a)} onChange={(e)=>{ change(a.id,{ group:e.target.value as ActionGroup }) }}>
+              {ACTION_GROUPS.map(group => <option key={group} value={group}>{t(categoryLabelKeys[group])}</option>)}
+            </select></label>
+            <label>{t('order')}<input type="number" value={a.order} onChange={(e)=>{ change(a.id,{ order:Number(e.target.value) }) }}/></label>
+            <button type="button" onClick={()=>{setDraft(xs=>xs.filter(x=>x.id!==a.id));setDirty(true)}}>{t('delete')}</button>
+          </div>
+          <label>{t('prompt')}<textarea rows={2} value={a.prompt} onChange={(e)=>{ change(a.id,{ prompt:e.target.value }) }}/></label>
+          <label>{t('when')}<input value={a.description} onChange={(e)=>{ change(a.id,{ description:e.target.value }) }}/></label>
+          <label>{t('example')}<input value={a.example} onChange={(e)=>{ change(a.id,{ example:e.target.value }) }}/></label>
+        </div>)}
+      </section>)}
+      <details><summary>{t('importTitle')}</summary>
+        <textarea rows={6} value={importJson} onChange={(e)=>{ setImportJson(e.target.value) }}/>
+        <button type="button" onClick={()=>{try{setDraft(parseActions(importJson));setDirty(true);setError('')}catch(err){setError(t('importFailed')+explain(err))}}}>{t('import')}</button>
+      </details>
     </fieldset>
-    <small>{t('state')}{form.status}{'；'}{dirty?t('dirty'):t('synced')}{t('version')}{form.revision??t('notLoaded')}</small>
+    <div className={css.footer}>
+      {error&&<p role="alert" className={css.error}>{error}</p>}
+      <div className={css.footerRow}>
+        <small>{t('state')}{form.status}{'；'}{dirty?t('dirty'):t('synced')}{t('version')}{form.revision??t('notLoaded')}</small>
+        <div className={css.footerActions}>
+          <button type="button" disabled={busy||missingDefaultActions(draft).length===0} onClick={fillMissing}>{t('fillMissing')}</button>
+          <button type="button" disabled={busy} onClick={exportJson}>{t('export')}</button>
+          <button type="button" disabled={busy} onClick={()=>{setDraft(presentDefaultActions(DEFAULT_ACTIONS.map(x=>({ ...x })), t('defaultLocale') === 'en'));setHiddenGroups([]);setDirty(true)}}>{t('reset')}</button>
+          <button type="button" onClick={cancel} disabled={!dirty||busy}>{t('cancel')}</button>
+          <button type="button" onClick={()=>{void save()}} disabled={!dirty||busy||!form.writable}>{busy?t('saving'):t('save')}</button>
+        </div>
+      </div>
+    </div>
   </section>
 }
