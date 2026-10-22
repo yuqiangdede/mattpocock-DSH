@@ -67,12 +67,13 @@ export function recommend(entries: readonly ChatEntry[], running = false): Recom
   for (let i = assistantIndex - 1; i >= 0; i--) if (entries[i]?.role === 'user') { userIndex = i; break }
   if (userIndex < 0) return null
   const request = entries[userIndex]!.text
-  if (failures.test(response)) return { ids: ['bug', 'continue'], evidence: response.slice(0, 5000), reason: '上一操作存在失败或中断' }
   for (const link of links) {
     if (!link.trigger.test(request) || !link.success.test(response)) continue
+    if (failures.test(response) && !link.ids.includes('review-fix')) break
     if (link.ids.includes('review-fix') && negative.test(response)) return { ids: ['commit'], evidence: response.slice(0, 5000), reason: '审查未发现问题' }
     return { ids: link.ids, evidence: response.slice(0, 5000), reason: link.reason }
   }
+  if (failures.test(response)) return { ids: ['bug', 'continue'], evidence: response.slice(0, 5000), reason: '上一操作存在失败或中断' }
   return null
 }
 /** Context text always remains a draft which the user can inspect before sending. */
