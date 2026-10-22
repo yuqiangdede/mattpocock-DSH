@@ -17,7 +17,7 @@ kind: "package-reference"
 - [构建和运行](#build-and-run)
 - [模型体验](#model-experience)
 - [已知限制和延期工作](#known-limitations-and-deferred-work)
-- [开发说明](#dev-note)
+- [开发备注](#dev-note)
 
 <a id="behavior"></a>
 ## 行为
@@ -80,6 +80,6 @@ Launcher 不改变已有的模型前缀。普通 Session 提交和 Skill 加载�
 - Windows Electron 交互、浏览器讨论结果写回、外部文档生成依赖均需要端到端验收。
 
 <a id="dev-note"></a>
-### 开发说明
+### 开发备注
 
 本 Fork 独立于上游 Agent Loop 和 Session 存储维护此插件。

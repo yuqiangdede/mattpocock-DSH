@@ -1,6 +1,6 @@
 /** Recorded-session replay of the Windows bundles through the shipped dsh Web profile. */
 import { spawn, execFile } from 'node:child_process'
-import { cp, mkdir, mkdtemp, readFile, readdir, rm, symlink, writeFile } from 'node:fs/promises'
+import { cp, mkdir, mkdtemp, readFile, readdir, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -38,22 +38,31 @@ describe.skipIf(process.platform !== 'win32')('Windows offline bundle recorded S
     const failures = downloads.flatMap(result => result.status === 'rejected' ? [result.reason] : [])
     if (failures.length > 0) throw new AggregateError(failures, 'Bundled snapshot archives could not be verified')
     const modules = join(runtime, 'node_modules')
+    const linkDeepseekPackages = async (targetModulesDir: string) => {
+      const cliAi = join(repo, 'apps/cli/node_modules/@deepseek-ai')
+      const targetAi = join(targetModulesDir, '@deepseek-ai')
+      await mkdir(targetAi, { recursive: true })
+      for (const entry of await readdir(cliAi)) {
+        const realTarget = await realpath(join(cliAi, entry))
+        await symlink(realTarget, join(targetAi, entry), 'junction')
+      }
+    }
+    await linkDeepseekPackages(modules)
     await mkdir(join(modules, '@deepseek-ai/dsh-web-app/presets'), { recursive: true })
     await cp(join(repo, 'packages/bundle/web-app/presets/standard.patch.yml'), join(modules, '@deepseek-ai/dsh-web-app/presets/standard.patch.yml'))
     for (const release of [BUNDLED_DESKTOP_OPERATOR, BUNDLED_LLM_RETRY, BUNDLED_SIDE_CHAT]) {
       const destination = join(modules, release.name)
       await mkdir(destination, { recursive: true })
       await promisify(execFile)('tar', ['-xf', join(runtime, 'vendor', `${release.name}-${release.version}.tgz`), '--strip-components=1', '-C', destination])
-      await mkdir(join(destination, 'node_modules'), { recursive: true })
-      await symlink(join(repo, 'apps/cli/node_modules/@deepseek-ai'), join(destination, 'node_modules/@deepseek-ai'), 'junction')
+      await linkDeepseekPackages(join(destination, 'node_modules'))
       if (release.name === BUNDLED_SIDE_CHAT.name) {
         await symlink(join(repo, 'vendor/schemastery'), join(destination, 'node_modules/schemastery'), 'junction')
+        await symlink(join(repo, 'vendor/schemastery'), join(modules, 'schemastery'), 'junction')
       }
     }
     writeDesktopOperatorPresetBundle(runtime)
     const controller = join(modules, 'desktop-recording-controller')
-    await mkdir(join(controller, 'node_modules'), { recursive: true })
-    await symlink(join(repo, 'apps/cli/node_modules/@deepseek-ai'), join(controller, 'node_modules/@deepseek-ai'), 'junction')
+    await linkDeepseekPackages(join(controller, 'node_modules'))
     await cp(join(repo, 'apps/desktop/tests/fixtures/recorded-bundles.mjs'), join(controller, 'index.mjs'))
     await writeFile(join(controller, 'package.json'), JSON.stringify({
       name: 'desktop-recording-controller', version: '1.0.0', type: 'module', exports: './index.mjs', dsh: { bundle: { patch: './cordis.patch.yml' } },

@@ -32,7 +32,7 @@ it('generates an offline preset from the installed DSH standard rather than vend
   expect(patch).toContain("name: 'dsh-desktop-operator'")
   expect(patch).toContain('highRiskActionPolicy: confirm')
   expect(patch).toContain('default: desktop-computer-use')
-  expect(JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')).version)
+  expect((JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8')) as { version: string }).version)
     .toBe(BUNDLED_DESKTOP_OPERATOR.version)
 })
 
@@ -79,7 +79,7 @@ it('rejects ambiguous duplicate standard preset ids instead of silently modifyin
     - id: preset-standard
       name: '@deepseek-ai/dsh-agent-preset'
 `)
-  expect(() => writeDesktopOperatorPresetBundle(root)).toThrow('standard preset changed')
+  expect(() => { writeDesktopOperatorPresetBundle(root) }).toThrow('standard preset changed')
   expect(existsSync(join(root, 'node_modules', ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/')))).toBe(false)
 })
 
@@ -89,7 +89,7 @@ it('fails when DSH standard preset structure changes', () => {
   const path = join(root, 'node_modules/@deepseek-ai/dsh-web-app/presets/standard.patch.yml')
   mkdirSync(join(root, 'node_modules/@deepseek-ai/dsh-web-app/presets'), { recursive: true })
   writeFileSync(path, '[]\n')
-  expect(() => writeDesktopOperatorPresetBundle(root)).toThrow('standard preset changed')
+  expect(() => { writeDesktopOperatorPresetBundle(root) }).toThrow('standard preset changed')
   expect(existsSync(join(root, 'node_modules', ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/')))).toBe(false)
 })
 
@@ -109,7 +109,7 @@ it('fails closed if the upstream native runtime resolver changes', () => {
   const entry = join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib', 'index.js')
   mkdirSync(join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib'), { recursive: true })
   writeFileSync(entry, 'const runtimeExecutable = resolveSomethingElse()\\n')
-  expect(() => patchDesktopOperatorAsarRuntime(root)).toThrow('upstream runtime resolver changed')
+  expect(() => { patchDesktopOperatorAsarRuntime(root) }).toThrow('upstream runtime resolver changed')
 })
 
 it('targets the last exact app.asar segment even when parent directories also contain archives', () => {
@@ -122,17 +122,17 @@ it('targets the last exact app.asar segment even when parent directories also co
   const rewritten = readFileSync(entry, 'utf8')
   const cases = [
     {
-      joinPath: win32.join,
+      joinPath: (...args: string[]) => win32.join(...args),
       source: win32.join('C:/', 'Users', 'myapp.asar', 'archive', 'app.asar', 'resources', 'app.asar', 'node_modules', 'operator'),
       expected: win32.join('C:/', 'Users', 'myapp.asar', 'archive', 'app.asar', 'resources', 'app.asar.unpacked', 'node_modules', 'operator'),
     },
     {
-      joinPath: posix.join,
+      joinPath: (...args: string[]) => posix.join(...args),
       source: '/home/app.asar/archive/app.asar/resources/app.asar/node_modules/operator',
       expected: '/home/app.asar/archive/app.asar/resources/app.asar.unpacked/node_modules/operator',
     },
     {
-      joinPath: win32.join,
+      joinPath: (...args: string[]) => win32.join(...args),
       source: win32.join('C:/', 'Users', 'myapp.asar', 'resources', 'already-unpacked', 'node_modules', 'operator'),
       expected: win32.join('C:/', 'Users', 'myapp.asar', 'resources', 'already-unpacked', 'node_modules', 'operator'),
     },
@@ -144,7 +144,7 @@ it('targets the last exact app.asar segment even when parent directories also co
       bundledRuntimeRelativePath: () => 'runtime/bin/win32-x64/open-computer-use.exe',
       platform: 'win32',
       arch: 'x64',
-    })
+    }) as string
     expect(result).toBe(joinPath(expected, 'runtime/bin/win32-x64/open-computer-use.exe'))
   }
 })

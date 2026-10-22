@@ -86,9 +86,9 @@ describe('Skill Launcher contextual recommendations', () => {
     expect(recommend([user(request), assistant(response)])?.ids).toEqual(ids)
   })
   it('passes completed evidence to manual actions without requiring a recommendation', () => {
-    const entries = [user('查看当前任务'), assistant('规格：docs/spec.md；P1 src/a.ts:20，尚未验证')]
+    const entries = [user('查看当前任务'), assistant('规格：specs/task.md；P1 src/a.ts:20，尚未验证')]
     const text = withEvidence('交接任务', null, 'handoff', entries)
-    expect(text).toContain('docs/spec.md')
+    expect(text).toContain('specs/task.md')
     expect(text).toContain('P1 src/a.ts:20')
     expect(text).toContain('未完成项')
     expect(withEvidence('修复问题', null, 'review-fix', entries)).toContain('逐项核实')

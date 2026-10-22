@@ -84,7 +84,7 @@ describe('desktop external plugin profile', () => {
     expect(existsSync(join(profile, 'lock'))).toBe(false)
     write.mockRestore()
     await manager.applyRelease()
-    expect(JSON.parse(readFileSync(file, 'utf8')).dsh.profile.bundles).toContain(bundle)
+    expect((JSON.parse(readFileSync(file, 'utf8')) as { dsh: { profile: { bundles: string[] } } }).dsh.profile.bundles).toContain(bundle)
     expect(existsSync(join(profile, marker))).toBe(true)
   })
 

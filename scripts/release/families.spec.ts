@@ -52,7 +52,7 @@ describe('release families', () => {
     expect(launcher?.manifest.files).toEqual(['lib/index.js', 'lib/client.js', 'lib/types/**/*.d.ts'])
     expect(members.find(member => member.directory === 'packages/bundle/web-app')?.manifest.dependencies)
       .toHaveProperty('@deepseek-ai/dsh-client-ui-matt-skill-launcher', 'workspace:*')
-    expect(() => family.verifyVersions(members)).not.toThrow()
+    expect(() => { family.verifyVersions(members) }).not.toThrow()
   })
 
   it('publishes all current experimental packages', () => {

@@ -59,7 +59,7 @@ it('rejects altered Side Chat bytes despite the pinned npm version', async () =>
   await expect(stageBundledSideChatTarball(test.project, test.cache)).rejects.toThrow('SHA-256 mismatch')
   expect(fetchMock).toHaveBeenCalledWith(
     `https://registry.npmjs.org/${BUNDLED_SIDE_CHAT.name}/-/${BUNDLED_SIDE_CHAT.name}-${BUNDLED_SIDE_CHAT.version}.tgz`,
-    expect.objectContaining({ signal: expect.any(AbortSignal) }),
+    expect.objectContaining({ signal: expect.any(AbortSignal) as AbortSignal }),
   )
   expect(existsSync(join(test.project, 'vendor', `${BUNDLED_SIDE_CHAT.name}-${BUNDLED_SIDE_CHAT.version}.tgz`))).toBe(false)
 })
