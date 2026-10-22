@@ -73,7 +73,7 @@ describe('desktop external plugin profile', () => {
       name: BUNDLED_SIDE_CHAT.name, version: BUNDLED_SIDE_CHAT.version,
       dsh: { bundle: { patch: './cordis.patch.yml' } },
     }))
-    writeFileSync(join(pluginRoot, 'cordis.patch.yml'), '[]\\n')
+    writeFileSync(join(pluginRoot, 'cordis.patch.yml'), '[]\n')
     await manager.applyRelease()
     const profile = loadProfileDirectory('dsh', manager.paths.profile,
       join(manager.runtime.dsh, 'node_modules/@deepseek-ai/dsh/package.json'))
