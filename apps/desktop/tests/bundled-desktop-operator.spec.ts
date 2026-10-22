@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, win32, posix } from 'node:path'
+import { runInNewContext } from 'node:vm'
 import { afterEach, expect, it } from 'vitest'
 import { patchDesktopOperatorAsarRuntime, writeDesktopOperatorPresetBundle } from '../scripts/bundled-desktop-operator.ts'
 import { BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE, DESKTOP_OPERATOR_PRESET_ID } from '../src/bundled-plugins.ts'
@@ -109,4 +110,41 @@ it('fails closed if the upstream native runtime resolver changes', () => {
   mkdirSync(join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib'), { recursive: true })
   writeFileSync(entry, 'const runtimeExecutable = resolveSomethingElse()\\n')
   expect(() => patchDesktopOperatorAsarRuntime(root)).toThrow('upstream runtime resolver changed')
+})
+
+it('targets the last exact app.asar segment even when parent directories also contain archives', () => {
+  const root = mkdtempSync(join(tmpdir(), 'operator-asar-'))
+  directories.push(root)
+  const entry = join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib', 'index.js')
+  mkdirSync(join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib'), { recursive: true })
+  writeFileSync(entry, 'const runtimeExecutable = join(packageRoot, bundledRuntimeRelativePath(platform, arch));\n')
+  patchDesktopOperatorAsarRuntime(root)
+  const rewritten = readFileSync(entry, 'utf8')
+  const cases = [
+    {
+      joinPath: win32.join,
+      source: win32.join('C:/', 'Users', 'myapp.asar', 'archive', 'app.asar', 'resources', 'app.asar', 'node_modules', 'operator'),
+      expected: win32.join('C:/', 'Users', 'myapp.asar', 'archive', 'app.asar', 'resources', 'app.asar.unpacked', 'node_modules', 'operator'),
+    },
+    {
+      joinPath: posix.join,
+      source: '/home/app.asar/archive/app.asar/resources/app.asar/node_modules/operator',
+      expected: '/home/app.asar/archive/app.asar/resources/app.asar.unpacked/node_modules/operator',
+    },
+    {
+      joinPath: win32.join,
+      source: win32.join('C:/', 'Users', 'myapp.asar', 'resources', 'already-unpacked', 'node_modules', 'operator'),
+      expected: win32.join('C:/', 'Users', 'myapp.asar', 'resources', 'already-unpacked', 'node_modules', 'operator'),
+    },
+  ]
+  for (const { joinPath, source, expected } of cases) {
+    const result = runInNewContext(rewritten + '\nruntimeExecutable', {
+      packageRoot: source,
+      join: joinPath,
+      bundledRuntimeRelativePath: () => 'runtime/bin/win32-x64/open-computer-use.exe',
+      platform: 'win32',
+      arch: 'x64',
+    })
+    expect(result).toBe(joinPath(expected, 'runtime/bin/win32-x64/open-computer-use.exe'))
+  }
 })

@@ -82,7 +82,7 @@ export function patchDesktopOperatorAsarRuntime(runtimeRoot: string): void {
   if (source.split(resolver).length !== 2) {
     throw new Error('desktop Computer Use: upstream runtime resolver changed; review ASAR adapter')
   }
-  const replacement = String.raw`const runtimeExecutable = join(packageRoot.replace(/app\.asar(?=[\\/])/u, 'app.asar.unpacked'), bundledRuntimeRelativePath(platform, arch));`
+  const replacement = String.raw`const runtimeExecutable = join(packageRoot.replace(/([\\/])app\.asar(?=[\\/])(?![\s\S]*[\\/]app\.asar[\\/])/u, '$1app.asar.unpacked'), bundledRuntimeRelativePath(platform, arch));`
   writeFileSync(entry, source.replace(resolver, replacement))
 }
 
