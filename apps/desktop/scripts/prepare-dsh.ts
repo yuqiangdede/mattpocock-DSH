@@ -179,11 +179,13 @@ async function main(): Promise<void> {
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',
       dependencies: { ...Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
-        [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
-        ...(process.platform === 'win32' ? { [BUNDLED_DESKTOP_OPERATOR.name]: BUNDLED_DESKTOP_OPERATOR.version,
+        ...(process.platform === 'win32' ? { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+          [BUNDLED_DESKTOP_OPERATOR.name]: BUNDLED_DESKTOP_OPERATOR.version,
           [DESKTOP_OPERATOR_PRESET_BUNDLE]: BUNDLED_DESKTOP_OPERATOR.version } : {}) },
     }, undefined, 2)}\n`)
-    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-side-chat', async () => verifyBundledSideChat(DSH_OUTPUT_ROOT))
+    if (process.platform === 'win32') {
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-side-chat', async () => verifyBundledSideChat(DSH_OUTPUT_ROOT))
+    }
     for (const file of DESKTOP_HOST_RUNTIME_FILES) {
       if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', DESKTOP_HOST_PACKAGE, file))) {
         throw new Error(`desktop runtime: missing private Host file ${file}`)
@@ -199,8 +201,8 @@ async function main(): Promise<void> {
     }
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:manifests', () => prepareRuntimeManifests(DSH_OUTPUT_ROOT))
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:primary-smoke', async () => smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime')))
-    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name), BUNDLED_SIDE_CHAT.name,
-      ...(process.platform === 'win32' ? [BUNDLED_DESKTOP_OPERATOR.name, DESKTOP_OPERATOR_PRESET_BUNDLE] : [])], target))
+    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name),
+      ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_DESKTOP_OPERATOR.name, DESKTOP_OPERATOR_PRESET_BUNDLE] : [])], target))
     const descriptor = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-before-smoke', () => verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target))
     if (!process.argv.includes('--defer-runtime-smoke')) {
       await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:smoke', () => smokePreparedRuntime(DSH_OUTPUT_ROOT, NODE, RUNTIME_ROOT, descriptor))
