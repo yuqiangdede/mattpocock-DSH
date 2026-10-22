@@ -21,7 +21,12 @@ async function main(): Promise<void> {
   const projectDir = process.argv[3] as string
   const primaryRuntime = process.argv[4] ?? join(runtimeDir, '..', 'runtime', 'primary-runtime')
   installOfficeEngineResolution(runtimeDir)
-  const installAnchor = join(runtimeDir, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+  // Desktop's release manifest is the installation root: it declares the full
+  // signed DSH closure AND the version-pinned offline third-party plugins.
+  // Anchoring on @deepseek-ai/dsh instead hides those extra dependencies from
+  // createRuntimeResolution, so Loader finds the bundle YAML but cannot import
+  // its plugin module from the external Desktop profile.
+  const installAnchor = join(runtimeDir, 'package.json')
   const profile = loadProfileDirectory('dsh', projectDir, installAnchor)
   reportSkippedBundles('dsh', profile)
   const application = runProfile({

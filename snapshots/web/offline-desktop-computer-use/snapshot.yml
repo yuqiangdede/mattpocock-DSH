@@ -1,0 +1,9 @@
+version: 1
+scenario: offline-desktop-computer-use
+profile: web
+composition: offline-desktop-computer-use
+recording: authored
+platform: pwsh
+header:
+  class: offline-desktop-computer-use
+  pin: true

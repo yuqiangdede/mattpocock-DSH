@@ -75,7 +75,11 @@ export function createElectronBuilderConfig(
   let dshDestination
   let windowsCode = []
   const unpack = ['**/*.{node,dylib,dll,so,exe}', '**/*.so.*', '**/spawn-helper', '**/@vscode/ripgrep-*/bin/rg',
-    `**/node_modules/@deepseek-ai/libreoffice-kit-${resolvedPlatform}-${resolvedArch}/**/*`]
+    `**/node_modules/@deepseek-ai/libreoffice-kit-${resolvedPlatform}-${resolvedArch}/**/*`,
+    // The operator resolves its native executable relative to import.meta.url.
+    // Unpack the package itself so Node resolves that path beside app.asar,
+    // where electron-builder also places the executable, and Windows can spawn it.
+    ...(packagesWindows ? ['dsh/node_modules/dsh-desktop-operator/**/*'] : [])]
   const windowsSigner = packagesWindows && !unsigned
     ? createWindowsTokenSigner({
         certificateFile: env.DSH_DESKTOP_WINDOWS_CER_FILE,

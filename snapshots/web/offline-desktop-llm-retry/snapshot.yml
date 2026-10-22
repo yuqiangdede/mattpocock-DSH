@@ -1,0 +1,9 @@
+version: 1
+scenario: offline-desktop-llm-retry
+profile: web
+composition: offline-desktop-llm-retry
+recording: authored
+platform: pwsh
+header:
+  class: offline-desktop-llm-retry
+  pin: true

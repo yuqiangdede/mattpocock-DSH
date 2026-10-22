@@ -8,6 +8,10 @@ import { tmpdir } from 'node:os'
 import { delimiter, join, relative, resolve } from 'node:path'
 import { desktopNodeEnvironment } from '../src/node-environment.ts'
 import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
+import { BUNDLED_SIDE_CHAT, BUNDLED_LLM_RETRY, BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE } from '../src/bundled-plugins.ts'
+import { stageDesktopOperatorTarball, verifyBundledDesktopOperator, writeDesktopOperatorPresetBundle } from './bundled-desktop-operator.ts'
+import { stageBundledLlmRetryTarball, verifyBundledLlmRetry } from './bundled-llm-retry.ts'
+import { stageBundledSideChatTarball } from './bundled-side-chat.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { parseDesktopRelease, type DesktopRelease } from '../src/release.ts'
 import {
@@ -113,6 +117,29 @@ function runPnpm(args: readonly string[]): Promise<void> {
   })
 }
 
+/** Fail the release build if an offline install would need a missing or wrong plugin. */
+function verifyBundledSideChat(root: string): void {
+  const directory = join(root, 'node_modules', BUNDLED_SIDE_CHAT.name)
+  const manifestPath = join(directory, 'package.json')
+  if (!existsSync(manifestPath)) {
+    throw new Error('desktop runtime: bundled side chat package is missing')
+  }
+  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
+    name?: string
+    version?: string
+    dsh?: { bundle?: { patch?: string } }
+  }
+  if (manifest.name !== BUNDLED_SIDE_CHAT.name || manifest.version !== BUNDLED_SIDE_CHAT.version
+    || manifest.dsh?.bundle?.patch !== './cordis.patch.yml') {
+    throw new Error('desktop runtime: incompatible bundled side chat package manifest')
+  }
+  for (const file of ['cordis.patch.yml', 'lib/index.js', 'lib/client.js', 'lib/client-registry.js']) {
+    if (!existsSync(join(directory, file))) {
+      throw new Error(`desktop runtime: bundled side chat is missing ${file}`)
+    }
+  }
+}
+
 async function main(): Promise<void> {
   try {
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:reset', async () => {
@@ -124,6 +151,11 @@ async function main(): Promise<void> {
     const patches = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:stage-packages', async () => {
       copyFileSync(join(PACKAGE_SET_ROOT, DESKTOP_PACKAGE_SET_FILE), join(BUILD_ROOT, DESKTOP_PACKAGE_SET_FILE))
       cpSync(join(PACKAGE_SET_ROOT, DESKTOP_PACKAGES_DIR), join(BUILD_ROOT, DESKTOP_PACKAGES_DIR), { recursive: true })
+      if (process.platform === 'win32') {
+        await stageDesktopOperatorTarball(BUILD_ROOT, PNPM_BUILD_STATE)
+        await stageBundledLlmRetryTarball(BUILD_ROOT, PNPM_BUILD_STATE)
+        await stageBundledSideChatTarball(BUILD_ROOT, PNPM_BUILD_STATE)
+      }
       createRuntimeProjectMetadata(BUILD_ROOT, release)
       return prepareRuntimePatches(BUILD_ROOT, resolve(APP_ROOT, '..', '..'))
     })
@@ -146,10 +178,24 @@ async function main(): Promise<void> {
       join(DSH_OUTPUT_ROOT, 'node_modules'),
       source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
     ))
+    if (process.platform === 'win32') {
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-llm-retry', async () => verifyBundledLlmRetry(DSH_OUTPUT_ROOT))
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-computer-use', async () => {
+        verifyBundledDesktopOperator(DSH_OUTPUT_ROOT)
+        writeDesktopOperatorPresetBundle(DSH_OUTPUT_ROOT)
+      })
+    }
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',
-      dependencies: Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
+      dependencies: { ...Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
+        ...(process.platform === 'win32' ? { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+          [BUNDLED_LLM_RETRY.name]: BUNDLED_LLM_RETRY.version,
+          [BUNDLED_DESKTOP_OPERATOR.name]: BUNDLED_DESKTOP_OPERATOR.version,
+          [DESKTOP_OPERATOR_PRESET_BUNDLE]: BUNDLED_DESKTOP_OPERATOR.version } : {}) },
     }, undefined, 2)}\n`)
+    if (process.platform === 'win32') {
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-side-chat', async () => verifyBundledSideChat(DSH_OUTPUT_ROOT))
+    }
     for (const file of DESKTOP_HOST_RUNTIME_FILES) {
       if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', DESKTOP_HOST_PACKAGE, file))) {
         throw new Error(`desktop runtime: missing private Host file ${file}`)
@@ -165,7 +211,8 @@ async function main(): Promise<void> {
     }
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:manifests', () => prepareRuntimeManifests(DSH_OUTPUT_ROOT))
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:primary-smoke', async () => smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime')))
-    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, packageSet.packages.map(entry => entry.name), target))
+    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name),
+      ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, BUNDLED_DESKTOP_OPERATOR.name, DESKTOP_OPERATOR_PRESET_BUNDLE] : [])], target))
     const descriptor = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-before-smoke', () => verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target))
     if (!process.argv.includes('--defer-runtime-smoke')) {
       await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:smoke', () => smokePreparedRuntime(DSH_OUTPUT_ROOT, NODE, RUNTIME_ROOT, descriptor))

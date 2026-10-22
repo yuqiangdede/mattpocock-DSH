@@ -1,0 +1,94 @@
+[
+  {
+    "sessionId": "{{session:1}}",
+    "type": "permission/preset"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "sandbox/mode"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "approval/policy"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "agent/inbox/spliced"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "turn/start"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "agent/inbox/spliced"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "step/start"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "system/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "user/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "user/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "user/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "user/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "request/header"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "request/context"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "session/title"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "assistant/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "tool/call"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "tool/result"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "step/end"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "step/start"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "assistant/message"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "step/end"
+  },
+  {
+    "sessionId": "{{session:1}}",
+    "type": "turn/end"
+  }
+]

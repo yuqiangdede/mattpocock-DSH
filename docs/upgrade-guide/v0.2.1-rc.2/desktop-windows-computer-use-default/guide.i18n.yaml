@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.2/desktop-windows-computer-use-default/guide.md
+/:
+  en: 596ac8836fe8a1c7
+  zh: 629c64fb0e2153b1
+/windows-desktop-computer-use-default-preset:
+  en: 6e8472490864b240
+  zh: 0b72171e1ba155cf
+/windows-desktop-computer-use-default-preset/change:
+  en: 2c0604e258ce4122
+  zh: dd600264754049be
+/windows-desktop-computer-use-default-preset/migration:
+  en: f30a8483bdd50942
+  zh: 1df652fbce816d13

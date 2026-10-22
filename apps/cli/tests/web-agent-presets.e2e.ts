@@ -168,7 +168,7 @@ async function bootWeb(
   const home = profileHome
   const profileDir = join(home, 'profiles', surface)
   await mkdir(profileDir, { recursive: true })
-  if (surface === 'desktop') createPluginProfile(profileDir)
+  if (surface === 'desktop') await createPluginProfile(profileDir)
   else if (profileBundles === undefined) initProfile(profileDir, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
   // Product Bundles are installed into the Profile, not the dsh app. Model
   // pnpm's package link for only the selected products; their own production
@@ -287,7 +287,7 @@ describe('the shipped Web composition', () => {
 
   it('composes the full agent from `standard`', async () => {
     const handle = await ctx.agents.create({
-      sessionId: SessionId('preset-standard'),
+      sessionId: SessionId(`preset-standard-${randomUUID()}`),
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'standard').then(() => undefined),
     })
     try {
@@ -297,13 +297,13 @@ describe('the shipped Web composition', () => {
       // excluded for the reason the TUI composition e2e excludes them — they
       // depend on ripgrep being present on the machine.
       expect(toolNames(ctx, handle.agent).filter(name => name !== 'glob' && name !== 'grep')).toEqual([
-        'ask_user_question', 'bash', 'create_goal', 'edit', 'exit_plan_mode',
+        'ask_user_question', process.platform === 'win32' ? 'pwsh' : 'bash', 'create_goal', 'edit', 'exit_plan_mode',
         'get_goal', 'interrupt_agent', 'job_kill', 'job_list', 'job_output', 'list_agents', 'present', 'read', 'read_image',
         'schedule_create', 'schedule_delete', 'schedule_list', 'schedule_update',
         'send_message', 'skill',
         'subagent', 'subagent_fork', 'todo_write', 'update_goal', 'web_fetch', 'web_search',
         'workflow', 'working_directory', 'write',
-      ])
+      ].sort())
       expect(ctx.commands.find(handle.agent, 'goal')).toBeDefined()
     } finally {
       await handle.dispose()
