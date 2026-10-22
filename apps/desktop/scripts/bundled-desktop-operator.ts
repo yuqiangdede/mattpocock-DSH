@@ -69,6 +69,21 @@ export function verifyBundledDesktopOperator(runtimeRoot: string): void {
   if (sha256(native) !== RELEASE.windowsX64Sha256) {
     throw new Error('desktop Computer Use: packaged native executable SHA-256 mismatch')
   }
+
+  patchDesktopOperatorAsarRuntime(runtimeRoot)
+}
+
+
+/** Keep the upstream package resolver compatible with Electron's ASAR-unpacked native files. */
+export function patchDesktopOperatorAsarRuntime(runtimeRoot: string): void {
+  const entry = join(runtimeRoot, 'node_modules', RELEASE.name, 'lib', 'index.js')
+  const source = readFileSync(entry, 'utf8')
+  const resolver = 'const runtimeExecutable = join(packageRoot, bundledRuntimeRelativePath(platform, arch));'
+  if (source.split(resolver).length !== 2) {
+    throw new Error('desktop Computer Use: upstream runtime resolver changed; review ASAR adapter')
+  }
+  const replacement = String.raw`const runtimeExecutable = join(packageRoot.replace(/app\.asar(?=[\\/])/u, 'app.asar.unpacked'), bundledRuntimeRelativePath(platform, arch));`
+  writeFileSync(entry, source.replace(resolver, replacement))
 }
 
 /**
