@@ -43,7 +43,7 @@ export async function smokeDesktopRuntime(
   let timer: ReturnType<typeof setTimeout> | undefined
   try {
     writeFileSync(join(home, 'npmrc'), '')
-    createPluginProfile(profile)
+    await createPluginProfile(profile)
     // This process is plain Node, which reads no path inside the application ASAR.
     const archive = runtimeArchivePath(root)
     if (archive === undefined) {
@@ -286,7 +286,11 @@ export function apply(ctx) {
         throw new Error(`desktop Computer Use: preset activation failed: ${await presetResponse.text()}`)
       }
       const preset = await presetResponse.json() as {
-        id: string; broken: string | null; defaultId: string; operatorMounted: boolean; toolNames: string[]
+        id: string
+        broken: string | null
+        defaultId: string
+        operatorMounted: boolean
+        toolNames: string[]
       }
       if (preset.id !== DESKTOP_OPERATOR_PRESET_ID || preset.broken !== null
         || preset.defaultId !== DESKTOP_OPERATOR_PRESET_ID || !preset.operatorMounted

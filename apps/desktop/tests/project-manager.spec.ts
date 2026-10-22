@@ -8,6 +8,7 @@ import { DesktopProjectManager } from '../src/project-manager.ts'
 import { createPluginProfile } from '../src/project-manager.ts'
 import { createRuntimeResolution, loadProfileDirectory, readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
+import * as atomicWrite from '@deepseek-ai/dsh-atomic-write'
 
 const roots: string[] = []
 function temporaryRoot(): string {
@@ -58,10 +59,35 @@ function setup(): { root: string; manager: DesktopProjectManager } {
   return { root, manager: new DesktopProjectManager(resolveDesktopPaths(join(root, '.dsh')), { dsh }) }
 }
 afterEach(() => {
+  vi.restoreAllMocks()
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
 describe('desktop external plugin profile', () => {
+  it.skipIf(process.platform !== 'win32').each([
+    ['dsh-side-chat-plus', '.bundled-side-chat-v1', []],
+    ['dsh-llm-retry-settings', '.bundled-llm-retry-v1', ['.bundled-side-chat-v1']],
+    [DESKTOP_OPERATOR_PRESET_BUNDLE, '.bundled-desktop-operator-v1', ['.bundled-side-chat-v1', '.bundled-llm-retry-v1']],
+  ] as const)('preserves the complete manifest and retries %s when atomic publication fails', async (bundle, marker, previous) => {
+    const { manager } = setup()
+    const profile = manager.paths.profile
+    mkdirSync(profile, { recursive: true })
+    const file = join(profile, 'package.json')
+    const original = JSON.stringify({ private: true, dependencies: {},
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } } })
+    writeFileSync(file, original)
+    for (const name of previous) writeFileSync(join(profile, name), 'completed\n')
+    const write = vi.spyOn(atomicWrite, 'writeFileAtomic').mockRejectedValueOnce(new Error('publication failed'))
+    await expect(manager.applyRelease()).rejects.toThrow('publication failed')
+    expect(readFileSync(file, 'utf8')).toBe(original)
+    expect(existsSync(join(profile, marker))).toBe(false)
+    expect(existsSync(join(profile, 'lock'))).toBe(false)
+    write.mockRestore()
+    await manager.applyRelease()
+    expect(JSON.parse(readFileSync(file, 'utf8')).dsh.profile.bundles).toContain(bundle)
+    expect(existsSync(join(profile, marker))).toBe(true)
+  })
+
   it('enables the offline side chat on first launch without installing packages', async () => {
     const { manager } = setup()
     await manager.applyRelease()
@@ -119,7 +145,7 @@ describe('desktop external plugin profile', () => {
       dsh: { bundle: { patch: './cordis.patch.yml' } },
     }))
     writeFileSync(join(bundled, 'cordis.patch.yml'), '- insert:\n    - id: sidechat\n      name: dsh-side-chat-plus\n')
-    createPluginProfile(manager.paths.profile)
+    await createPluginProfile(manager.paths.profile)
     const profile = loadProfileDirectory('dsh', manager.paths.profile, manifestPath)
     expect(profile.skippedBundles).toEqual([])
     expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_SIDE_CHAT.name)

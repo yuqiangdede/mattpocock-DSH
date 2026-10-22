@@ -168,7 +168,7 @@ async function bootWeb(
   const home = profileHome
   const profileDir = join(home, 'profiles', surface)
   await mkdir(profileDir, { recursive: true })
-  if (surface === 'desktop') createPluginProfile(profileDir)
+  if (surface === 'desktop') await createPluginProfile(profileDir)
   else if (profileBundles === undefined) initProfile(profileDir, ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'])
   // Product Bundles are installed into the Profile, not the dsh app. Model
   // pnpm's package link for only the selected products; their own production

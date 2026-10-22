@@ -31,3 +31,5 @@ Windows 安装包默认包含 `dsh-llm-retry-settings`，首次启动时将其�
 6. 未开启覆盖时原生重试行为没有变化。
 
 **注意：** 此功能只有通过 Windows CI、完整打包烟测及内网实际 UI/请求验证后，才能视为端到端可用。
+
+在 Windows 上，`pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t llm-retry` 启用内置策略覆盖，并回放确定性的暂时失败及后续恢复，无需模型 API Key，同时比较失败尝试、重试策略、成功回复和持久化 Session 输出。

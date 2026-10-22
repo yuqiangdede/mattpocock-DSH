@@ -1,0 +1,11 @@
+version: 1
+scenario: offline-desktop-side-chat
+profile: web
+composition: offline-desktop-side-chat
+recording: authored
+platform: pwsh
+header:
+  class: offline-desktop-side-chat
+  pin: true
+  childSystemPrompts: [1]
+  childToolSchemas: [1]

@@ -30,3 +30,5 @@ This fork uses the independently maintained [DSH Desktop Operator](https://githu
 5. Verify existing-Profile upgrades, manual disabling, restart, recovery mode, and offline logs. Verify that data, screenshots, and control requests reach only authorized internal services.
 
 **Acceptance limits**: build and Host smoke tests do not replace physical Windows GUI operations, offline startup, or internal model-request verification. Complete the physical-machine acceptance above before release.
+
+On Windows, `pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t computer-use` replays the generated default Preset through the shipped Web profile. It calls the real native read-only window-listing tool with an absent-app filter and compares model schemas, stream events, and persisted Session output without a model API key. Profile migrations atomically replace the manifest before publishing their completion markers; a failed replacement preserves the previous manifest for retry.

@@ -30,3 +30,5 @@
 5. 验证升级旧 Profile、人工停用、程序重启、恢复模式及断网日志。验证数据、截图和控制请求是否只到授权内网服务。
 
 **验收边界**：构建与 Host 烟测不能代替 Windows 实机 GUI 操作、断网启动及内网模型请求链路验证。发布前须完成上述实机验收。
+
+在 Windows 上，`pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t computer-use` 通过已发布 Web profile 回放生成的默认 Preset，无需模型 API Key。测试使用不存在的应用过滤条件调用真实原生只读窗口列表工具，并比较模型 schema、流事件及持久化 Session 输出。Profile 迁移先原子替换清单，再写入完成标记；替换失败时保留原清单以便重试。

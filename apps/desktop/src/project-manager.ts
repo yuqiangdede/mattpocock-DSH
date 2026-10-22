@@ -14,6 +14,7 @@ import {
   writeSync,
 } from 'node:fs'
 import { join } from 'node:path'
+import { writeFileAtomic } from '@deepseek-ai/dsh-atomic-write'
 import {
   DESKTOP_HOST_PACKAGE,
   desktopCorePackageOverrides,
@@ -69,7 +70,7 @@ function migrateProfileSettings(projectDir: string): void {
  * Do not re-enable it on later launches if a user disables the plugin or invokes recovery.
  * An explicitly installed but disabled plugin is also respected.
  */
-function migrateBundledSideChat(projectDir: string): void {
+async function migrateBundledSideChat(projectDir: string): Promise<void> {
   if (process.platform !== 'win32') return
   const marker = join(projectDir, SIDE_CHAT_DEFAULT_MARKER)
   if (existsSync(marker)) return
@@ -81,11 +82,11 @@ function migrateBundledSideChat(projectDir: string): void {
   }
   if (!bundles.includes(BUNDLED_SIDE_CHAT.name)
     && !Object.hasOwn(manifest.dependencies ?? {}, BUNDLED_SIDE_CHAT.name)) {
-    writeJson(path, {
+    await writeFileAtomic(path, `${JSON.stringify({
       ...manifest,
       dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile,
         bundles: [...bundles, BUNDLED_SIDE_CHAT.name] } },
-    })
+    }, undefined, 2)}\n`, { mode: 0o600 })
   }
   // Write only after the manifest update; retry safely if the process is interrupted.
   writeFileSync(marker, BUNDLED_SIDE_CHAT.version + '\n', { mode: 0o600 })
@@ -93,7 +94,7 @@ function migrateBundledSideChat(projectDir: string): void {
 
 
 /** Enable the shipped retry settings card once, without overriding user opt-out. */
-function migrateBundledLlmRetry(projectDir: string): void {
+async function migrateBundledLlmRetry(projectDir: string): Promise<void> {
   if (process.platform !== 'win32') return
   const marker = join(projectDir, LLM_RETRY_DEFAULT_MARKER)
   if (existsSync(marker)) return
@@ -105,17 +106,17 @@ function migrateBundledLlmRetry(projectDir: string): void {
   }
   if (!bundles.includes(BUNDLED_LLM_RETRY.name)
     && !Object.hasOwn(manifest.dependencies ?? {}, BUNDLED_LLM_RETRY.name)) {
-    writeJson(path, {
+    await writeFileAtomic(path, `${JSON.stringify({
       ...manifest,
       dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile,
         bundles: [...bundles, BUNDLED_LLM_RETRY.name] } },
-    })
+    }, undefined, 2)}\n`, { mode: 0o600 })
   }
   writeFileSync(marker, BUNDLED_LLM_RETRY.version + '\n', { mode: 0o600 })
 }
 
 /** First-use migration only: never turn Computer Use back on after user disable/recovery. */
-function migrateBundledDesktopOperator(projectDir: string): void {
+async function migrateBundledDesktopOperator(projectDir: string): Promise<void> {
   if (process.platform !== 'win32') return
   const marker = join(projectDir, COMPUTER_USE_DEFAULT_MARKER)
   if (existsSync(marker)) return
@@ -129,11 +130,11 @@ function migrateBundledDesktopOperator(projectDir: string): void {
   if (!bundles.includes(WINDOWS_OPERATOR_BUNDLES[0])
     && !Object.hasOwn(manifest.dependencies ?? {}, BUNDLED_DESKTOP_OPERATOR.name)
     && !Object.hasOwn(manifest.dependencies ?? {}, WINDOWS_OPERATOR_BUNDLES[0])) {
-    writeJson(path, {
+    await writeFileAtomic(path, `${JSON.stringify({
       ...manifest,
       dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile,
         bundles: [...bundles, ...WINDOWS_OPERATOR_BUNDLES] } },
-    })
+    }, undefined, 2)}\n`, { mode: 0o600 })
   }
   writeFileSync(marker, BUNDLED_DESKTOP_OPERATOR.version + '\n', { mode: 0o600 })
 }
@@ -162,11 +163,11 @@ export class DesktopProjectManager {
    * Load application metadata and prepare the external plugin profile without installing packages.
    */
   async applyRelease(): Promise<void> {
-    await this.withLock(() => {
+    await this.withLock(async () => {
       // Validation only: an unreadable or mismatched runtime descriptor stops preparation before the Host starts.
       readDesktopRuntime(this.runtime.dsh)
       migrateProfileSettings(this.paths.profile)
-      createPluginProfile(this.paths.profile)
+      await createPluginProfile(this.paths.profile)
       removeLinkProjections(this.paths.profile)
     })
   }
@@ -220,7 +221,7 @@ export function createRuntimeProjectMetadata(projectDir: string, release: Deskto
     private: true,
     version: '0.0.0',
     dependencies: { ...desktopCorePackageOverrides(packageSet),
-      ...(process.platform === 'win32' ? { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+      ...(process.platform === 'win32' ? { [BUNDLED_SIDE_CHAT.name]: `file:./vendor/${BUNDLED_SIDE_CHAT.name}-${BUNDLED_SIDE_CHAT.version}.tgz`,
         [BUNDLED_LLM_RETRY.name]: `file:./vendor/${BUNDLED_LLM_RETRY.name}-${BUNDLED_LLM_RETRY.version}.tgz`,
         [BUNDLED_DESKTOP_OPERATOR.name]: `file:./vendor/${BUNDLED_DESKTOP_OPERATOR.name}-${BUNDLED_DESKTOP_OPERATOR.version}.tgz` } : {}) },
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
@@ -254,11 +255,15 @@ export function createDevelopmentProjectMetadata(projectDir: string, release: De
   writeFileSync(join(projectDir, 'pnpm-workspace.yaml'), workspaceFile(), { mode: 0o600 })
 }
 
-/** Create the first external plugin profile without running a package manager. */
-export function createPluginProfile(projectDir: string): void {
+/**
+ * Initialize the external profile and atomically publish one-time bundle migrations.
+ * @param projectDir - External desktop profile directory.
+ * @returns Resolves after migration writes and markers finish; a failed replacement leaves its marker absent.
+ */
+export async function createPluginProfile(projectDir: string): Promise<void> {
   initProfile(projectDir, [...WEB_PROFILE.bundles,
     ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, ...WINDOWS_OPERATOR_BUNDLES] : [])])
-  migrateBundledSideChat(projectDir)
-  migrateBundledLlmRetry(projectDir)
-  migrateBundledDesktopOperator(projectDir)
+  await migrateBundledSideChat(projectDir)
+  await migrateBundledLlmRetry(projectDir)
+  await migrateBundledDesktopOperator(projectDir)
 }

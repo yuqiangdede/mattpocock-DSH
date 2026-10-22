@@ -2,6 +2,7 @@
 export const BUNDLED_SIDE_CHAT = {
   name: 'dsh-side-chat-plus',
   version: '0.5.0',
+  sha256: '66e91efc7903cb72e394444c9e11174daf09b96c11f5682dd24de097a7edf3ef',
 } as const
 
 /** Windows-only offline LLM retry settings plugin, pinned to a verified Release. */

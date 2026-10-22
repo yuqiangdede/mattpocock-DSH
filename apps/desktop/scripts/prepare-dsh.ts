@@ -11,6 +11,7 @@ import { createRuntimeProjectMetadata } from '../src/project-manager.ts'
 import { BUNDLED_SIDE_CHAT, BUNDLED_LLM_RETRY, BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE } from '../src/bundled-plugins.ts'
 import { stageDesktopOperatorTarball, verifyBundledDesktopOperator, writeDesktopOperatorPresetBundle } from './bundled-desktop-operator.ts'
 import { stageBundledLlmRetryTarball, verifyBundledLlmRetry } from './bundled-llm-retry.ts'
+import { stageBundledSideChatTarball } from './bundled-side-chat.ts'
 import { DESKTOP_HOST_PROTOCOL_VERSION } from '../src/host-protocol.ts'
 import { parseDesktopRelease, type DesktopRelease } from '../src/release.ts'
 import {
@@ -153,6 +154,7 @@ async function main(): Promise<void> {
       if (process.platform === 'win32') {
         await stageDesktopOperatorTarball(BUILD_ROOT, PNPM_BUILD_STATE)
         await stageBundledLlmRetryTarball(BUILD_ROOT, PNPM_BUILD_STATE)
+        await stageBundledSideChatTarball(BUILD_ROOT, PNPM_BUILD_STATE)
       }
       createRuntimeProjectMetadata(BUILD_ROOT, release)
       return prepareRuntimePatches(BUILD_ROOT, resolve(APP_ROOT, '..', '..'))

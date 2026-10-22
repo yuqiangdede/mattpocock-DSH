@@ -67,7 +67,11 @@ jobs:
 
       - name: Test offline Desktop bundled plugin defaults, Computer Use, and LLM retry
         shell: pwsh
-        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts apps/desktop/tests/bundled-llm-retry.spec.ts
+        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-archive.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts apps/desktop/tests/bundled-llm-retry.spec.ts
+
+      - name: Replay offline Desktop bundle Sessions without a model API key
+        shell: pwsh
+        run: pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts
 
       # Packaging reads apps/desktop/.env.windows even for unsigned builds.
       # Use an isolated loopback-only test configuration; never put release

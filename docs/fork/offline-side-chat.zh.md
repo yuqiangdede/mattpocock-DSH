@@ -25,4 +25,6 @@ pnpm run package:desktop:win:x64:unsigned
 
 **说明：离线安装不等于离线模型推理**。需要在内网提供模型 API 或其他可用模型服务。
 
-版本在 `apps/desktop/src/bundled-plugins.ts` 统一维护，不复制第三方插件源代码。上线前应完成第三方代码及数据流向审查。
+版本和压缩包 SHA-256 在 `apps/desktop/src/bundled-plugins.ts` 一起维护，不复制第三方插件源代码。构建在解析依赖前校验压缩包，并在读取过程中取消超过大小限制的下载。上线前应完成第三方代码及数据流向审查。
+
+在 Windows 上，`pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t side-chat` 通过挂载 Desktop bundles 的已发布 Web profile 回放有效的 Side Chat 请求，无需模型 API Key，并比较父子 Session 日志、模型请求和对话输出。

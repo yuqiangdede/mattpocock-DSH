@@ -31,3 +31,5 @@ Windows installers include `dsh-llm-retry-settings` by default and load it as a 
 6. Verify that native retry behavior stays unchanged while overrides are disabled.
 
 **Note:** end-to-end availability requires Windows CI, complete packaging smoke tests, and real internal-network UI/request verification.
+
+On Windows, `pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t llm-retry` enables the bundled override and replays a deterministic transient failure followed by recovery. It compares the failed attempt, retry policy, successful response, and persisted Session output without a model API key.
