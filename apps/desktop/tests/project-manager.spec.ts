@@ -56,7 +56,7 @@ describe('desktop external plugin profile', () => {
     ])
     expect(manifest.dependencies).not.toHaveProperty(BUNDLED_SIDE_CHAT.name)
     expect(existsSync(join(manager.paths.profile, 'node_modules'))).toBe(false)
-    expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\\n')
+    expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\n')
     await manager.disableAllPlugins()
     await manager.applyRelease()
     const disabled = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
