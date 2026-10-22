@@ -118,6 +118,23 @@ export function apply(ctx) {
   if (!(ctx instanceof Context)) throw new Error('desktop runtime: external plugin loaded another Cordis instance')
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke',
     handler(_request, response) { response.end('plugin route ready') } }))
+  // Diagnostic is deliberately smoke-only, not part of the shipped runtime.
+  ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-diagnostics',
+    handler(_request, response) {
+      const services = ['webServer', 'sessions', 'agents', 'workspaceRegistry',
+        'sessionQuery', 'permissionPresets', 'agentPresets', 'llm', 'attachments', 'commands']
+      const missing = services.filter(name => ctx.get(name) === undefined)
+      const entries = [...(ctx.get('loader')?.entries?.() ?? [])]
+        .filter(entry => String(entry.options?.id ?? entry.id ?? '').includes('side-chat')
+          || String(entry.options?.name ?? '').includes('side-chat'))
+        .map(entry => ({
+          id: entry.options?.id, name: entry.options?.name,
+          disabled: entry.options?.disabled, state: String(entry.fiber?.state ?? entry.state ?? ''),
+          error: String(entry.fiber?.error ?? '').slice(0, 800),
+        }))
+      response.setHeader('content-type', 'application/json')
+      response.end(JSON.stringify({ missing, entries }))
+    } }))
   ctx.effect(() => ctx.webServer.register({ kind: 'exact', path: '/desktop-smoke-install',
     async handler(_request, response) {
       try {
@@ -197,8 +214,12 @@ export function apply(ctx) {
     }
     if (sideChat.status !== 404 || sideChatResult?.error?.code !== 'not-found'
       || !sideChatResult.error.message?.includes('unknown sidechat API method')) {
+      const diagnostics = await fetch(new URL('/desktop-smoke-diagnostics', ready.url),
+        { headers: { cookie } }).then(async result => result.ok ? await result.text() : `probe HTTP ${result.status}`)
+        .catch(error => `probe error ${String(error)}`)
       throw new Error(`desktop runtime: offline ${BUNDLED_SIDE_CHAT.name} API not mounted or unhealthy: `
-        + `status=${sideChat.status} type=${JSON.stringify(responseType)} body=${JSON.stringify(sideChatText.slice(0, 512))}`)
+        + `status=${sideChat.status} type=${JSON.stringify(responseType)} body=${JSON.stringify(sideChatText.slice(0, 512))}`
+        + ` diagnostics=${diagnostics.slice(0, 1800)}`)
     }
     console.log('desktop runtime: bundled side chat host routes passed')
     const pluginResponse = await fetch(new URL('/desktop-smoke', ready.url), { headers: { cookie } })
