@@ -10,6 +10,7 @@ import { fileURLToPath } from 'node:url'
 import { readPrimaryRuntime, workspaceDependencyPaths } from '../../../packages/skill/tool-workspace-dependencies/src/index.ts'
 import { DesktopHostProcess } from '../src/host-process.ts'
 import { createPluginProfile } from '../src/project-manager.ts'
+import { BUNDLED_SIDE_CHAT } from '../src/bundled-plugins.ts'
 import type { DesktopRuntimeDescriptor } from '../src/runtime-tree.ts'
 
 /**
@@ -155,6 +156,18 @@ export function apply(ctx) {
     if (response.status !== 200 || !(await response.text()).includes('<html')) {
       throw new Error('desktop runtime: packaged frontend smoke failed')
     }
+    // The bundled side chat must respond without running pnpm or contacting a registry.
+    const sideChat = await fetch(new URL('/sidechat/api/__desktop_offline_smoke__', ready.url), {
+      method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: '{}',
+    })
+    const sideChatResult = await sideChat.json() as {
+      error?: { code?: string; message?: string }
+    }
+    if (sideChat.status !== 404 || sideChatResult.error?.code !== 'not-found'
+      || !sideChatResult.error.message?.includes('unknown sidechat API method')) {
+      throw new Error(`desktop runtime: offline ${BUNDLED_SIDE_CHAT.name} API did not mount`)
+    }
+    console.log('desktop runtime: bundled side chat host routes passed')
     const pluginResponse = await fetch(new URL('/desktop-smoke', ready.url), { headers: { cookie } })
     if (await pluginResponse.text() !== 'plugin route ready') throw new Error('desktop runtime: plugin HTTP route failed')
     const installation = await fetch(new URL('/desktop-smoke-install', ready.url), {
