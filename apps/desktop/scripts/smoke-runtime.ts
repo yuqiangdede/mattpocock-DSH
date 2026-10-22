@@ -129,7 +129,9 @@ export function apply(ctx) {
           || String(entry.options?.name ?? '').includes('side-chat'))
         .map(entry => ({
           id: entry.options?.id, name: entry.options?.name,
-          disabled: entry.options?.disabled, state: String(entry.fiber?.state ?? entry.state ?? ''),
+          disabled: entry.disabled, state: String(entry.fiber?.state ?? entry.state ?? ''),
+          moduleLoaded: entry.moduleNamespace !== undefined,
+          keys: Object.keys(entry).slice(0, 16),
           error: String(entry.fiber?.error ?? '').slice(0, 800),
         }))
       response.setHeader('content-type', 'application/json')
@@ -219,7 +221,8 @@ export function apply(ctx) {
         .catch(error => `probe error ${String(error)}`)
       throw new Error(`desktop runtime: offline ${BUNDLED_SIDE_CHAT.name} API not mounted or unhealthy: `
         + `status=${sideChat.status} type=${JSON.stringify(responseType)} body=${JSON.stringify(sideChatText.slice(0, 512))}`
-        + ` diagnostics=${diagnostics.slice(0, 1800)}`)
+        + ` diagnostics=${diagnostics.slice(0, 1800)}`
+        + ` hostStderr=${JSON.stringify(host.getRecentStderr().replace(/(?:token=)[A-Za-z0-9_-]+/gu, 'token=[redacted]').slice(-2800))}`)
     }
     console.log('desktop runtime: bundled side chat host routes passed')
     const pluginResponse = await fetch(new URL('/desktop-smoke', ready.url), { headers: { cookie } })
