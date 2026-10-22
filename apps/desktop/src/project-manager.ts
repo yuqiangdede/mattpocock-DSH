@@ -19,11 +19,12 @@ import {
   desktopCorePackageOverrides,
   verifyDesktopCorePackageSet,
 } from './core-package-set.ts'
+import { BUNDLED_SIDE_CHAT } from './bundled-plugins.ts'
 import type { DesktopPaths } from './paths.ts'
 import type { DesktopRelease } from './release.ts'
 import { readDesktopRuntime } from './runtime-tree.ts'
 import {
-  initProfile, PROFILE_TEMPLATES, removeLinkProjections, sanitizeProfile, type ProfileTemplate,
+  initProfile, PROFILE_TEMPLATES, readProfileManifest, removeLinkProjections, sanitizeProfile, type ProfileTemplate,
 } from '@deepseek-ai/dsh-app-boot'
 
 const PROJECT_NAME = '@deepseek-ai/dsh-desktop-runtime'
@@ -31,6 +32,7 @@ const DSH_PACKAGE = '@deepseek-ai/dsh'
 const CORE_BUILD_PACKAGE = '@deepseek-ai/dsh-subprocess-local'
 const WEB_PROFILE = PROFILE_TEMPLATES.web as ProfileTemplate
 const WORKSPACE_SETTINGS = 'nodeLinker: hoisted\nautoInstallPeers: false\n'
+const SIDE_CHAT_DEFAULT_MARKER = '.bundled-side-chat-v1'
 function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, undefined, 2)}\n`, { mode: 0o600 })
 }
@@ -55,6 +57,32 @@ function migrateProfileSettings(projectDir: string): void {
   if (readFileSync(path, 'utf8').replaceAll('\r\n', '\n') === legacy) {
     writeFileSync(path, workspaceFile())
   }
+}
+
+/**
+ * Add the bundled side chat once for existing Desktop profiles without installing anything.
+ * Do not re-enable it on later launches if a user disables the plugin or invokes recovery.
+ * An explicitly installed but disabled plugin is also respected.
+ */
+function migrateBundledSideChat(projectDir: string): void {
+  const marker = join(projectDir, SIDE_CHAT_DEFAULT_MARKER)
+  if (existsSync(marker)) return
+  const path = join(projectDir, 'package.json')
+  const manifest = readProfileManifest('dsh', projectDir)
+  const bundles = manifest.dsh?.profile?.bundles
+  if (!Array.isArray(bundles) || !bundles.every(bundle => typeof bundle === 'string')) {
+    throw new Error('desktop side chat: invalid profile bundle list')
+  }
+  if (!bundles.includes(BUNDLED_SIDE_CHAT.name)
+    && !Object.hasOwn(manifest.dependencies ?? {}, BUNDLED_SIDE_CHAT.name)) {
+    writeJson(path, {
+      ...manifest,
+      dsh: { ...manifest.dsh, profile: { ...manifest.dsh?.profile,
+        bundles: [...bundles, BUNDLED_SIDE_CHAT.name] } },
+    })
+  }
+  // Write only after the manifest update; retry safely if the process is interrupted.
+  writeFileSync(marker, BUNDLED_SIDE_CHAT.version + '\n', { mode: 0o600 })
 }
 
 /** Initializes the Desktop profile and disables third-party bundles during recovery. */
@@ -138,7 +166,7 @@ export function createRuntimeProjectMetadata(projectDir: string, release: Deskto
     name: PROJECT_NAME,
     private: true,
     version: '0.0.0',
-    dependencies: desktopCorePackageOverrides(packageSet),
+    dependencies: { ...desktopCorePackageOverrides(packageSet), [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version },
     dsh: { profile: { bundles: [...WEB_PROFILE.bundles] } },
   }
   writeJson(join(projectDir, 'package.json'), manifest)
@@ -172,5 +200,6 @@ export function createDevelopmentProjectMetadata(projectDir: string, release: De
 
 /** Create the first external plugin profile without running a package manager. */
 export function createPluginProfile(projectDir: string): void {
-  initProfile(projectDir, WEB_PROFILE.bundles)
+  initProfile(projectDir, [...WEB_PROFILE.bundles, BUNDLED_SIDE_CHAT.name])
+  migrateBundledSideChat(projectDir)
 }
