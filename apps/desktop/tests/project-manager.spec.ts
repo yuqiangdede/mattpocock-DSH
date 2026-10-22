@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
 import { BUNDLED_SIDE_CHAT } from '../src/bundled-plugins.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
-import { readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
+import { loadProfileDirectory, readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
 
 const roots: string[] = []
@@ -63,6 +63,22 @@ describe('desktop external plugin profile', () => {
       dsh: { profile: { bundles: string[] } }
     }
     expect(disabled.dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+  it('resolves a bundled plugin from the installation without local dependency installation', async () => {
+    const { manager } = setup()
+    const pluginRoot = join(manager.runtime.dsh, 'node_modules', BUNDLED_SIDE_CHAT.name)
+    mkdirSync(pluginRoot, { recursive: true })
+    writeFileSync(join(pluginRoot, 'package.json'), JSON.stringify({
+      name: BUNDLED_SIDE_CHAT.name, version: BUNDLED_SIDE_CHAT.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(pluginRoot, 'cordis.patch.yml'), '[]\\n')
+    await manager.applyRelease()
+    const profile = loadProfileDirectory('dsh', manager.paths.profile,
+      join(manager.runtime.dsh, 'node_modules/@deepseek-ai/dsh/package.json'))
+    expect(profile.skippedBundles).toEqual([])
+    expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_SIDE_CHAT.name)
   })
 
   it('adds the side chat to an existing profile once and preserves custom bundles', async () => {
