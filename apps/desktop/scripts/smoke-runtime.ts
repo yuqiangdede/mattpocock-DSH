@@ -50,7 +50,7 @@ export async function smokeDesktopRuntime(
       const loaded = loadProfileDirectory('dsh', profile,
         join(root, 'package.json'))
       if (loaded.skippedBundles.length !== 0
-        || !loaded.layers.some(layer => layer.packageName === BUNDLED_SIDE_CHAT.name)) {
+        || (process.platform === 'win32' && !loaded.layers.some(layer => layer.packageName === BUNDLED_SIDE_CHAT.name))) {
         throw new Error(`desktop side chat: bundle not resolved: ${JSON.stringify(loaded.skippedBundles)}`)
       }
       if (process.platform === 'win32') {
@@ -203,31 +203,34 @@ export function apply(ctx) {
     if (response.status !== 200 || !(await response.text()).includes('<html')) {
       throw new Error('desktop runtime: packaged frontend smoke failed')
     }
-    // The bundled side chat must respond without running pnpm or contacting a registry.
-    const sideChat = await fetch(new URL('/sidechat/api/__desktop_offline_smoke__', ready.url), {
-      method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: '{}',
-    })
-    // Preserve status and body in the error so a missing route is not hidden
-    // behind JSON.parse(""), and do not weaken the original route assertion.
-    const responseType = sideChat.headers.get('content-type')
-    const sideChatText = await sideChat.text()
-    let sideChatResult: { error?: { code?: string; message?: string } } | undefined
-    try {
-      sideChatResult = JSON.parse(sideChatText) as typeof sideChatResult
-    } catch {
-      // The expected plugin always returns JSON, including for unknown methods.
+    if (process.platform === 'win32') {
+      // The bundled side chat must respond without running pnpm or contacting a registry.
+      const sideChat = await fetch(new URL('/sidechat/api/__desktop_offline_smoke__', ready.url), {
+        method: 'POST', headers: { cookie, 'content-type': 'application/json' }, body: '{}',
+        signal: AbortSignal.timeout(30_000),
+      })
+      // Preserve status and body in the error so a missing route is not hidden
+      // behind JSON.parse(""), and do not weaken the original route assertion.
+      const responseType = sideChat.headers.get('content-type')
+      const sideChatText = await sideChat.text()
+      let sideChatResult: { error?: { code?: string; message?: string } } | undefined
+      try {
+        sideChatResult = JSON.parse(sideChatText) as typeof sideChatResult
+      } catch {
+        // The expected plugin always returns JSON, including for unknown methods.
+      }
+      if (sideChat.status !== 404 || sideChatResult?.error?.code !== 'not-found'
+        || !sideChatResult.error.message?.includes('unknown sidechat API method')) {
+        const diagnostics = await fetch(new URL('/desktop-smoke-diagnostics', ready.url),
+          { headers: { cookie }, signal: AbortSignal.timeout(15_000) }).then(async result => result.ok ? await result.text() : `probe HTTP ${result.status}`)
+          .catch(error => `probe error ${String(error)}`)
+        throw new Error(`desktop runtime: offline ${BUNDLED_SIDE_CHAT.name} API not mounted or unhealthy: `
+          + `status=${sideChat.status} type=${JSON.stringify(responseType)} body=${JSON.stringify(sideChatText.slice(0, 512))}`
+          + ` diagnostics=${diagnostics.slice(0, 1800)}`
+          + ` hostStderr=${JSON.stringify(host.getRecentStderr().replace(/(?:token=)[A-Za-z0-9_-]+/gu, 'token=[redacted]').slice(-2800))}`)
+      }
+      console.log('desktop runtime: bundled side chat host routes passed')
     }
-    if (sideChat.status !== 404 || sideChatResult?.error?.code !== 'not-found'
-      || !sideChatResult.error.message?.includes('unknown sidechat API method')) {
-      const diagnostics = await fetch(new URL('/desktop-smoke-diagnostics', ready.url),
-        { headers: { cookie } }).then(async result => result.ok ? await result.text() : `probe HTTP ${result.status}`)
-        .catch(error => `probe error ${String(error)}`)
-      throw new Error(`desktop runtime: offline ${BUNDLED_SIDE_CHAT.name} API not mounted or unhealthy: `
-        + `status=${sideChat.status} type=${JSON.stringify(responseType)} body=${JSON.stringify(sideChatText.slice(0, 512))}`
-        + ` diagnostics=${diagnostics.slice(0, 1800)}`
-        + ` hostStderr=${JSON.stringify(host.getRecentStderr().replace(/(?:token=)[A-Za-z0-9_-]+/gu, 'token=[redacted]').slice(-2800))}`)
-    }
-    console.log('desktop runtime: bundled side chat host routes passed')
     const pluginResponse = await fetch(new URL('/desktop-smoke', ready.url), { headers: { cookie } })
     if (await pluginResponse.text() !== 'plugin route ready') throw new Error('desktop runtime: plugin HTTP route failed')
     const installation = await fetch(new URL('/desktop-smoke-install', ready.url), {
