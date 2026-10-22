@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_ACTIONS, encodeActions, parseActions, resolveActionGroup, missingDefaultActions, displayOrder } from '../src/client/actions.ts'
+import { ACTION_SCHEMA_VERSION, DEFAULT_ACTIONS, encodeActions, parseActions, resolveActionGroup, missingDefaultActions, displayOrder } from '../src/client/actions.ts'
 import { LEGACY_ACTIONS, LEGACY_ENGLISH_PRESENTATION } from '../src/client/legacy-actions.ts'
 
 describe('mattpocock-DSH CodingAction document', () => {
@@ -48,12 +48,24 @@ describe('mattpocock-DSH CodingAction document', () => {
     const actions = DEFAULT_ACTIONS.map((a, index) => ({ ...a, label: index === 0 ? '自定义' : a.label }))
     expect(parseActions(encodeActions(actions))).toEqual(actions)
   })
+  it('writes pinned shortcuts under the schema version that carries them', () => {
+    expect(ACTION_SCHEMA_VERSION).toBe(3)
+    expect(encodeActions([])).toContain(`"schemaVersion": ${String(ACTION_SCHEMA_VERSION)}`)
+    const pinned = DEFAULT_ACTIONS.map(a => ({ ...a, pinned: true }))
+    expect(parseActions(encodeActions(pinned)).every(a => a.pinned === true)).toBe(true)
+  })
+  it('keeps reading the earlier saved versions', () => {
+    // A version-2 writer never persisted `pinned`, so an upgrade keeps its saved state unchanged.
+    const version2 = JSON.stringify({ schemaVersion: 2, actions: DEFAULT_ACTIONS.map(a => ({ ...a, pinned: undefined })) })
+    expect(parseActions(version2)).toHaveLength(DEFAULT_ACTIONS.length)
+    expect(parseActions(version2).some(a => a.pinned)).toBe(false)
+  })
   it('preserves an intentionally empty action list', () => {
     expect(parseActions(encodeActions([]))).toEqual([])
   })
   it.each([
     '{not-json',
-    '{"schemaVersion":3,"actions":[]}',
+    '{"schemaVersion":4,"actions":[]}',
     '{"schemaVersion":1,"actions":[{"id":"a"}]}',
     '{"schemaVersion":1,"actions":[{"id":"a","kind":"skill","label":"x","skillId":"A","prompt":"","enabled":true,"order":1,"description":"","example":""}]}',
   ])('rejects malformed configuration instead of silently resetting it', (raw) => {

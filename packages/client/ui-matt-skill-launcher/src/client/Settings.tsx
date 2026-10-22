@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { DEFAULT_ACTIONS, parseActions, encodeActions, actionErrorKey, presentDefaultActions, resolveActionGroup, missingDefaultActions, ACTION_GROUPS, type CodingAction, type ActionGroup } from './actions.ts'
 import type { LauncherSettingsInjected } from './index.ts'
+import { categoryLabelKeys } from './locales.ts'
 import css from './Settings.module.css'
 type Props = PropsRuntime<'settings.section'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherSettingsInjected>
 export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
@@ -58,17 +59,17 @@ export function LauncherSettings({ useActionForm, saveActions, t }: Props) {
   return <section className={css.root}>
     <h2>{t('title')}</h2><p>{t('intro')}</p>
     <fieldset disabled={busy} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
-    <section><h3>{t('categoryVisibility')}</h3><div className={css.row}>{ACTION_GROUPS.map(group=><label key={group}><input type="checkbox" checked={!hiddenGroups.includes(group)} onChange={e=>{setHiddenGroups(xs=>e.target.checked?xs.filter(g=>g!==group):[...xs,group]);setDirty(true)}} />{t(group === 'development' ? 'developmentGroup' : group === 'document' ? 'documentGroup' : group === 'utility' ? 'utilityGroup' : 'moreGroup')}</label>)}</div></section>
+    <section><h3>{t('categoryVisibility')}</h3><div className={css.row}>{ACTION_GROUPS.map(group=><label key={group}><input type="checkbox" checked={!hiddenGroups.includes(group)} onChange={(e)=>{setHiddenGroups(xs=>e.target.checked?xs.filter(g=>g!==group):[...xs,group]);setDirty(true)}} />{t(categoryLabelKeys[group])}</label>)}</div></section>
     {(['skill','prompt'] as const).map(kind=><section key={kind}>
       <div className={css.head}><h3>{kind==='skill'?t('skillRow'):t('promptRow')}</h3><button type="button" onClick={()=>{ add(kind) }}>{t('add')}</button></div>
       {draft.filter(a=>a.kind===kind).sort((a,b)=>a.order-b.order).map(a=><div className={css.card} key={a.id}>
         <div className={css.row}>
-          <label><input type="checkbox" checked={a.pinned ?? false} onChange={e=>change(a.id,{ pinned:e.target.checked })}/>{t('pinShortcut')}</label>
+          <label><input type="checkbox" checked={a.pinned ?? false} onChange={(e)=>{ change(a.id,{ pinned: e.target.checked }) }}/>{t('pinShortcut')}</label>
           <label><input type="checkbox" checked={a.enabled} onChange={(e)=>{ change(a.id,{ enabled:e.target.checked }) }}/>{t('enabled')}</label>
           <label>{t('buttonName')}<input value={a.label} onChange={(e)=>{ change(a.id,{ label:e.target.value }) }}/></label>
           {kind==='skill'&&<label>{t('skillId')}<input value={a.skillId??''} onChange={(e)=>{ change(a.id,{ skillId:e.target.value }) }}/></label>}
           <label>{t('group')}<select value={resolveActionGroup(a)} onChange={(e)=>{ change(a.id,{ group:e.target.value as ActionGroup }) }}>
-            {ACTION_GROUPS.map(group => <option key={group} value={group}>{t(group === 'development' ? 'developmentGroup' : group === 'document' ? 'documentGroup' : group === 'utility' ? 'utilityGroup' : 'moreGroup')}</option>)}
+            {ACTION_GROUPS.map(group => <option key={group} value={group}>{t(categoryLabelKeys[group])}</option>)}
           </select></label>
           <label>{t('order')}<input type="number" value={a.order} onChange={(e)=>{ change(a.id,{ order:Number(e.target.value) }) }}/></label>
           <button type="button" onClick={()=>{setDraft(xs=>xs.filter(x=>x.id!==a.id));setDirty(true)}}>{t('delete')}</button>

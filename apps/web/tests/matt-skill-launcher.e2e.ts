@@ -10,7 +10,7 @@ const fixture = fileURLToPath(new URL('../../../snapshots/web/seeded-history/ses
 const expected = fileURLToPath(new URL('./expected/matt-skill-launcher/buttons.expected.md', import.meta.url))
 
 describe('Skill Launcher on recorded session history', () => {
-  it('collapses all groups, resolves bundled skills and carries history into a draft', async () => {
+  it('switches category tabs, collapses the group, resolves bundled skills and carries history into a draft', async () => {
     const scaffold = await launchWebScaffold({})
     let browser: Awaited<ReturnType<typeof chromium.launch>> | undefined
     try {
@@ -36,10 +36,17 @@ describe('Skill Launcher on recorded session history', () => {
       await compareOrRefreshGolden(expected, await captureStableAria(page, '[data-matt-skill-launcher]', scaffold.workspaceCwd), webSnapshotMode())
       await collapse.click()
       expect(await dock.getByRole('button', { name: 'Develop', exact: true }).count()).toBe(0)
+      expect(await dock.getByRole('tab', { name: 'Documents', exact: true }).count()).toBe(0)
       await dock.getByRole('button', { name: 'Expand coding buttons' }).click()
-      await dock.getByRole('button', { name: 'More', exact: false }).click()
-      await page.getByRole('menuitem', { name: 'Prototype', exact: true }).waitFor()
-      await page.keyboard.press('Escape')
+      const initialize = dock.getByRole('button', { name: 'Initialize', exact: true })
+      await initialize.waitFor()
+      await dock.getByRole('tab', { name: 'Documents', exact: true }).click()
+      await dock.getByRole('button', { name: 'API Documentation', exact: true }).waitFor()
+      expect(await initialize.count()).toBe(0)
+      await dock.getByRole('tab', { name: 'Documents', exact: true }).focus()
+      await page.keyboard.press('ArrowRight')
+      await expect.poll(() => dock.getByRole('tab', { name: 'Utilities', exact: true }).getAttribute('aria-selected')).toBe('true')
+      await dock.getByRole('button', { name: 'Context Handoff', exact: true }).waitFor()
       const input = page.locator('[data-composer-input]').first()
       await writeComposerDraft(page, input, '')
       await input.focus()
@@ -57,13 +64,8 @@ describe('Skill Launcher on recorded session history', () => {
       expect(await dock.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true)
       const panel = await dock.boundingBox()
       expect(panel?.y).toBeGreaterThanOrEqual(75)
-      await dock.getByRole('button', { name: 'More', exact: false }).click()
-      const menu = page.getByRole('menu')
-      await menu.waitFor()
-      const menuRect = await menu.boundingBox()
-      expect(menuRect?.x).toBeGreaterThanOrEqual(0)
-      expect((menuRect?.x ?? 390) + (menuRect?.width ?? 390)).toBeLessThanOrEqual(390)
-      await page.keyboard.press('Escape')
+      await dock.getByRole('tab', { name: 'More', exact: true }).click()
+      await dock.getByRole('button', { name: 'Prototype', exact: true }).waitFor()
       await page.screenshot({ path: join(evidenceDirectory, `launcher-${process.pid}-narrow.png`), fullPage: true })
       const chinese = await browser.newPage({ viewport: { width: 1280, height: 900 }, locale: 'zh-CN' })
       await chinese.goto(scaffold.authenticatedUrl, { waitUntil: 'load' })
@@ -71,6 +73,7 @@ describe('Skill Launcher on recorded session history', () => {
       await chinese.getByRole('treeitem').nth(1).click()
       const zhDock = chinese.locator('[data-matt-skill-launcher]')
       await zhDock.getByRole('button', { name: '开发', exact: true }).waitFor()
+      await zhDock.getByRole('tab', { name: '辅助操作', exact: true }).click()
       await zhDock.getByRole('button', { name: '修复审核问题', exact: true }).waitFor()
       await chinese.screenshot({ path: join(evidenceDirectory, `launcher-${process.pid}-zh.png`), fullPage: true })
     } finally {

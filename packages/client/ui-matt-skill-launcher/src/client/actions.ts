@@ -110,16 +110,15 @@ export function presentDefaultActions(actions: CodingAction[], english: boolean)
   return english ? actions.map(a => ({ ...a, ...ENGLISH_DEFAULT_PRESENTATION[a.id] })) : actions
 }
 
+/** Version written by this client: version 3 adds the optional `pinned` flag, which version-2 clients discard when they save. */
+export const ACTION_SCHEMA_VERSION = 3
 /** Serialize a versioned action document.
  * @param actions Actions to persist.
  * @returns The JSON document.
  */
 export const encodeActions = (actions: readonly CodingAction[]): string =>
-  JSON.stringify({ schemaVersion: 2, actions }, null, 2)
-/** Validate a persisted action document and copy defaults when absent.
- * @param text Saved JSON or an absent configuration.
- * @returns Validated actions.
- */
+  JSON.stringify({ schemaVersion: ACTION_SCHEMA_VERSION, actions }, null, 2)
+/** Locale key naming why an action document failed validation. */
 export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip' | 'errorGroup'
 export class ActionConfigError extends Error {
   constructor(readonly key: ActionConfigErrorKey) { super(key); this.name = 'ActionConfigError' }
@@ -128,13 +127,18 @@ export class ActionConfigError extends Error {
 export function actionErrorKey(error: unknown): ActionConfigErrorKey | undefined {
   return error instanceof ActionConfigError ? error.key : undefined
 }
+/** Validate a persisted action document and copy defaults when absent.
+ * Versions 1 and 2 load as saved; version 1 also upgrades unchanged preset fields.
+ * @param text Saved JSON or an absent configuration.
+ * @returns Validated actions.
+ */
 export function parseActions(text: string | undefined): CodingAction[] {
   if (text === undefined || text.trim() === '') return DEFAULT_ACTIONS.map(a => ({ ...a }))
   let raw: unknown
   try { raw = JSON.parse(text) } catch { throw new ActionConfigError('errorJson') }
   if (typeof raw !== 'object' || raw === null) throw new ActionConfigError('errorRoot')
   const doc = raw as { schemaVersion?: unknown; actions?: unknown }
-  if ((doc.schemaVersion !== 1 && doc.schemaVersion !== 2) || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new ActionConfigError('errorVersion')
+  if ((doc.schemaVersion !== 1 && doc.schemaVersion !== 2 && doc.schemaVersion !== 3) || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new ActionConfigError('errorVersion')
   const ids = new Set<string>()
   const actions = doc.actions.map((value: unknown) => {
     if (typeof value !== 'object' || value === null) throw new ActionConfigError('errorEntry')
@@ -148,7 +152,7 @@ export function parseActions(text: string | undefined): CodingAction[] {
     if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new ActionConfigError('errorTooltip')
     if (a.pinned !== undefined && typeof a.pinned !== 'boolean') throw new ActionConfigError('errorFields')
     if (a.group !== undefined && !ACTION_GROUPS.includes(a.group as ActionGroup)) throw new ActionConfigError('errorGroup')
-    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, ...(a.pinned === undefined ? {} : { pinned: a.pinned as boolean }), order: a.order, description: a.description, example: a.example } as CodingAction
+    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, ...(a.pinned === undefined ? {} : { pinned: a.pinned }), order: a.order, description: a.description, example: a.example } as CodingAction
   })
   return doc.schemaVersion === 1 ? migrateActions(actions) : actions
 }
