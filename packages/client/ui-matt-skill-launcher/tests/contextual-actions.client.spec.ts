@@ -71,7 +71,36 @@ describe('Skill Launcher contextual recommendations', () => {
   it('adds only matching recommendation evidence to the editable prompt', () => {
     const result = recommend([user('请代码审查'), assistant('审查结果：P1 src/a.ts:20 空指针问题')])
     expect(withEvidence('修复问题', result, 'review-fix')).toContain('src/a.ts:20')
-    expect(withEvidence('编译', result, 'compile')).toBe('编译')
-    expect(withEvidence('修复问题', null, 'review-fix')).toBe('修复问题')
+    expect(withEvidence('编译', result, 'compile')).not.toContain('src/a.ts:20')
+    expect(withEvidence('修复问题', null, 'review-fix')).toContain('问题编号')
+  })
+  it.each([
+    ['/to-tickets 按规格拆分', '工单已创建', ['execute']],
+    ['/implement 按工单开发', '实现完成', ['compile','review']],
+    ['/research 查证资料', '研究完成，资料来源已记录', ['discussion']],
+    ['/prototype 验证状态', '原型完成', ['discussion']],
+    ['/improve-codebase-architecture 分析模块', '候选方案已列出', ['discussion']],
+    ['/domain-modeling 澄清概念', '术语表已更新', ['discussion']],
+    ['/handoff 交接任务', '交接文档：handoff.md', ['continue']],
+  ])('recommends after the current Matt action %s', (request, response, ids) => {
+    expect(recommend([user(request), assistant(response)])?.ids).toEqual(ids)
+  })
+  it('passes completed evidence to manual actions without requiring a recommendation', () => {
+    const entries = [user('查看当前任务'), assistant('规格：docs/spec.md；P1 src/a.ts:20，尚未验证')]
+    const text = withEvidence('交接任务', null, 'handoff', entries)
+    expect(text).toContain('docs/spec.md')
+    expect(text).toContain('P1 src/a.ts:20')
+    expect(text).toContain('未完成项')
+    expect(withEvidence('修复问题', null, 'review-fix', entries)).toContain('逐项核实')
+    expect(withEvidence('自定义', null, 'custom', entries)).toBe('自定义')
+  })
+  it('marks truncated evidence, preserves receiving requirements and supports English', () => {
+    const entries = [user('开始'), assistant('x'.repeat(6000))]
+    expect(withEvidence('review', null, 'review', entries, true)).toContain('Excerpt truncated')
+    expect(withEvidence('review', null, 'review', entries, true)).toContain('finding IDs')
+    expect(withEvidence('review', null, 'review', entries, true).length).toBeLessThan(6000)
+  })
+  it('does not use earlier evidence as the current action intent', () => {
+    expect(recommend([user('帮我看别的问题\n\n【上一阶段对话摘录】\n代码审查'), assistant('审查结果：P1 src/a.ts:20')])).toBeNull()
   })
 })
