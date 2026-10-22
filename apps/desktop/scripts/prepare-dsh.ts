@@ -124,7 +124,9 @@ function verifyBundledSideChat(root: string): void {
     throw new Error('desktop runtime: bundled side chat package is missing')
   }
   const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as {
-    name?: string; version?: string; dsh?: { bundle?: { patch?: string } }
+    name?: string
+    version?: string
+    dsh?: { bundle?: { patch?: string } }
   }
   if (manifest.name !== BUNDLED_SIDE_CHAT.name || manifest.version !== BUNDLED_SIDE_CHAT.version
     || manifest.dsh?.bundle?.patch !== './cordis.patch.yml') {
@@ -175,7 +177,7 @@ async function main(): Promise<void> {
       source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
     ))
     if (process.platform === 'win32') {
-      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-llm-retry', () => verifyBundledLlmRetry(DSH_OUTPUT_ROOT))
+      await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-bundled-llm-retry', async () => verifyBundledLlmRetry(DSH_OUTPUT_ROOT))
       await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-computer-use', async () => {
         verifyBundledDesktopOperator(DSH_OUTPUT_ROOT)
         writeDesktopOperatorPresetBundle(DSH_OUTPUT_ROOT)
