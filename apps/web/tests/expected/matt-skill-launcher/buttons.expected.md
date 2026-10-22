@@ -1,0 +1,7 @@
+- button "Discuss Requirements"
+- button "Finalize Spec"
+- button "Develop"
+- button "Diagnose Bug"
+- button "Code Review"
+- button "Commit Code"
+- button "More"

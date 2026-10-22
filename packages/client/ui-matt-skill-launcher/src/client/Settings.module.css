@@ -7,3 +7,12 @@
 .root input:not([type=checkbox]),.root select,.root textarea{font:inherit;box-sizing:border-box;width:100%;padding:6px;color:inherit;background:var(--dsw-specific-input-major);border:1px solid var(--dsw-alias-border-l2);border-radius:5px}
 .root textarea{resize:vertical}.root button{font:inherit;cursor:pointer;padding:6px 10px;background:var(--dsw-specific-input-major);color:inherit;border:1px solid var(--dsw-alias-border-l2);border-radius:5px}
 .root button:disabled{opacity:.5;cursor:default}.error{color:var(--dsw-alias-state-error-primary)}
+/* Save bar pinned to the bottom of the settings scroll column, so the actions
+   stay reachable without scrolling past every button card. The column's 24px
+   bottom padding is part of its scrollport but outside the sticky view
+   rectangle, so the bar offsets past it and cancels it in flow; without both
+   the bar floats 24px above the panel edge. */
+.footer{position:sticky;bottom:-24px;z-index:1;display:flex;flex-direction:column;gap:8px;margin:0 0 -24px;padding:12px 0 14px;border-top:0.5px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2)}
+.footerRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.footerRow small{flex:1;min-width:120px;color:var(--dsw-alias-label-tertiary)}
+.footerActions{display:flex;flex-wrap:wrap;gap:8px;margin-left:auto}

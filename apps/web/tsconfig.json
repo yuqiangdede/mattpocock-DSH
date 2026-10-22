@@ -171,6 +171,7 @@
     "tests/blank-preset-reuse.e2e.ts",
     "tests/queue-image.e2e.ts",
     "tests/skill-invocation-policy.e2e.ts",
+    "tests/matt-skill-launcher.e2e.ts",
     "tests/skill-user-invoke.e2e.ts",
     "tests/skill-menu-plugin-change.e2e.ts",
     "tests/permission-policy-context.e2e.ts",

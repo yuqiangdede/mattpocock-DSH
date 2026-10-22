@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
-import { Menu } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useEffect, useId, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
-import { parseActions, actionErrorKey, presentDefaultActions, resolveActionGroup, displayOrder, type CodingAction } from './actions.ts'
+import { parseActions, actionErrorKey, presentDefaultActions, displayOrder, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
 import css from './Launcher.module.css'
@@ -11,8 +10,10 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   const input = useInput(x => x)
   const chat = useConversation(x => x.views.get('chat'))
   const sessionRunning = useSession(x => x.running)
-  const recommendation = sessionRunning ? null : recommend(chatEntries(chat))
-  const [more, setMore] = useState(false)
+  const entries = sessionRunning ? [] : chatEntries(chat)
+  const recommendation = recommend(entries)
+  const morePanelId = useId()
+  const [moreOpen, setMoreOpen] = useState(false)
   const [pending, setPending] = useState(false)
   const [notice, setNotice] = useState('')
   const alive = useRef(true)
@@ -30,14 +31,12 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     ? enabledActions.filter(action => recommendation.ids.includes(action.id))
     : []
   const visibleRecommendation = recommendedActions.length ? recommendation : null
-  const byGroup = (group: ReturnType<typeof resolveActionGroup>) => enabledActions.filter(a => resolveActionGroup(a) === group)
-  const development = byGroup('development')
-  const documents = byGroup('document')
-  const utilities = byGroup('utility')
-  const extra = byGroup('more')
+  const shownActions = enabledActions.filter(a => a.pinned)
+  const moreActions = enabledActions.filter(a => !a.pinned)
+  const hasActions = enabledActions.length > 0
+  const moreRecommended = recommendedActions.some(a => !a.pinned)
   const available = input.phase === 'plain' && !pending && snapshot.status === 'ready'
   const insert = async (action: CodingAction) => {
-    setMore(false)
     if (!available) return
     setNotice('')
     const span = inputActions.captureInsertion()
@@ -45,7 +44,7 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     if (action.kind === 'skill' && (span.start !== 0 || input.draft.startsWith('/'))) {
       setNotice(t('start')); return
     }
-    let value = withEvidence(action.prompt, recommendation, action.id)
+    let value = withEvidence(action.prompt, recommendation, action.id, entries, t('defaultLocale') === 'en')
     if (action.kind === 'skill') {
       const skillId = action.skillId ?? ''
       setPending(true)
@@ -64,31 +63,15 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={visibleRecommendation?.ids.includes(a.id) ? css.recommended : css.action}
     title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommendationTooltip').replace('{reason}', t(visibleRecommendation.reason)) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
-    {(development.length > 0 || extra.length > 0) && <section className={css.group}>
-      <span className={css.groupLabel}>{t('developmentGroup')}</span>
-      <div className={css.row} aria-label={t('developmentGroup')}>
-        {development.map(render)}
-        {extra.length > 0 && <Menu
-          open={more} side="top" align="start" compact
-          anchor={<button type="button" className={css.action} disabled={!available}
-            onClick={() => { setMore(v => !v) }} aria-haspopup="menu" aria-expanded={more}>{t('more')}</button>}
-          items={extra.map(a => ({ id: a.id, label: a.label }))}
-          onClose={() => { setMore(false) }}
-          onSelect={(id) => {
-            const selected = extra.find(a => a.id === id)
-            if (selected) void insert(selected)
-          }}
-        />}
-      </div>
-    </section>}
-    {documents.length > 0 && <section className={css.group}>
-      <span className={css.groupLabel}>{t('documentGroup')}</span>
-      <div className={css.row} aria-label={t('documentGroup')}>{documents.map(render)}</div>
-    </section>}
-    {utilities.length > 0 && <section className={css.group}>
-      <span className={css.groupLabel}>{t('utilityGroup')}</span>
-      <div className={css.row} aria-label={t('utilityGroup')}>{utilities.map(render)}</div>
-    </section>}
+    {hasActions && <div className={css.row}>
+      {shownActions.map(render)}
+      {moreActions.length > 0 && <button type="button" className={moreRecommended ? css.recommended : css.action}
+        aria-expanded={moreOpen} aria-controls={morePanelId}
+        onClick={() => { setMoreOpen(open => !open) }}>{t('more')}</button>}
+    </div>}
+    {moreActions.length > 0 && <div id={morePanelId} hidden={!moreOpen} className={css.morePanel}>
+      <div className={css.row}>{moreActions.map(render)}</div>
+    </div>}
     {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
