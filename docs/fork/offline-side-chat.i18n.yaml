@@ -1,0 +1,13 @@
+# Bilingual-pair consistency record for offline-side-chat.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/fork/offline-side-chat.md
+/bundled-side-chat-in-offline-windows-installers:
+  en: e93daa428057ab41
+  zh: c9900ede60a9eb4e
+/bundled-side-chat-in-offline-windows-installers/build:
+  en: cbca99b6ffc6b637
+  zh: 04aa82a425f8e26f
+/bundled-side-chat-in-offline-windows-installers/acceptance-without-external-network-access:
+  en: fa7a827d6622d41d
+  zh: ed6152ae20cd9e55

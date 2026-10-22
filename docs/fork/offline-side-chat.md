@@ -1,26 +1,28 @@
-# Windows 离线安装包内置侧边聊天
+# Bundled side chat in offline Windows installers
 
-该 Fork 的 Windows Desktop 发行构建会将 `dsh-side-chat-plus@0.5.0` 及其生产依赖一起放入安装包。下载插件仅发生在联网构建机上；安装后的 Desktop 初始化 `profiles/desktop` 时不使用 npm、pnpm 或在线插件安装。
+English | [中文](offline-side-chat.zh.md)
 
-## 构建方式
+This fork's Windows Desktop release bundles `dsh-side-chat-plus@0.5.0` and its production dependencies. Only the connected build machine downloads the plugin; the installed Desktop does not use npm, pnpm, or online plugin installation when initializing `profiles/desktop`.
 
-在能够访问 npm registry 的 Windows 构建机执行：
+## Build
+
+Run on a Windows build machine with access to the npm registry:
 
 ```powershell
 pnpm run package:desktop:win:x64:unsigned
 ```
 
-正式发布请使用项目原有的签名发布任务。构建过程中会验证插件版本、bundle 清单与客户端/Host 文件，并通过桌面运行时冒烟测试确认插件 HTTP 路由加载成功。生产依赖作为运行时文件写入哈希清单。
+Use the project's existing signed release tasks for production releases. The build verifies the plugin version, bundle manifest, and client/Host files. The desktop runtime smoke test checks that the plugin HTTP route loads. The runtime hash manifest includes production dependencies.
 
-## 无网络环境验收
+## Acceptance without external network access
 
-1. 在未使用过 DSH 的 Windows 测试机器上断开外网后安装。
-2. 首次启动无需单独安装侧边聊天插件。
-3. 选中主会话文本，确认右侧聊天入口出现并可打开。
-4. 将模型服务配置为可访问的内网接口，测试侧聊回复及结果回传。
-5. 重启确认设置保留，手动停用后再次重启确认不会自动重新启用。
-6. 检查日志，确认启动没有请求在线插件仓库。
+1. Disconnect a Windows test machine that has never used DSH from the external network, then install.
+2. Confirm that the first launch requires no separate side-chat plugin installation.
+3. Select text in the main conversation and confirm that the right-side chat entry appears and opens.
+4. Configure the model service to use an accessible internal endpoint, then test side-chat replies and returning results.
+5. Restart and confirm that settings persist. Disable the plugin manually, restart again, and confirm it stays disabled.
+6. Check logs and confirm that startup does not request an online plugin registry.
 
-**说明：离线安装不等于离线模型推理**。需要在内网提供模型 API 或其他可用模型服务。
+**Offline installation does not provide offline model inference.** Supply a model API or another accessible model service on the internal network.
 
-版本在 `apps/desktop/src/bundled-plugins.ts` 统一维护，不复制第三方插件源代码。上线前应完成第三方代码及数据流向审查。
+Maintain the version in `apps/desktop/src/bundled-plugins.ts`; do not copy third-party plugin source. Review third-party code and data destinations before release.

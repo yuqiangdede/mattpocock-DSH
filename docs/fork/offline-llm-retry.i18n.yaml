@@ -1,0 +1,19 @@
+# Bilingual-pair consistency record for offline-llm-retry.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/fork/offline-llm-retry.md
+/offline-windows-installer-llm-automatic-retry-settings:
+  en: 45d857a44445a07c
+  zh: 2a74736d88ed23bb
+/offline-windows-installer-llm-automatic-retry-settings/goal:
+  en: 788e57967c2c8a0e
+  zh: 4957605d2159cea6
+/offline-windows-installer-llm-automatic-retry-settings/version-pinning-and-updates:
+  en: c74dbba4f1297e52
+  zh: 456109a74bd96d71
+/offline-windows-installer-llm-automatic-retry-settings/usage-behavior:
+  en: 3518ac74bc79b28e
+  zh: 2bd84d1dae763aaf
+/offline-windows-installer-llm-automatic-retry-settings/acceptance-steps:
+  en: af5546281898d07e
+  zh: a23709288ff38d99
