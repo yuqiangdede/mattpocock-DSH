@@ -9,7 +9,7 @@ type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLau
 export function Launcher({ useInput, useConversation, useSession, inputActions, useActionForm, fetchSkillNames, t }: Props) {
   const snapshot = useActionForm(x => x)
   const input = useInput(x => x)
-  const chat = useConversation(x => x.views.get('chat'))
+  const chat = useConversation(x => x.views.get('chat' as never) as unknown)
   const sessionRunning = useSession(x => x.running)
   const recommendation = recommend(chatEntries(chat), sessionRunning)
   const [more, setMore] = useState(false)
