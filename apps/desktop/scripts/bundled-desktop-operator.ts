@@ -80,15 +80,27 @@ export function writeDesktopOperatorPresetBundle(runtimeRoot: string): void {
   const modules = join(runtimeRoot, 'node_modules')
   const standardPath = join(modules, '@deepseek-ai', 'dsh-web-app', 'presets', 'standard.patch.yml')
   const standard = readFileSync(standardPath, 'utf8')
-  for (const token of ['- insert:', 'id: preset-standard', 'id: standard', 'order: 1', 'plugins:']) {
-    if (!standard.includes(token)) {
-      throw new Error(`desktop Computer Use: standard preset changed (${token}); review adapter`)
+  // Only mutate exact fields belonging to the standard preset. A substring
+  // match could accidentally rename a helper preset or an order of 10.
+  const lines = standard.split('\n')
+  const replacements = [
+    ['    - id: preset-standard', '    - id: preset-desktop-computer-use'],
+    ['        id: standard', `        id: ${DESKTOP_OPERATOR_PRESET_ID}`],
+    ['        order: 1', '        order: 0'],
+  ] as const
+  for (const required of ['- insert:', '        plugins:']) {
+    if (lines.filter(line => line === required).length !== 1) {
+      throw new Error(`desktop Computer Use: standard preset changed (${required}); review adapter`)
     }
   }
-  const updated = standard
-    .replace('id: preset-standard', 'id: preset-desktop-computer-use')
-    .replace('id: standard', `id: ${DESKTOP_OPERATOR_PRESET_ID}`)
-    .replace('order: 1', 'order: 0')
+  for (const [before, after] of replacements) {
+    const indexes = lines.flatMap((line, index) => line === before ? [index] : [])
+    if (indexes.length !== 1) {
+      throw new Error(`desktop Computer Use: standard preset changed (${before.trim()}); review adapter`)
+    }
+    lines[indexes[0]!] = after
+  }
+  const updated = lines.join('\n')
   const patch = `${updated.trimEnd()}
           - id: computer-use
             name: '${RELEASE.name}'
