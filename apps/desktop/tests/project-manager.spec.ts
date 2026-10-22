@@ -62,8 +62,8 @@ describe('desktop external plugin profile', () => {
       dsh: { profile: { bundles: string[] } }
     }
     expect(manifest.dsh.profile.bundles).toEqual([
-      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', BUNDLED_SIDE_CHAT.name,
-      ...(process.platform === 'win32' ? WINDOWS_OPERATOR_BUNDLES : []),
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app',
+      ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, ...WINDOWS_OPERATOR_BUNDLES] : []),
     ])
     expect(manifest.dependencies).not.toHaveProperty(BUNDLED_SIDE_CHAT.name)
     expect(existsSync(join(manager.paths.profile, 'node_modules'))).toBe(false)
@@ -71,7 +71,11 @@ describe('desktop external plugin profile', () => {
       expect(readFileSync(join(manager.paths.profile, '.bundled-desktop-operator-v1'), 'utf8'))
         .toBe(BUNDLED_DESKTOP_OPERATOR.version + '\n')
     }
-    expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\n')
+    if (process.platform === 'win32') {
+      expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\n')
+    } else {
+      expect(existsSync(join(manager.paths.profile, '.bundled-side-chat-v1'))).toBe(false)
+    }
     await manager.disableAllPlugins()
     await manager.applyRelease()
     const disabled = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
@@ -81,7 +85,7 @@ describe('desktop external plugin profile', () => {
     expect(disabled.dsh.profile.bundles).not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
   })
 
-  it('resolves bundled extensions through the Desktop release manifest without profile installation', async () => {
+  it.skipIf(process.platform !== 'win32')('resolves bundled extensions through the Desktop release manifest without profile installation', async () => {
     const { root, manager } = setup()
     const dsh = manager.runtime.dsh
     const manifestPath = join(dsh, 'package.json')
@@ -116,7 +120,7 @@ describe('desktop external plugin profile', () => {
     expect(legacy.entries.some(entry => entry.name === BUNDLED_SIDE_CHAT.name)).toBe(false)
   })
 
-  it('resolves a bundled plugin from the installation without local dependency installation', async () => {
+  it.skipIf(process.platform !== 'win32')('resolves a bundled plugin from the installation without local dependency installation', async () => {
     const { manager } = setup()
     const pluginRoot = join(manager.runtime.dsh, 'node_modules', BUNDLED_SIDE_CHAT.name)
     mkdirSync(pluginRoot, { recursive: true })
@@ -132,7 +136,7 @@ describe('desktop external plugin profile', () => {
     expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_SIDE_CHAT.name)
   })
 
-  it('adds the side chat to an existing profile once and preserves custom bundles', async () => {
+  it.skipIf(process.platform !== 'win32')('adds the side chat to an existing profile once and preserves custom bundles', async () => {
     const { manager } = setup()
     mkdirSync(manager.paths.profile, { recursive: true })
     const path = join(manager.paths.profile, 'package.json')
@@ -159,6 +163,24 @@ describe('desktop external plugin profile', () => {
   })
 
 
+  it.skipIf(process.platform === 'win32')('keeps non-Windows profiles free from Windows-only offline bundles, including upgrades', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { 'my-plugin': '1.0.0' },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin'] } },
+    }))
+    await manager.applyRelease()
+    const updated = JSON.parse(readFileSync(path, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(updated.dsh.profile.bundles).toEqual(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin'])
+    expect(existsSync(join(manager.paths.profile, '.bundled-side-chat-v1'))).toBe(false)
+    expect(existsSync(join(manager.paths.profile, '.bundled-desktop-operator-v1'))).toBe(false)
+  })
+
   it.skipIf(process.platform !== 'win32')('never re-enables a disabled bundled Computer Use preset', async () => {
     const { manager } = setup()
     await manager.applyRelease()
@@ -174,7 +196,7 @@ describe('desktop external plugin profile', () => {
       .not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
   })
 
-  it('respects an older manually installed and disabled side chat', async () => {
+  it.skipIf(process.platform !== 'win32')('respects an older manually installed and disabled side chat', async () => {
     const { manager } = setup()
     mkdirSync(manager.paths.profile, { recursive: true })
     const path = join(manager.paths.profile, 'package.json')
