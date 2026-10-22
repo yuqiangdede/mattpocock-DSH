@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.2/coding-action-presets/guide.md
 /:
-  en: d8c339996fd62682
-  zh: 39b99714f5915509
-/coding-action-presets-and-settings-version-2:
-  en: abdbba5a1c83ce3e
-  zh: 6cc57d3e0b1e0b33
-/coding-action-presets-and-settings-version-2/change:
-  en: 718a7ddf8b13a795
-  zh: 7336335c2a92dfc1
-/coding-action-presets-and-settings-version-2/migration:
-  en: 9029b5338e946d17
-  zh: 91c176c928e0638d
+  en: 144c341d5a184db4
+  zh: e8e849e6fa0fa765
+/coding-action-presets-and-settings-version-3:
+  en: e5b2e745aaa90382
+  zh: b9c048a832abc00a
+/coding-action-presets-and-settings-version-3/change:
+  en: 49d262a8e86ce494
+  zh: 90e3ce0a20aeefd0
+/coding-action-presets-and-settings-version-3/migration:
+  en: 3de5e8590c8e2501
+  zh: 2657609bddf70855

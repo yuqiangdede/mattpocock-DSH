@@ -13,6 +13,8 @@ export interface CodingAction {
   skillId?: string
   prompt: string
   enabled: boolean
+  /** Pinned shortcuts remain visible above the selected category. */
+  pinned?: boolean
   order: number
   description: string
   example: string
@@ -21,12 +23,12 @@ export interface CodingAction {
 export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'initialize', label: '初始化', kind: 'skill', skillId: 'setup-matt-pocock-skills', prompt: '核对当前项目的工程 Skills 配置，先说明现状和缺失内容，修改之前征求确认。', enabled: true, order: 5, description: '什么时候使用：首次为仓库配置工程 Skills。', example: '具体例子：初始化 Issue 跟踪与项目文档约定。' },
   { id: 'ask', label: '咨询', kind: 'skill', skillId: 'ask-matt', prompt: '结合当前问题、项目上下文和实际可用的 Skills 推荐下一步，说明原因和前提；只给建议，不修改工程文件。', enabled: true, order: 8, description: '什么时候使用：不确定接下来应该调用哪个 Skill。', example: '具体例子：咨询该先讨论需求还是排查 Bug。' },
-  { id: 'discussion', label: '需求讨论', kind: 'skill', skillId: 'grill-with-docs', prompt: '根据当前讨论澄清真实需求与未决问题，不要擅自增加业务功能。', enabled: true, order: 10, description: '什么时候使用：刚开始讨论需求，存在不确定问题。', example: '具体例子：明确功能目标及交互流程。' },
-  { id: 'spec', label: '固化需求', kind: 'skill', skillId: 'to-spec', prompt: '请将最新确认的需求固化为可验收的规格。', enabled: true, order: 20, description: '什么时候使用：需求讨论已经形成决策。', example: '具体例子：整理开发和验收依据。' },
+  { id: 'discussion', label: '需求讨论', kind: 'skill', skillId: 'grill-with-docs', prompt: '根据当前讨论澄清真实需求与未决问题，不要擅自增加业务功能。', enabled: true, pinned: true, order: 10, description: '什么时候使用：刚开始讨论需求，存在不确定问题。', example: '具体例子：明确功能目标及交互流程。' },
+  { id: 'spec', label: '固化需求', kind: 'skill', skillId: 'to-spec', prompt: '请将最新确认的需求固化为可验收的规格。', enabled: true, pinned: true, order: 20, description: '什么时候使用：需求讨论已经形成决策。', example: '具体例子：整理开发和验收依据。' },
   { id: 'plan', label: '拆分工单', kind: 'skill', skillId: 'to-tickets', prompt: '按已确认规格拆分可独立验收的工单，明确依赖与阻塞关系，不扩大范围。', enabled: true, order: 30, description: '什么时候使用：已有需求规格，需要拆分实施工单。', example: '具体例子：为接口升级拆分工单及验收标准。' },
-  { id: 'execute', label: '开发', kind: 'skill', skillId: 'implement', prompt: '按已确认规格或工单实现，分步验证并报告失败。', enabled: true, order: 40, description: '什么时候使用：需要开始实际编码。', example: '具体例子：按工单完成编码和测试。' },
-  { id: 'bug', label: 'Bug 排查', kind: 'skill', skillId: 'diagnosing-bugs', prompt: '先复现和定位根因，再最小修复并验证。', enabled: true, order: 50, description: '什么时候使用：功能异常或测试失败。', example: '具体例子：排查会话状态错误。' },
-  { id: 'review', label: '代码审查', kind: 'skill', skillId: 'code-review', prompt: '审查正确性、数据安全和可维护性，给出有证据的问题。', enabled: true, order: 60, description: '什么时候使用：代码完成，准备合并。', example: '具体例子：检查权限和并发处理。' },
+  { id: 'execute', label: '开发', kind: 'skill', skillId: 'implement', prompt: '按已确认规格或工单实现，分步验证并报告失败。', enabled: true, pinned: true, order: 40, description: '什么时候使用：需要开始实际编码。', example: '具体例子：按工单完成编码和测试。' },
+  { id: 'bug', label: 'Bug 排查', kind: 'skill', skillId: 'diagnosing-bugs', prompt: '先复现和定位根因，再最小修复并验证。', enabled: true, pinned: true, order: 50, description: '什么时候使用：功能异常或测试失败。', example: '具体例子：排查会话状态错误。' },
+  { id: 'review', label: '代码审查', kind: 'skill', skillId: 'code-review', prompt: '审查正确性、数据安全和可维护性，给出有证据的问题。', enabled: true, pinned: true, order: 60, description: '什么时候使用：代码完成，准备合并。', example: '具体例子：检查权限和并发处理。' },
   { id: 'visual', label: '可视化讨论', kind: 'skill', skillId: 'grill-with-ui', prompt: '基于最新已确认需求开展可视化讨论，并把最终结果写回当前对话。', enabled: true, order: 15, description: '什么时候使用：需要交互式问答讨论。', example: '具体例子：逐个确认界面问题。' },
   { id: 'tdd', label: '测试驱动开发', kind: 'skill', skillId: 'tdd', prompt: '先编写失败测试再实现最小修改。', enabled: true, order: 120, description: '什么时候使用：可以通过测试驱动的实现。', example: '具体例子：先写解析器边界测试。' },
   { id: 'prototype', label: '制作原型', kind: 'skill', skillId: 'prototype', group: 'more', prompt: '围绕当前未决设计问题制作可运行原型，记录结论及适用限制。', enabled: true, order: 125, description: '什么时候使用：需要运行原型来验证设计。', example: '具体例子：验证交互流程或状态模型。' },
@@ -39,7 +41,7 @@ export const DEFAULT_ACTIONS: readonly CodingAction[] = [
   { id: 'doc-merge', label: '文档融合', kind: 'skill', skillId: 'component-doc-merge', prompt: '将多个组件接口资料按既有事实去重合并，保留来源与章节结构。', enabled: true, order: 180, description: '什么时候使用：组件文档融合交付任务。', example: '具体例子：调用 component-doc-merge 生成可复核的工程文档。' },
   { id: 'docx', label: 'MD 转 Word', kind: 'skill', skillId: 'markdown-to-docx', prompt: '按文档内容和指定模板生成 DOCX 并检查章节完整性和内容一致性。', enabled: true, order: 190, description: '什么时候使用：Markdown 转 Word交付任务。', example: '具体例子：调用 markdown-to-docx 生成可复核的工程文档。' },
   { id: 'image', label: '交互提示词', kind: 'prompt', prompt: '根据当前对话已确认的需求、设计决策、页面截图及文档，生成可直接用于 AI 图像生成的 UI 交互效果图提示词。保留原页面中未要求修改的功能和布局，明确操作流程、交互状态及视觉要求，不得凭空增加业务。', enabled: true, order: 300, description: '什么时候使用：需要把设计方案转成 UI 效果图。', example: '具体例子：给新增的搜索面板生成生图提示词。' },
-  { id: 'commit', label: '提交代码', kind: 'prompt', prompt: '先执行与本次改动相关的编译和测试，通过后才提交代码；兼容 Git、GitLab 和 SVN。失败则停止并报告，成功后说明提交标识和变更摘要；除非明确要求，不推送远程。', enabled: true, order: 210, description: '什么时候使用：本次编码已经完成。', example: '具体例子：编译成功后提交到版本库。' },
+  { id: 'commit', label: '提交代码', kind: 'prompt', prompt: '先执行与本次改动相关的编译和测试，通过后才提交代码；兼容 Git、GitLab 和 SVN。失败则停止并报告，成功后说明提交标识和变更摘要；除非明确要求，不推送远程。', enabled: true, pinned: true, order: 210, description: '什么时候使用：本次编码已经完成。', example: '具体例子：编译成功后提交到版本库。' },
   { id: 'review-fix', label: '修复审核问题', kind: 'prompt', prompt: '根据当前对话中已明确的代码审查问题或测试失败证据逐项定位并修复；若没有明确问题则先询问。仅做必要修改并运行相关回归测试。', enabled: true, order: 220, description: '什么时候使用：代码审查或测试发现了明确问题。', example: '具体例子：修复审查报告中的空指针问题。' },
   { id: 'compile', label: '编译', kind: 'prompt', prompt: '核对当前项目的构建脚本、运行环境和依赖，执行合适的编译或构建检查；不要提交代码。失败时定位原因，未经确认不扩大修改范围。', enabled: true, order: 230, description: '什么时候使用：需要验证当前工程是否能够编译。', example: '具体例子：运行项目在 Windows 上的构建命令。' },
   { id: 'continue', label: '继续', kind: 'prompt', prompt: '先核对本会话的未完成任务、最近改动及磁盘实际文件，识别已完成步骤和当前阻塞，再从可靠检查点继续，不覆盖现有工作。', enabled: true, order: 240, description: '什么时候使用：恢复中断的开发任务。', example: '具体例子：从上次失败的构建检查处继续。' },
@@ -108,16 +110,15 @@ export function presentDefaultActions(actions: CodingAction[], english: boolean)
   return english ? actions.map(a => ({ ...a, ...ENGLISH_DEFAULT_PRESENTATION[a.id] })) : actions
 }
 
+/** Version written by this client: version 3 adds the optional `pinned` flag, which version-2 clients discard when they save. */
+export const ACTION_SCHEMA_VERSION = 3
 /** Serialize a versioned action document.
  * @param actions Actions to persist.
  * @returns The JSON document.
  */
 export const encodeActions = (actions: readonly CodingAction[]): string =>
-  JSON.stringify({ schemaVersion: 2, actions }, null, 2)
-/** Validate a persisted action document and copy defaults when absent.
- * @param text Saved JSON or an absent configuration.
- * @returns Validated actions.
- */
+  JSON.stringify({ schemaVersion: ACTION_SCHEMA_VERSION, actions }, null, 2)
+/** Locale key naming why an action document failed validation. */
 export type ActionConfigErrorKey = 'errorJson' | 'errorRoot' | 'errorVersion' | 'errorEntry' | 'errorId' | 'errorLabel' | 'errorKind' | 'errorSkillId' | 'errorFields' | 'errorTooltip' | 'errorGroup'
 export class ActionConfigError extends Error {
   constructor(readonly key: ActionConfigErrorKey) { super(key); this.name = 'ActionConfigError' }
@@ -126,13 +127,18 @@ export class ActionConfigError extends Error {
 export function actionErrorKey(error: unknown): ActionConfigErrorKey | undefined {
   return error instanceof ActionConfigError ? error.key : undefined
 }
+/** Validate a persisted action document and copy defaults when absent.
+ * Versions 1 and 2 load as saved; version 1 also upgrades unchanged preset fields.
+ * @param text Saved JSON or an absent configuration.
+ * @returns Validated actions.
+ */
 export function parseActions(text: string | undefined): CodingAction[] {
   if (text === undefined || text.trim() === '') return DEFAULT_ACTIONS.map(a => ({ ...a }))
   let raw: unknown
   try { raw = JSON.parse(text) } catch { throw new ActionConfigError('errorJson') }
   if (typeof raw !== 'object' || raw === null) throw new ActionConfigError('errorRoot')
   const doc = raw as { schemaVersion?: unknown; actions?: unknown }
-  if ((doc.schemaVersion !== 1 && doc.schemaVersion !== 2) || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new ActionConfigError('errorVersion')
+  if ((doc.schemaVersion !== 1 && doc.schemaVersion !== 2 && doc.schemaVersion !== 3) || !Array.isArray(doc.actions) || doc.actions.length > 100) throw new ActionConfigError('errorVersion')
   const ids = new Set<string>()
   const actions = doc.actions.map((value: unknown) => {
     if (typeof value !== 'object' || value === null) throw new ActionConfigError('errorEntry')
@@ -144,8 +150,9 @@ export function parseActions(text: string | undefined): CodingAction[] {
     if (a.kind === 'skill' && (typeof a.skillId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.skillId))) throw new ActionConfigError('errorSkillId')
     if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new ActionConfigError('errorFields')
     if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new ActionConfigError('errorTooltip')
+    if (a.pinned !== undefined && typeof a.pinned !== 'boolean') throw new ActionConfigError('errorFields')
     if (a.group !== undefined && !ACTION_GROUPS.includes(a.group as ActionGroup)) throw new ActionConfigError('errorGroup')
-    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, order: a.order, description: a.description, example: a.example } as CodingAction
+    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, ...(a.pinned === undefined ? {} : { pinned: a.pinned }), order: a.order, description: a.description, example: a.example } as CodingAction
   })
   return doc.schemaVersion === 1 ? migrateActions(actions) : actions
 }
