@@ -45,7 +45,7 @@ export async function smokeDesktopRuntime(
     createPluginProfile(profile)
     {
       const loaded = loadProfileDirectory('dsh', profile,
-        join(root, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))
+        join(root, 'package.json'))
       if (loaded.skippedBundles.length !== 0
         || !loaded.layers.some(layer => layer.packageName === BUNDLED_SIDE_CHAT.name)) {
         throw new Error(`desktop side chat: bundle not resolved: ${JSON.stringify(loaded.skippedBundles)}`)
@@ -53,7 +53,7 @@ export async function smokeDesktopRuntime(
     }
     if (process.platform === 'win32') {
       const loaded = loadProfileDirectory('dsh', profile,
-        join(root, 'node_modules', '@deepseek-ai', 'dsh', 'package.json'))
+        join(root, 'package.json'))
       if (loaded.skippedBundles.length !== 0
         || !loaded.layers.some(layer => layer.packageName === DESKTOP_OPERATOR_PRESET_BUNDLE)) {
         throw new Error(`desktop Computer Use: offline bundle missing: ${JSON.stringify(loaded.skippedBundles)}`)

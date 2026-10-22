@@ -5,7 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
 import { BUNDLED_SIDE_CHAT, BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE, WINDOWS_OPERATOR_BUNDLES } from '../src/bundled-plugins.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
-import { loadProfileDirectory, readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
+import { createPluginProfile } from '../src/project-manager.ts'
+import { createRuntimeResolution, loadProfileDirectory, readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
 
 const roots: string[] = []
@@ -78,6 +79,41 @@ describe('desktop external plugin profile', () => {
     }
     expect(disabled.dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
     expect(disabled.dsh.profile.bundles).not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
+  })
+
+  it('resolves bundled extensions through the Desktop release manifest without profile installation', async () => {
+    const { root, manager } = setup()
+    const dsh = manager.runtime.dsh
+    const manifestPath = join(dsh, 'package.json')
+    writeFileSync(manifestPath, JSON.stringify({
+      name: '@deepseek-ai/dsh-desktop-runtime',
+      version: '1.0.0', type: 'module',
+      dependencies: {
+        '@deepseek-ai/dsh': '1.0.0',
+        [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+        ...(process.platform === 'win32' ? {
+          [DESKTOP_OPERATOR_PRESET_BUNDLE]: BUNDLED_DESKTOP_OPERATOR.version,
+        } : {}),
+      },
+    }))
+    const bundled = join(dsh, 'node_modules', BUNDLED_SIDE_CHAT.name)
+    mkdirSync(bundled, { recursive: true })
+    writeFileSync(join(bundled, 'package.json'), JSON.stringify({
+      name: BUNDLED_SIDE_CHAT.name, version: BUNDLED_SIDE_CHAT.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(bundled, 'cordis.patch.yml'), '- insert:\\n    - id: sidechat\\n      name: dsh-side-chat-plus\\n'.replaceAll('\\\\n', '\\n'))
+    createPluginProfile(manager.paths.profile)
+    const profile = loadProfileDirectory('dsh', manager.paths.profile, manifestPath)
+    expect(profile.skippedBundles).toEqual([])
+    expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_SIDE_CHAT.name)
+    const runtime = await createRuntimeResolution({ installAnchor: manifestPath, profile, home: root })
+    expect(runtime.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: BUNDLED_SIDE_CHAT.name, scope: 'installation' }),
+    ]))
+    const oldAnchor = join(dsh, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+    const legacy = await createRuntimeResolution({ installAnchor: oldAnchor, profile, home: root })
+    expect(legacy.entries.some(entry => entry.name === BUNDLED_SIDE_CHAT.name)).toBe(false)
   })
 
   it('resolves a bundled plugin from the installation without local dependency installation', async () => {
