@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
+import { BUNDLED_SIDE_CHAT } from '../src/bundled-plugins.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
 import { readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
@@ -43,6 +44,67 @@ afterEach(() => {
 })
 
 describe('desktop external plugin profile', () => {
+  it('enables the offline side chat on first launch without installing packages', async () => {
+    const { manager } = setup()
+    await manager.applyRelease()
+    const manifest = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(manifest.dsh.profile.bundles).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', BUNDLED_SIDE_CHAT.name,
+    ])
+    expect(manifest.dependencies).not.toHaveProperty(BUNDLED_SIDE_CHAT.name)
+    expect(existsSync(join(manager.paths.profile, 'node_modules'))).toBe(false)
+    expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\\n')
+    await manager.disableAllPlugins()
+    await manager.applyRelease()
+    const disabled = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(disabled.dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+  it('adds the side chat to an existing profile once and preserves custom bundles', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { 'my-plugin': '1.0.0' },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin'] } },
+    }))
+    await manager.applyRelease()
+    const updated = JSON.parse(readFileSync(path, 'utf8')) as {
+      dependencies: Record<string, string>
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(updated.dependencies).toEqual({ 'my-plugin': '1.0.0' })
+    expect(updated.dsh.profile.bundles).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin', BUNDLED_SIDE_CHAT.name,
+    ])
+    updated.dsh.profile.bundles = updated.dsh.profile.bundles.filter(name => name !== BUNDLED_SIDE_CHAT.name)
+    writeFileSync(path, JSON.stringify(updated))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(path, 'utf8')) as typeof updated).dsh.profile.bundles)
+      .not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+  it('respects an older manually installed and disabled side chat', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } },
+    }))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(path, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }).dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
   it('preserves installed packages, profile state, and the lockfile when preparing a launch', async () => {
     const { manager } = setup()
     await manager.applyRelease()
