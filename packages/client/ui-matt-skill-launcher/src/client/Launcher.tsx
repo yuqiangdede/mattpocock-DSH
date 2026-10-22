@@ -62,7 +62,7 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     inputActions.persistDraft()
   }
   const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={visibleRecommendation?.ids.includes(a.id) ? css.recommended : css.action}
-    title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommended') + ': ' + t(visibleRecommendation.reason) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
+    title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommendationTooltip').replace('{reason}', t(visibleRecommendation.reason)) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
     {(development.length > 0 || extra.length > 0) && <section className={css.group}>
       <span className={css.groupLabel}>{t('developmentGroup')}</span>
@@ -89,7 +89,7 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
       <span className={css.groupLabel}>{t('utilityGroup')}</span>
       <div className={css.row} aria-label={t('utilityGroup')}>{utilities.map(render)}</div>
     </section>}
-    {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendNext')}: {recommendedActions.map(action => action.label).join('、')}（{t(visibleRecommendation.reason)}）</div>}
+    {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
 }
