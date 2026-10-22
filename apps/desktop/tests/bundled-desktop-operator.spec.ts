@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, expect, it } from 'vitest'
-import { writeDesktopOperatorPresetBundle } from '../scripts/bundled-desktop-operator.ts'
+import { patchDesktopOperatorAsarRuntime, writeDesktopOperatorPresetBundle } from '../scripts/bundled-desktop-operator.ts'
 import { BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE, DESKTOP_OPERATOR_PRESET_ID } from '../src/bundled-plugins.ts'
 
 const directories: string[] = []
@@ -90,4 +90,23 @@ it('fails when DSH standard preset structure changes', () => {
   writeFileSync(path, '[]\n')
   expect(() => writeDesktopOperatorPresetBundle(root)).toThrow('standard preset changed')
   expect(existsSync(join(root, 'node_modules', ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/')))).toBe(false)
+})
+
+it('rewrites the native runtime lookup for Electron ASAR packages', () => {
+  const root = mkdtempSync(join(tmpdir(), 'operator-asar-'))
+  directories.push(root)
+  const entry = join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib', 'index.js')
+  mkdirSync(join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib'), { recursive: true })
+  writeFileSync(entry, 'const runtimeExecutable = join(packageRoot, bundledRuntimeRelativePath(platform, arch));\\n')
+  patchDesktopOperatorAsarRuntime(root)
+  expect(readFileSync(entry, 'utf8')).toContain('app.asar.unpacked')
+})
+
+it('fails closed if the upstream native runtime resolver changes', () => {
+  const root = mkdtempSync(join(tmpdir(), 'operator-asar-'))
+  directories.push(root)
+  const entry = join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib', 'index.js')
+  mkdirSync(join(root, 'node_modules', BUNDLED_DESKTOP_OPERATOR.name, 'lib'), { recursive: true })
+  writeFileSync(entry, 'const runtimeExecutable = resolveSomethingElse()\\n')
+  expect(() => patchDesktopOperatorAsarRuntime(root)).toThrow('upstream runtime resolver changed')
 })
