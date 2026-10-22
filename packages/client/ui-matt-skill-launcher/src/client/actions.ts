@@ -13,6 +13,8 @@ export interface CodingAction {
   skillId?: string
   prompt: string
   enabled: boolean
+  /** Pinned shortcuts remain visible above the selected category. */
+  pinned?: boolean
   order: number
   description: string
   example: string
@@ -144,8 +146,9 @@ export function parseActions(text: string | undefined): CodingAction[] {
     if (a.kind === 'skill' && (typeof a.skillId !== 'string' || !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(a.skillId))) throw new ActionConfigError('errorSkillId')
     if (typeof a.prompt !== 'string' || a.prompt.length > 16000 || typeof a.enabled !== 'boolean' || !Number.isSafeInteger(a.order)) throw new ActionConfigError('errorFields')
     if (typeof a.description !== 'string' || a.description.length > 500 || typeof a.example !== 'string' || a.example.length > 500) throw new ActionConfigError('errorTooltip')
+    if (a.pinned !== undefined && typeof a.pinned !== 'boolean') throw new ActionConfigError('errorFields')
     if (a.group !== undefined && !ACTION_GROUPS.includes(a.group as ActionGroup)) throw new ActionConfigError('errorGroup')
-    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, order: a.order, description: a.description, example: a.example } as CodingAction
+    return { id: a.id, label: a.label, kind: a.kind, ...(a.kind === 'skill' ? { skillId: a.skillId } : {}), ...(a.group === undefined ? {} : { group: a.group as ActionGroup }), prompt: a.prompt, enabled: a.enabled, ...(a.pinned === undefined ? {} : { pinned: a.pinned as boolean }), order: a.order, description: a.description, example: a.example } as CodingAction
   })
   return doc.schemaVersion === 1 ? migrateActions(actions) : actions
 }
