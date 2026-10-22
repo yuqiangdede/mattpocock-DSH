@@ -64,3 +64,7 @@ jobs:
       - name: Build Windows workspace (Host, Client, Desktop, Web)
         shell: pwsh
         run: pnpm run build
+
+      - name: Test offline side chat desktop profile defaults
+        shell: pwsh
+        run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts
