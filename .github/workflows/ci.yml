@@ -69,6 +69,21 @@ jobs:
         shell: pwsh
         run: pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts
 
+      # Packaging reads apps/desktop/.env.windows even for unsigned builds.
+      # Use an isolated loopback-only test configuration; never put release
+      # credentials, signing keys, or live update URLs in fork CI.
+      - name: Set up unsigned Windows packaging configuration
+        shell: pwsh
+        run: |
+          @'
+          DSH_DESKTOP_APP_ID=com.mattpocock.dsh.ci
+          DSH_DESKTOP_AUTO_UPDATE_ENV=test
+          DOWNLOAD_TEST_ORIGIN=https://127.0.0.1
+          DOWNLOAD_TEST_RELEASE_ID=0123456789abcdef0123456789abcdef
+          DSH_DESKTOP_MANDATORY_UPDATE_TEST_ORIGIN=https://127.0.0.1
+          DSH_DESKTOP_MANDATORY_UPDATE_CONFIG='{"allowedAuthOrigins":["https://127.0.0.1"]}'
+          '@ | Set-Content -Path apps/desktop/.env.windows -Encoding utf8
+
       # This is a shipping requirement, not a documentation gate: reject installers
       # whose bundled Computer Use release or native runtime fails verification.
       - name: Build and smoke-test offline Windows installer
