@@ -22,7 +22,7 @@
 6. 产品资料文档门禁仍由 Skill/提示词执行，Host 侧未单独拦截文档目录写入。
 7. 生成目录（config catalog、Cordis surface、module graph）尚未随新插件刷新。
 
-合并之前需补足 AC-P1～P3 与 E2E-01～12 的逐项证据；目前应保持 PR 为 **Draft**，不可将此实现标记为最终全量完成。
+合并之前需补足 AC-P1～P3 与 E2E-01～12 的逐项证据；目前应保持 PR 为 **Draft**，不可将此实现标记为最终全量完成。逐条状态与可复跑证据见[验收证据台账](coding-workflow-acceptance.zh.md)。
 
 ## 本地测试
 
