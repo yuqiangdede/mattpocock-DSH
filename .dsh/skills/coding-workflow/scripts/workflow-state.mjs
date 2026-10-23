@@ -277,7 +277,11 @@ const main = () => {
         return task
       }
       task.stages.S5 = { status: open.length ? 'failed' : 'completed', attempts: task.stages.S5.attempts + 1, evidence: proof }
-      task.stages.S6 = open.length ? { status: 'pending', attempts: task.stages.S6.attempts } : { status: 'skipped', attempts: task.stages.S6.attempts, reason: 'No blocking findings' }
+      task.stages.S6 = open.length
+        ? { status: 'pending', attempts: task.stages.S6.attempts }
+        : task.repairRounds > 0 && task.stages.S6.status === 'completed'
+          ? task.stages.S6
+          : { status: 'skipped', attempts: task.stages.S6.attempts, reason: 'No blocking findings or repair needed' }
       task.stages.S7 = { status: 'stale', attempts: task.stages.S7.attempts }
       task.verificationRuns = []
       task.currentStage = open.length ? 'S6' : 'S7'
