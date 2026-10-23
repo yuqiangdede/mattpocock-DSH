@@ -163,3 +163,35 @@ test('wrong branch invalidates a task without moving user HEAD', () => {
     assert.equal(e.git('branch', '--show-current'), 'different-branch')
   } finally { e.cleanup() }
 })
+
+test('repair evidence survives a clean rereview and permits fresh verification', () => {
+  const e = setup()
+  try {
+    const id = e.run('start', 'repair with history').value.taskId
+    const proof = join(e.base, 'proof.txt'); writeFileSync(proof, 'stage evidence')
+    for (const stage of ['S1', 'S2', 'S3'])
+      assert.equal(e.run('stage', id, stage, proof).status, 0)
+    configure(e, id)
+    writeFileSync(join(e.cwd, 'readme.txt'), 'buggy implementation\n')
+    assert.equal(e.run('stage', id, 'S4', proof).status, 0)
+    const review = join(e.base, 'review.json')
+    writeFileSync(review, JSON.stringify({ findings: [{
+      id: 'P1-1', severity: 'P1', status: 'open', file: 'readme.txt', evidence: 'incorrect behavior',
+    }] }))
+    assert.equal(e.run('review', id, review).value.currentStage, 'S6')
+    writeFileSync(join(e.cwd, 'readme.txt'), 'repaired implementation\n')
+    const repair = e.run('repair', id, proof)
+    assert.equal(repair.status, 0, repair.stderr)
+    assert.equal(repair.value.stages.S6.status, 'completed')
+    writeFileSync(review, JSON.stringify({ findings: [] }))
+    const clean = e.run('review', id, review)
+    assert.equal(clean.status, 0, clean.stderr)
+    assert.equal(clean.value.currentStage, 'S7')
+    assert.equal(clean.value.stages.S6.status, 'completed')
+    assert.equal(e.run('verify',id,'test','--',process.execPath,'--version').status, 0)
+    assert.equal(e.run('verify',id,'build','--',process.execPath,'-p','1+1').status, 0)
+    const committed = e.run('commit', id, '--', 'readme.txt')
+    assert.equal(committed.status, 0, committed.stderr)
+    assert.ok(committed.value.commitRef)
+  } finally { e.cleanup() }
+})
