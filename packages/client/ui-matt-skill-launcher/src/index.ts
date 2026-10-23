@@ -14,12 +14,13 @@ import { LAUNCHER_CONFIG_GLOBAL, LauncherDeploymentFields, type LauncherDeployme
 
 /** Host configuration: the Settings-owned action document plus the browser deployment values. */
 export interface Config extends LauncherDeployment {
+  /** Versioned CodingAction document kept by DSH Settings. */
   actionsJson: Volatile<string | undefined>
 }
 
 export const Config = z.object({
   actionsJson: z.string().volatile(),
-  ...LauncherDeploymentFields,
+  todoStaleMs: LauncherDeploymentFields.todoStaleMs,
 })
 
 /**

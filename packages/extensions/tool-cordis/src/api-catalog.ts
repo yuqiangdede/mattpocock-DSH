@@ -637,6 +637,139 @@ export const SERVICE_API: readonly ServiceApiEntry[] = [
     ],
   },
   {
+    key: 'codingWorkflow',
+    summary: 'Coding-workflow service (`ctx.codingWorkflow`).',
+    description: 'Coding-workflow service (`ctx.codingWorkflow`).',
+    methods: [
+      {
+        signature: 'async start(agent: Agent, title: string): Promise<WorkItem>',
+        description: 'Start one Work Item on a clean tree; a protected branch gets a new task branch.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'title', description: 'human task title.' }],
+        returns: 'the created record.',
+      },
+      {
+        signature: '@Remote(\'get\') get(agent: Agent): WorkItem | null',
+        description: 'Read the Session\'s current Work Item.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }],
+        returns: 'the newest unfinished record, else the newest record, else null.',
+      },
+      {
+        signature: 'inspect(agent: Agent): WorkItem | null',
+        description: 'Read the Session\'s current unfinished Work Item without validating liveness. The synchronous tool guard uses this path.',
+        parameters: [{ name: 'agent', description: 'calling Agent.' }],
+        returns: 'the unfinished record, or null when the Session owns none.',
+      },
+      {
+        signature: 'async stage(agent: Agent, request: StageRequest): Promise<WorkItem>',
+        description: 'Complete one evidence-only stage.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'request', description: 'stage and evidence path.' }],
+        returns: 'the next record.',
+      },
+      {
+        signature: 'async checks(agent: Agent, request: ChecksRequest): Promise<WorkItem>',
+        description: 'Accept the implementation plan\'s checks and allowed paths.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'request', description: 'plan evidence, checks, and allowed paths.' }],
+        returns: 'the next record.',
+      },
+      {
+        signature: 'async review(agent: Agent, request: ReviewRequest): Promise<WorkItem>',
+        description: 'Record one structured review and route the task onward.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'request', description: 'review evidence and findings.' }],
+        returns: 'the next record.',
+      },
+      {
+        signature: 'async repair(agent: Agent, evidencePath: string): Promise<WorkItem>',
+        description: 'Record one repair round after a failing review.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'evidencePath', description: 'repair evidence path.' }],
+        returns: 'the next record.',
+      },
+      {
+        signature: 'async verify(agent: Agent, request: VerifyRequest, signal?: AbortSignal): Promise<WorkItem>',
+        description: 'Run one planned verification command and fold its outcome.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'request', description: 'planned kind and exact command.' }, { name: 'signal', description: 'caller cancellation.' }],
+        returns: 'the next record.',
+      },
+      {
+        signature: 'async commit(agent: Agent, request: CommitRequest): Promise<WorkItem>',
+        description: 'Stage exactly the listed files and create the task\'s single local commit.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'request', description: 'exact files to commit.' }],
+        returns: 'the record at S9.',
+      },
+      {
+        signature: '@Remote(\'pause\') pause(agent: Agent, taskId: TaskId, revision: number): Promise<WorkItem>',
+        description: 'Pause further progress.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'taskId', description: 'task identity.' }, { name: 'revision', description: 'expected revision.' }],
+        returns: 'the paused record.',
+      },
+      {
+        signature: '@Remote(\'resume\') async resume(agent: Agent, taskId: TaskId, revision: number): Promise<WorkItem>',
+        description: 'Resume a paused, blocked, or ready task.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'taskId', description: 'task identity.' }, { name: 'revision', description: 'expected revision.' }],
+        returns: 'the runnable record.',
+      },
+      {
+        signature: '@Remote(\'setMode\') setMode(agent: Agent, taskId: TaskId, revision: number, mode: WorkflowMode): Promise<WorkItem>',
+        description: 'Switch mode without resuming work.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'taskId', description: 'task identity.' }, { name: 'revision', description: 'expected revision.' }, { name: 'mode', description: 'requested mode.' }],
+        returns: 'the paused record with the new mode.',
+      },
+      {
+        signature: '@Remote(\'approve\') approve(agent: Agent, taskId: TaskId, revision: number, decision: string): Promise<WorkItem>',
+        description: 'Record a scoped human approval.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'taskId', description: 'task identity.' }, { name: 'revision', description: 'expected revision.' }, { name: 'decision', description: 'scoped decision text.' }],
+        returns: 'the approved record.',
+      },
+      {
+        signature: '@Remote(\'cancel\') cancel(agent: Agent, taskId: TaskId, revision: number, reason: string): Promise<WorkItem>',
+        description: 'Cancel a task permanently.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'taskId', description: 'task identity.' }, { name: 'revision', description: 'expected revision.' }, { name: 'reason', description: 'why the user cancelled.' }],
+        returns: 'the cancelled record.',
+      },
+      {
+        signature: 'async requestApproval(agent: Agent, reason: string): Promise<WorkItem>',
+        description: 'Ask a human for a scoped decision from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'reason', description: 'concrete reason and proposed recovery.' }],
+        returns: 'the waiting record.',
+      },
+      {
+        signature: 'async block(agent: Agent, reason: string): Promise<WorkItem>',
+        description: 'Stop a task on an unrecoverable condition from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'reason', description: 'concrete reason and proposed recovery.' }],
+        returns: 'the blocked record.',
+      },
+      {
+        signature: 'async updateMode(agent: Agent, mode: WorkflowMode): Promise<WorkItem>',
+        description: 'Switch the current task\'s mode from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'mode', description: 'requested mode.' }],
+        returns: 'the paused record with the new mode.',
+      },
+      {
+        signature: 'async pauseCurrent(agent: Agent): Promise<WorkItem>',
+        description: 'Pause the current task from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }],
+        returns: 'the paused record.',
+      },
+      {
+        signature: 'async resumeCurrent(agent: Agent): Promise<WorkItem>',
+        description: 'Resume the current task from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }],
+        returns: 'the runnable record.',
+      },
+      {
+        signature: 'async cancelCurrent(agent: Agent, reason: string): Promise<WorkItem>',
+        description: 'Cancel the current task from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'reason', description: 'why the task is cancelled.' }],
+        returns: 'the cancelled record.',
+      },
+      {
+        signature: 'async approveCurrent(agent: Agent, decision: string): Promise<WorkItem>',
+        description: 'Approve the current task\'s pending human decision from the model path.',
+        parameters: [{ name: 'agent', description: 'live owning Agent.' }, { name: 'decision', description: 'scoped decision text.' }],
+        returns: 'the approved record.',
+      },
+    ],
+  },
+  {
     key: 'commands',
     summary: 'Human-command registry.',
     description: 'Human-command registry. Plain-context definitions are global; definitions registered through a command-injected child of an agent context shadow globals for that agent.',
@@ -4174,6 +4307,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'key', description: 'the credential record the finished attempt was authorizing.' }, { name: 'settlement', description: 'how it ended, including the `failed` case its caller sees as a thrown error.' }],
   },
   {
+    name: 'coding-workflow/changed',
+    mode: 'emit',
+    signature: '\'coding-workflow/changed\'(payload: CodingWorkflowChanged): void',
+    summary: 'One accepted Work Item mutation.',
+    description: 'One accepted Work Item mutation.',
+    parameters: [{ name: 'payload', description: 'session, task, and the new stage/status.' }],
+  },
+  {
     name: 'commands/change',
     mode: 'emit',
     signature: '\'commands/change\'(): void',
@@ -4994,8 +5135,24 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ChangeResult {\n    changed: boolean;\n    application: \'applied\' | \'restart-required\' | \'overridden\' | \'failed\' | \'cancelled\';\n    restartReason?: RestartReason;\n    stage: \'install\' | \'enable\' | \'remove\';\n    target: string;\n    enabled?: boolean;\n    error?: ManagementError;\n    warnings?: string[];\n    packageResult?: PackageResult;\n    bundle?: string;\n    version?: string;\n    pendingBuilds?: string[];\n    approvedBuilds?: string[];\n    registries?: Registry[];\n    failedAt?: \'registry\' | \'spec-host\';\n}',
   },
   {
+    name: 'CheckKind',
+    declaration: 'export type CheckKind = \'test\' | \'build\' | \'lint\' | \'typecheck\' | \'integration\';',
+  },
+  {
+    name: 'CheckPlan',
+    declaration: 'export interface CheckPlan {\n    readonly kind: CheckKind;\n    readonly command: string[];\n}',
+  },
+  {
+    name: 'ChecksRequest',
+    declaration: 'export interface ChecksRequest {\n    readonly evidencePath: string;\n    readonly checks: readonly CheckPlan[];\n    readonly allowedPaths: readonly string[];\n}',
+  },
+  {
     name: 'ClientArtifactBaseline',
     declaration: 'export interface ClientArtifactBaseline {\n    readonly path: string;\n    readonly mtimeMs: number;\n    readonly ctimeMs: number;\n    readonly size: number;\n}',
+  },
+  {
+    name: 'CodingWorkflowChanged',
+    declaration: 'export interface CodingWorkflowChanged {\n    readonly sessionId: SessionId;\n    readonly taskId: TaskId;\n    readonly revision: number;\n    readonly status: WorkItemStatus;\n    readonly currentStage: StageId;\n}',
   },
   {
     name: 'CollectedOutput',
@@ -5038,10 +5195,6 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface CommandInvocation {\n    readonly commandId: CommandId;\n    readonly agent: Agent;\n    readonly rawInput: string;\n    readonly attachments: readonly (ImageBlock | FileBlock)[];\n    readonly signal: AbortSignal;\n}',
   },
   {
-    name: 'CommandResult',
-    declaration: 'export type CommandResult = {\n    readonly kind: \'success\';\n    readonly text?: string;\n    readonly sourceEventSeq?: SessionSeq;\n} | {\n    readonly kind: \'error\';\n    readonly text: string;\n};',
-  },
-  {
     name: 'CommandRunInput',
     declaration: 'export interface CommandRunInput {\n    command: string;\n    args: string;\n    origin: PromptOrigin;\n}',
   },
@@ -5056,6 +5209,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'CommandSubmitAttachment',
     declaration: 'export type CommandSubmitAttachment = ({\n    readonly type: \'image\';\n} & EncodedImageAttachment) | {\n    readonly type: \'file\';\n    readonly receiptId: string;\n};',
+  },
+  {
+    name: 'CommitRequest',
+    declaration: 'export interface CommitRequest {\n    readonly files: readonly string[];\n}',
   },
   {
     name: 'CompactionAgentContext',
@@ -5472,6 +5629,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'EveryScheduleRecord',
     declaration: 'export interface EveryScheduleRecord {\n    readonly id: ScheduleId;\n    readonly kind: \'every\';\n    readonly title: string;\n    readonly prompt: string;\n    readonly everySeconds: number;\n    readonly scheduledAt: string;\n}',
+  },
+  {
+    name: 'EvidenceRef',
+    declaration: 'export interface EvidenceRef {\n    readonly path: string;\n    readonly sha256: string;\n}',
   },
   {
     name: 'FeedbackCategory',
@@ -6826,6 +6987,26 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface ResumeAgentOptions {\n    readonly resumeSessionId: SessionId;\n    readonly parentAgent?: Agent;\n    readonly agentOptions?: AgentOptions;\n    readonly signal?: AbortSignal;\n    readonly setup?: AgentSetup;\n}',
   },
   {
+    name: 'ReviewEvidence',
+    declaration: 'export interface ReviewEvidence extends EvidenceRef {\n    readonly fingerprint: string;\n    readonly blockers: number;\n    readonly findingIds: string[];\n}',
+  },
+  {
+    name: 'ReviewFinding',
+    declaration: 'export interface ReviewFinding {\n    readonly id: string;\n    readonly severity: ReviewSeverity;\n    readonly status: ReviewFindingStatus;\n    readonly file: string;\n    readonly evidence: string;\n}',
+  },
+  {
+    name: 'ReviewFindingStatus',
+    declaration: 'export type ReviewFindingStatus = \'open\' | \'resolved\' | \'accepted\';',
+  },
+  {
+    name: 'ReviewRequest',
+    declaration: 'export interface ReviewRequest {\n    readonly evidencePath: string;\n    readonly findings: readonly ReviewFinding[];\n}',
+  },
+  {
+    name: 'ReviewSeverity',
+    declaration: 'export type ReviewSeverity = \'P0\' | \'P1\' | \'P2\' | \'P3\';',
+  },
+  {
     name: 'RpcId',
     declaration: 'export type RpcId = Branded<\'rpc-id\'>;',
   },
@@ -7802,6 +7983,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export type SshStreamEndpoint = z.infer<typeof streamEndpointSchema>;',
   },
   {
+    name: 'StageId',
+    declaration: 'export type StageId = typeof WORKFLOW_STAGES[number];',
+  },
+  {
+    name: 'StageRequest',
+    declaration: 'export interface StageRequest {\n    readonly stage: Extract<StageId, \'S1\' | \'S2\' | \'S3\' | \'S4\' | \'S9\'>;\n    readonly evidencePath: string;\n}',
+  },
+  {
+    name: 'StageState',
+    declaration: 'export interface StageState {\n    readonly status: StageStatus;\n    readonly attempts: number;\n    readonly evidence?: EvidenceRef | undefined;\n    readonly reason?: string | undefined;\n}',
+  },
+  {
+    name: 'StageStatus',
+    declaration: 'export type StageStatus = \'pending\' | \'running\' | \'waiting_approval\' | \'completed\' | \'failed\' | \'blocked\' | \'skipped\' | \'stale\';',
+  },
+  {
     name: 'StorageBackend',
     declaration: 'export interface StorageBackend {\n    readonly kv?: KvFacet;\n    close(): Promise<void>;\n}',
   },
@@ -8020,6 +8217,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'TableValueOf',
     declaration: 'export type TableValueOf<S extends DomainSpec, N extends keyof S[\'tables\']> = S[\'tables\'][N] extends DomainTableSpec<string, infer V> ? V : never;',
+  },
+  {
+    name: 'TaskId',
+    declaration: 'export type TaskId = Branded<\'CodingWorkflowTaskId\'>;',
   },
   {
     name: 'TeamId',
@@ -8550,8 +8751,20 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface UserMessage extends MessageBase {\n    readonly role: \'user\';\n}',
   },
   {
+    name: 'VerificationEvidence',
+    declaration: 'export interface VerificationEvidence {\n    readonly passed: true;\n    readonly fingerprint: string;\n    readonly runs: VerificationRun[];\n}',
+  },
+  {
+    name: 'VerificationRun',
+    declaration: 'export interface VerificationRun {\n    readonly kind: CheckKind;\n    readonly command: string[];\n    readonly exitCode: number | null;\n    readonly passed: boolean;\n    readonly fingerprint: string;\n    readonly logSha256: string;\n    readonly error: string;\n    readonly ranAt: string;\n}',
+  },
+  {
     name: 'VerifiedWebhookDelivery',
     declaration: 'export interface VerifiedWebhookDelivery<K extends string = string> {\n    readonly kind: K;\n    readonly source: WebhookSourceId;\n    readonly deliveryId: WebhookDeliveryId;\n    readonly event: WebhookEventOf<K>;\n    readonly receivedAt: number;\n}',
+  },
+  {
+    name: 'VerifyRequest',
+    declaration: 'export interface VerifyRequest {\n    readonly kind: CheckKind;\n    readonly command: readonly string[];\n}',
   },
   {
     name: 'WebBootBatch',
@@ -8698,6 +8911,10 @@ export const TYPE_API: readonly TypeApiEntry[] = [
     declaration: 'export interface WorkflowMeta {\n    name: string;\n    description: string;\n    whenToUse?: string;\n    phases?: WorkflowPhase[];\n}',
   },
   {
+    name: 'WorkflowMode',
+    declaration: 'export type WorkflowMode = \'manual\' | \'auto\';',
+  },
+  {
     name: 'WorkflowPhase',
     declaration: 'export interface WorkflowPhase {\n    title: string;\n    detail?: string;\n    provider?: string;\n    model?: string;\n}',
   },
@@ -8728,6 +8945,22 @@ export const TYPE_API: readonly TypeApiEntry[] = [
   {
     name: 'WorkflowStopReason',
     declaration: 'export type WorkflowStopReason = \'completed\' | \'cancelled\' | \'error\';',
+  },
+  {
+    name: 'WorkItem',
+    declaration: 'export interface WorkItem {\n    readonly schemaVersion: 1;\n    readonly revision: number;\n    readonly taskId: TaskId;\n    readonly sessionId: SessionId;\n    readonly workspaceRoot: string;\n    readonly title: string;\n    readonly mode: WorkflowMode;\n    readonly status: WorkItemStatus;\n    readonly currentStage: StageId;\n    readonly branch: string;\n    readonly baseCommit: string;\n    readonly commitRef: string | null;\n    readonly stages: Record<StageId, StageState>;\n    readonly repairRounds: number;\n    readonly noProgressRounds: number;\n    readonly checks: CheckPlan[] | null;\n    readonly allowedPaths: string[] | null;\n    readonly review: ReviewEvidence | null;\n    readonly verification: VerificationEvidence | null;\n    readonly verificationRuns: VerificationRun[];\n    readonly approval: WorkItemApproval | null;\n    readonly blocker: WorkItemBlocker | null;\n    readonly createdAt: string;\n    readonly updatedAt: string;\n}',
+  },
+  {
+    name: 'WorkItemApproval',
+    declaration: 'export interface WorkItemApproval {\n    readonly decision: string;\n    readonly stage: StageId;\n    readonly approvedAt: string;\n}',
+  },
+  {
+    name: 'WorkItemBlocker',
+    declaration: 'export interface WorkItemBlocker {\n    readonly reason: string;\n    readonly stage: StageId;\n}',
+  },
+  {
+    name: 'WorkItemStatus',
+    declaration: 'export type WorkItemStatus = \'created\' | \'ready\' | \'running\' | \'waiting_approval\' | \'paused\' | \'blocked\' | \'completed\' | \'cancelled\';',
   },
   {
     name: 'Workspace',

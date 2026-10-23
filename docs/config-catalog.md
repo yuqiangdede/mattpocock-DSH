@@ -531,6 +531,34 @@ export interface Config {
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-shortcuts -->
 
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-matt-skill-launcher -->
+<a id="deepseek-aidsh-client-ui-matt-skill-launcher"></a>
+
+## `@deepseek-ai/dsh-client-ui-matt-skill-launcher`
+
+- `refs`: `Volatile` (`@deepseek-ai/cordis`)
+- `source`: [`packages/client/ui-matt-skill-launcher/src/index.ts:16`](../packages/client/ui-matt-skill-launcher/src/index.ts)
+
+```ts config-catalog
+/** Host configuration: the Settings-owned action document plus the browser deployment values. */
+export interface Config extends LauncherDeployment {
+  /** Versioned CodingAction document kept by DSH Settings. */
+  actionsJson: Volatile<string | undefined>
+}
+
+/** Launcher values the browser face reads back from the Host. */
+export interface LauncherDeployment {
+  /**
+   * Milliseconds a running, unfinished todo plan may stay visibly unchanged
+   * before the launcher hints that the plan may be behind. This is the browser
+   * observation policy and is independent of the Host guard's `staleAfterMs`,
+   * which decides when the model is asked to re-check its plan.
+   */
+  todoStaleMs: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-matt-skill-launcher -->
+
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-client-ui-plugin-manager -->
 <a id="deepseek-aidsh-client-ui-plugin-manager"></a>
 
@@ -682,6 +710,23 @@ export interface Config {
 export type ThemePreference = typeof THEME_PREFERENCES[number]
 ```
 <!-- END GENERATED config-catalog:@deepseek-ai/dsh-client-ui-theme -->
+
+<!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-coding-workflow -->
+<a id="deepseek-aidsh-coding-workflow"></a>
+
+## `@deepseek-ai/dsh-coding-workflow`
+
+- `inject`: `storageDomain` · `agents` · `workingDirectory`
+- `source`: [`packages/workflow/coding-workflow/src/index.ts:65`](../packages/workflow/coding-workflow/src/index.ts)
+
+```ts config-catalog
+/** Deployment settings of the workflow service. */
+export interface Config {
+  /** Deadline of one registered verification command. */
+  verificationTimeoutMs?: number
+}
+```
+<!-- END GENERATED config-catalog:@deepseek-ai/dsh-coding-workflow -->
 
 <!-- BEGIN GENERATED config-catalog:@deepseek-ai/dsh-compaction-basic -->
 <a id="deepseek-aidsh-compaction-basic"></a>
@@ -4617,7 +4662,6 @@ These load from a `cordis.yml` entry with no `config:` block; they declare no co
 | `@deepseek-ai/dsh-client-ui-input-trigger` | — | [`packages/client/ui-input-trigger/src/index.ts`](../packages/client/ui-input-trigger/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-jobs` | — | [`packages/client/ui-jobs/src/index.ts`](../packages/client/ui-jobs/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-layout` | — | [`packages/client/ui-layout/src/index.ts`](../packages/client/ui-layout/src/index.ts) |
-| `@deepseek-ai/dsh-client-ui-matt-skill-launcher` | — | [`packages/client/ui-matt-skill-launcher/src/index.ts`](../packages/client/ui-matt-skill-launcher/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-message-feedback` | — | [`packages/client/ui-message-feedback/src/index.ts`](../packages/client/ui-message-feedback/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-model-selection` | — | [`packages/client/ui-model-selection/src/index.ts`](../packages/client/ui-model-selection/src/index.ts) |
 | `@deepseek-ai/dsh-client-ui-open-in-app` | — | [`packages/client/ui-open-in-app/src/index.ts`](../packages/client/ui-open-in-app/src/index.ts) |

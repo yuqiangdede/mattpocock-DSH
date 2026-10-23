@@ -142,6 +142,7 @@ export const SERVICE_PAGE: Record<string, string> = {
   userQuestions: 'user-questions.md',
   web: 'web.md',
   workflowEngine: 'workflow.md',
+  codingWorkflow: 'workflow.md',
   webhookRuntime: 'webhook.md',
   workspaceRegistry: 'workspace.md',
   workspaceController: 'workspace.md',
@@ -252,6 +253,7 @@ export const EVENT_SCOPE_PAGE: Record<string, string> = {
   'user-questions': 'user-questions.md',
   'webserver': 'web-server.md',
   'workflow': 'workflow.md',
+  'coding-workflow': 'workflow.md',
   'workspace': 'workspace.md',
 }
 
@@ -871,6 +873,15 @@ export const FOUNDATION_TYPE_NAMES: ReadonlySet<string> = new Set([
 /** Project types deliberately documented outside the subsystems catalog. */
 export const TYPE_LINK_EXEMPTIONS: Readonly<Record<string, string>> = {
   ProductEvent: 'Desktop event fields are owned by packages/client/product-analytics/README.md and src/events.ts',
+  CodingWorkflowChanged: 'coding Work Item change payload is owned by packages/workflow/coding-workflow/README.md',
+  WorkItem: 'coding Work Item record is owned by packages/workflow/coding-workflow/README.md',
+  TaskId: 'coding Work Item identity is owned by packages/workflow/coding-workflow/README.md',
+  WorkflowMode: 'coding Work Item mode is owned by packages/workflow/coding-workflow/README.md',
+  StageRequest: 'coding stage request is owned by packages/workflow/coding-workflow/README.md',
+  ChecksRequest: 'coding plan request is owned by packages/workflow/coding-workflow/README.md',
+  ReviewRequest: 'coding review request is owned by packages/workflow/coding-workflow/README.md',
+  VerifyRequest: 'coding verification request is owned by packages/workflow/coding-workflow/README.md',
+  CommitRequest: 'coding commit request is owned by packages/workflow/coding-workflow/README.md',
   ConnectionFetchHandler: 'shared Fetch dispatch is owned by packages/client/connection/src/rpc.ts',
   ConnectionRequestRejection: 'transport rejection status is owned by packages/client/connection/src/rpc.ts',
   ConnectionTrustRequest: 'transport authentication input is owned by packages/client/connection/src/rpc.ts',

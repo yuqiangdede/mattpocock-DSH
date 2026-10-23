@@ -449,6 +449,7 @@ flowchart TD
     pkg_typert_registry["typert-registry"]
   end
   subgraph group_workflow["packages/workflow"]
+    pkg_coding_workflow["coding-workflow"]
     pkg_tool_workflow["tool-workflow"]
     pkg_workflow["workflow"]
     pkg_workflow_ptc["workflow-ptc"]
@@ -1239,6 +1240,15 @@ flowchart TD
   pkg_webhook_github --> pkg_host_webserver
   pkg_webhook_github --> pkg_session
   pkg_webhook_github --> pkg_webhook
+  pkg_coding_workflow --> pkg_agent
+  pkg_coding_workflow --> pkg_agent_loop_testkit
+  pkg_coding_workflow --> pkg_brand
+  pkg_coding_workflow --> pkg_session
+  pkg_coding_workflow --> pkg_storage
+  pkg_coding_workflow --> pkg_storage_domain
+  pkg_coding_workflow --> pkg_tools
+  pkg_coding_workflow --> pkg_typert_protocol
+  pkg_coding_workflow --> pkg_working_directory
   pkg_goal_round_driver --> pkg_agent
   pkg_goal_round_driver --> pkg_goal
   pkg_goal_round_driver --> pkg_llm
@@ -1752,6 +1762,7 @@ flowchart TD
 | [`experimental-claude-code-mods`](../packages/experimental/claude-code-mods) | `experimental` | [`agent`](../packages/core/agent), [`commands`](../packages/interaction/commands), [`fs`](../packages/fs/fs), [`llm`](../packages/llm/llm), [`scope`](../packages/core/scope), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`storage-domain`](../packages/storage/storage-domain), [`subprocess`](../packages/subprocess/subprocess), [`token-meter`](../packages/llm/token-meter), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol), [`user-questions`](../packages/interaction/user-questions), [`working-directory`](../packages/session/working-directory) |
 | [`tool-session-query`](../packages/experimental/tool-session-query) | `experimental` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`session-projection`](../packages/session/session-projection), [`session-query`](../packages/session-query/session-query), [`system-prompt`](../packages/core/system-prompt), [`timeout`](../packages/util/timeout), [`tools`](../packages/core/tools) |
 | [`webhook-github`](../packages/experimental/webhook-github) | `experimental` | [`credentials`](../packages/credentials/credentials), [`host-webserver`](../packages/host/webserver), [`session`](../packages/core/session), [`webhook`](../packages/experimental/webhook) |
+| [`coding-workflow`](../packages/workflow/coding-workflow) | `workflow` | [`agent`](../packages/core/agent), [`agent-loop-testkit`](../packages/test-support/agent-loop-testkit), [`brand`](../packages/util/brand), [`session`](../packages/core/session), [`storage`](../packages/storage/storage), [`storage-domain`](../packages/storage/storage-domain), [`tools`](../packages/core/tools), [`typert-protocol`](../packages/typert/protocol), [`working-directory`](../packages/session/working-directory) |
 | [`goal-round-driver`](../packages/goal/goal-round-driver) | `goal` | [`agent`](../packages/core/agent), [`goal`](../packages/goal/goal), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent) |
 | [`subagent-acp`](../packages/subagent/subagent-acp) | `subagent` | [`agent`](../packages/core/agent), [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
 | [`subagent-claude-code`](../packages/subagent/subagent-claude-code) | `subagent` | [`llm`](../packages/llm/llm), [`session`](../packages/core/session), [`subagent`](../packages/subagent/subagent), [`subprocess`](../packages/subprocess/subprocess), [`timeout`](../packages/util/timeout) |
