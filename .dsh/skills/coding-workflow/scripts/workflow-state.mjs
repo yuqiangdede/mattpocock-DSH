@@ -121,6 +121,16 @@ const start = () => {
   ensure(title.length > 0 && title.length <= 1000, 'Missing or excessive task title')
   let currentBranch = branch(root)
   ensure(currentBranch.length > 0, 'Detached HEAD not supported')
+  // Prevent two unfinished work items from silently claiming one existing branch.
+  const store = storage(root)
+  if (fs.existsSync(store)) for (const file of fs.readdirSync(store)) {
+    if (!/^[0-9a-f-]{36}[.]json$/.test(file)) continue
+    const prior = JSON.parse(fs.readFileSync(path.join(store, file), 'utf8'))
+    if (prior.repositoryRoot === root && prior.branch === currentBranch &&
+        !['completed', 'cancelled'].includes(prior.status)) {
+      throw new Error('An unfinished Work Item already owns this branch: ' + prior.taskId)
+    }
+  }
   if (currentBranch === 'main' || currentBranch === 'master') {
     currentBranch = 'coding/' + id.slice(0, 8)
     git(root, 'switch', '-c', currentBranch)
@@ -157,6 +167,14 @@ const main = () => {
     }
     if (verb === 'pause') {
       requireNonterminal(task); task.status = 'paused'; return task
+    }
+    if (verb === 'cancel') {
+      requireNonterminal(task)
+      const reason = args.join(' ').trim()
+      ensure(reason.length >= 8, 'Give a reason for cancelling this Work Item')
+      task.status = 'cancelled'
+      task.blocker = { reason, stage: task.currentStage }
+      return task
     }
     if (verb === 'resume') {
       requireNonterminal(task); checkpoint(root, task)
@@ -270,6 +288,7 @@ const main = () => {
       ensure(task.stages.S5.status === 'failed', 'No failed review requiring repair')
       const proof = evidence(args.shift())
       const current = snapshot(root)
+      scoped(task, current)
       ensure(current.fingerprint !== task.review?.fingerprint, 'No diff changes; repair made no progress')
       task.repairRounds++
       ensure(task.repairRounds <= 3, 'Automatic repair limit reached')
