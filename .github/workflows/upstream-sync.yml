@@ -1,0 +1,103 @@
+# Check upstream once a week and propose changes without modifying master.
+name: Weekly upstream sync PR
+
+on:
+  schedule:
+    # Monday 09:17 Asia/Shanghai (Monday 01:17 UTC).
+    - cron: '17 1 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+concurrency:
+  group: weekly-upstream-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    if: github.repository == 'yuqiangdede/mattpocock-DSH' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout fork master
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Create upstream sync pull request when needed
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          git remote add upstream https://github.com/deepseek-ai/deepseek-harness.git
+          git fetch --no-tags upstream master
+          git fetch --no-tags origin master
+          git switch -C master origin/master
+
+          upstream_sha="$(git rev-parse upstream/master)"
+          upstream_short="${upstream_sha:0:12}"
+          missing="$(git rev-list --count HEAD..upstream/master)"
+
+          if [ "$missing" -eq 0 ]; then
+            echo "Fork already contains upstream master ($upstream_short)." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Do not create a second PR while an earlier upstream sync is awaiting review.
+          existing="$(gh pr list --base master --state open --limit 100 \
+            --json headRefName,url \
+            --jq '[.[] | select(.headRefName | startswith("automation/upstream-sync-")) | .url][0] // ""')"
+          if [ -n "$existing" ]; then
+            echo "Upstream has $missing new commit(s), but a sync PR is already open: $existing" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          branch="automation/upstream-sync-${upstream_short}-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+
+          # Keep upstream commit ancestry, preserving the fork's custom changes.
+          # Never push to master. A conflict requires manual resolution.
+          if ! git merge --no-ff --no-edit upstream/master; then
+            git merge --abort || true
+            echo "::error::Upstream merge conflict: resolve manually and open a sync PR."
+            echo "Upstream merge conflicted; no branch or PR was created." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          git push --set-upstream origin "$branch"
+
+          body="$(cat <<EOF
+          ### Upstream sync
+          - Source: [deepseek-ai/deepseek-harness](https://github.com/deepseek-ai/deepseek-harness/tree/master)
+          - Upstream commit: \`$upstream_sha\`
+          - New upstream commits relative to fork master: $missing
+          - Target: \`master\`
+
+          This PR contains a merge of upstream master onto the fork's master. It preserves upstream history and existing fork customizations, but requires review for behavior changes.
+
+          Windows CI is explicitly dispatched by the sync workflow. **Do not merge automatically.**
+          EOF
+          )"
+
+          if ! pr_url="$(gh pr create --base master --head "$branch" \
+            --title "chore: sync upstream deepseek-harness ($upstream_short)" \
+            --body "$body")"; then
+            echo "::error::PR creation failed. Check Settings > Actions > General > Allow GitHub Actions to create and approve pull requests."
+            git push origin --delete "$branch" || true
+            exit 1
+          fi
+
+          echo "Created sync PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
+
+          # PRs created by GITHUB_TOKEN may require approval to start PR-event CI.
+          # Explicit dispatch runs the existing Windows CI against the PR branch.
+          gh workflow run ci.yml --ref "$branch"
+          echo "Dispatched Windows CI (ci.yml) for $branch." >> "$GITHUB_STEP_SUMMARY"
