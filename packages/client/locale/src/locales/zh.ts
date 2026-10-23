@@ -38,7 +38,7 @@ export const zh = {
   'truncated': '已截断',
   'json.label': 'JSON',
   'markdown.footnotes': '脚注',
-  'markdown.mermaidFailure': 'Mermaid 图表无法渲染，已显示源代码。',
+  'markdown.mermaidFailure': 'Mermaid 图表无法渲染，已显示源代码',
   'markdown.truncatedCharacters': '… 已截断，共 {total} 字符',
   'number.thousand': '{value}K',
   'number.million': '{value}M',
