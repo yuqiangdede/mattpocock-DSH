@@ -323,6 +323,11 @@
     - id: goal
       name: '@deepseek-ai/dsh-goal'
 
+    # Fork-owned staged coding workflow: the authoritative Work Item service,
+    # its durable storage domain, and the model-facing `coding_workflow` tool.
+    - id: coding-workflow
+      name: '@deepseek-ai/dsh-coding-workflow'
+
     - id: goal-round-driver
       name: '@deepseek-ai/dsh-goal-round-driver'
 

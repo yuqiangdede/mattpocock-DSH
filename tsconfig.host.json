@@ -382,6 +382,7 @@
     { "path": "./packages/goal/tool-goal" },
     { "path": "./packages/goal/goal-round-driver" },
     { "path": "./packages/goal/command-goal" },
+    { "path": "./packages/workflow/coding-workflow" },
     { "path": "./packages/feedback/command-feedback" },
     { "path": "./packages/schedule/schedule" },
     { "path": "./packages/schedule/tool-schedule" },
