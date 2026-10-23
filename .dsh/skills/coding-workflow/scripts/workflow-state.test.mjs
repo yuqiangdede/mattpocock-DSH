@@ -6,6 +6,17 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 
 const cli = resolve(import.meta.dirname, 'workflow-state.mjs')
+// Windows keeps a directory handle open for a few seconds after the git
+// children using it exit; `rmSync` reports EPERM without retrying that case.
+const removeTree = path => {
+  const deadline = Date.now() + 5000
+  for (;;) {
+    try { rmSync(path, { recursive: true, force: true }); return } catch (error) {
+      if (Date.now() >= deadline) throw error
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100)
+    }
+  }
+}
 const setup = () => {
   const base = mkdtempSync(join(tmpdir(), 'coding-workflow-'))
   const cwd = join(base, 'repo')
@@ -25,7 +36,7 @@ const setup = () => {
     const r = spawnSync(process.execPath, [cli, ...args], { cwd, env: { ...process.env, DSH_HOME: home }, encoding: 'utf8' })
     return { ...r, value: r.status === 0 ? JSON.parse(r.stdout) : null }
   }
-  return { cwd, base, git, run, cleanup: () => rmSync(base, { recursive: true, force: true }) }
+  return { cwd, base, git, run, cleanup: () => removeTree(base) }
 }
 const configure = (e, id) => {
   const checks = join(e.base, 'checks.json')
