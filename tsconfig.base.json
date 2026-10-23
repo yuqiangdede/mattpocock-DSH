@@ -30,6 +30,7 @@
     "paths": {
       "@deepseek-ai/dsh-client-ui-matt-skill-launcher": ["./packages/client/ui-matt-skill-launcher/src/index.ts"],
       "@deepseek-ai/dsh-client-ui-matt-skill-launcher/client": ["./packages/client/ui-matt-skill-launcher/src/client/index.ts"],
+      "@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard": ["./packages/client/ui-matt-skill-launcher/src/todo-progress-guard.ts"],
       "@deepseek-ai/dsh-experimental-session-search": ["./packages/experimental/session-search/src/index.ts"],
       "@deepseek-ai/dsh-experimental-ralph-bundle": ["./packages/experimental/ralph-bundle/src/index.ts"],
       "@deepseek-ai/dsh-experimental-terminal-bundle": ["./packages/experimental/terminal-bundle/src/index.ts"],

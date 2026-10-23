@@ -1,2 +1,2 @@
 import { clientBundle } from '../tsdown.client.ts'
-export default clientBundle(import.meta.dirname, ['lib/types/index.js'])
+export default clientBundle(import.meta.dirname, ['lib/types/index.js', 'lib/types/todo-progress-guard.js'])

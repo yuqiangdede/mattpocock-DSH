@@ -12,6 +12,7 @@ import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
 import type { GoalProjection, GoalRef } from '@deepseek-ai/dsh-goal/client'
 import type { WorkItem } from '@deepseek-ai/dsh-coding-workflow/client'
+import { LAUNCHER_CONFIG_GLOBAL, LauncherDeploymentSchema } from '../config.ts'
 import { Launcher } from './Launcher.tsx'
 import { LauncherSettings } from './Settings.tsx'
 import { createCodingWorkflowSource } from './workflow-source.ts'
@@ -32,7 +33,7 @@ export interface WorkflowCommandResult {
 }
 /** Launcher mode values the workflow record understands. */
 export type WorkflowMode = 'manual' | 'auto'
-/** Launcher form, Skill catalog, and the Session's coding Work Item. */
+/** Launcher form, Skill catalog, the Session's coding Work Item, and the Host's stale-plan threshold. */
 export interface LauncherInjected {
   hooks: { actionForm: ConfigForm<ActionSettings>; workflow: HostObservable<CodingWorkflowSnapshot> }
   fetchSkillNames: ()=>Promise<readonly string[]>
@@ -45,6 +46,7 @@ export interface LauncherInjected {
     cancel: (reason: string) => Promise<WorkflowCommandResult>
     setMode: (mode: WorkflowMode) => Promise<WorkflowCommandResult>
   }
+  todoStaleMs: number
 }
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
   interface SessionReferenceSourceMap { mattSkillLauncher: unknown }
@@ -60,6 +62,11 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('mattSkillLauncher', { zh, en }), 'launcher dictionaries')
   const t = ctx.locale.bind('mattSkillLauncher')
   const form = ctx.configForms.get<ActionSettings>('ui-matt-skill-launcher')
+  // The page-global carries the Host-resolved policy; this read validates it
+  // against the same field schema the Host Config uses.
+  const deployment = LauncherDeploymentSchema(
+    (globalThis as { [LAUNCHER_CONFIG_GLOBAL]?: unknown })[LAUNCHER_CONFIG_GLOBAL] ?? {},
+  )
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock', locale: 'mattSkillLauncher', id: 'matt-skill-launcher', order: 1,
     inject: (sessionId): LauncherInjected => {
@@ -89,6 +96,7 @@ export function apply(ctx: ClientContext): void {
       }
       return {
         hooks: { actionForm: form, workflow },
+        todoStaleMs: deployment.todoStaleMs,
         workflowCommands: {
           approve: decision => command(item => ctx.remote.codingWorkflow.approve(sessionId, item.taskId, item.revision, decision)),
           pause: () => command(item => ctx.remote.codingWorkflow.pause(sessionId, item.taskId, item.revision)),

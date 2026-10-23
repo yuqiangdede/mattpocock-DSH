@@ -15,8 +15,8 @@
   en: 39924a0d8465a66e
   zh: 34920e240c161d86
 /mattpocock-dsh-skill-launcher/behavior:
-  en: 3af873aacaf3503a
-  zh: 13a5394dc6038c35
+  en: 1cc62cb542e3df57
+  zh: a0573881623f9e85
 /mattpocock-dsh-skill-launcher/behavior/build-and-run:
   en: 0966d946b4c61bcf
   zh: cdd4763722a5f1cf
@@ -34,10 +34,25 @@
   zh: 380ebd38bde78817
 /mattpocock-dsh-skill-launcher/model-experience/user-submitted-action-text/kv-cache-effect:
   en: 588a5fe6e3aae2f1
-  zh: c23219e87af06d74
+  zh: a5c4f5269ce697ad
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder:
+  en: a130682f51bfb8a8
+  zh: 6bbc59d531b5c51c
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/what-the-model-sees:
+  en: b9e98fcf08e01dc9
+  zh: 9577e2e1fd4148e6
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/what-the-model-sees/reminder-text:
+  en: 66e25d9891568e89
+  zh: babacf0b1f7fa484
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/token-effect:
+  en: 92756804e8419bad
+  zh: 70bc5bd094564451
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/kv-cache-effect:
+  en: 3a8a1220dc8da0b8
+  zh: f4f578142da23324
 /mattpocock-dsh-skill-launcher/known-limitations-and-deferred-work:
-  en: 3986d2ced9c7a54e
-  zh: 72169416f8e24481
+  en: 417bd377c50c7383
+  zh: 73aa52a9fe40aa02
 /mattpocock-dsh-skill-launcher/known-limitations-and-deferred-work/dev-note:
   en: a7255b2c586c012d
-  zh: 02e4a1744175be72
+  zh: 0ce3b86ecef0a6a6

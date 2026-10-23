@@ -34,3 +34,7 @@
 .workflowActions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
 .workflowInput{min-width:160px;font:inherit;font-size:12px;padding:2px 6px;border:0.5px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-input-major);color:var(--dsw-alias-label-primary)}
 .workflowInput:focus-visible{outline:2px solid var(--dsw-alias-border-l2);outline-offset:1px}
+/* The reserved line plus its padding keeps the composer dock's height stable
+   while the delayed hint is still empty. */
+.progressWarning{min-height:17px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary);padding:3px 5px;border-left:2px solid transparent;overflow-wrap:anywhere}
+.progressWarningActive{border-left-color:var(--dsw-alias-border-l2)}
