@@ -20,7 +20,7 @@ Unit specs pin the scope in isolation (outside a provider, a nested replacement,
 
 ## Alternatives considered
 
-**Observe the document palette attribute from each diagram.** This was the shipped behavior. Rejected because it fans one palette change across every diagram's observer and couples a primitive to a global document attribute whose owner is the theme presenter.
+**Have each diagram observe the document palette attribute.** This would fan one palette change across every diagram's observer and couple a primitive to a global document attribute owned by the theme presenter, so the theme owner supplies a shared scope instead.
 
 **Read `prefers-color-scheme` with `matchMedia`.** Rejected because the application theme is an independent preference: the resolved theme may be dark while the operating system reports light, and a registered third-party theme decides its own `colorScheme`.
 
@@ -31,6 +31,6 @@ Unit specs pin the scope in isolation (outside a provider, a nested replacement,
 ## Consequences
 
 - A scheme-dependent primitive reads one ambient scope; adding another such primitive needs no subscription and no per-owner prop.
-- Every mounted diagram re-renders on a palette change, which re-runs Mermaid for settled blocks. That cost existed before and stays bounded by the number of visible diagrams.
+- Every mounted diagram re-renders on a palette change, which re-runs Mermaid for settled blocks. The cost follows from rendering a static SVG with an embedded palette and is bounded by the number of visible diagrams.
 - A diagram rendered outside the shell's provider shows the light palette; standalone embedders that want dark diagrams mount the provider themselves.
 - `dsh-client-ui-layout` takes a development dependency on `dsh-client-ui-primitives` for the provider.
