@@ -74,6 +74,8 @@ export function patchDesktopOperatorAsarRuntime(runtimeRoot: string): void {
  * The upstream plugin exposes an empty Host patch: its tools must instead be
  * mounted in an Agent Preset. Add a separate disable-able bundle, generated
  * from the DSH standard preset at package time (no copied upstream preset).
+ * The deployment default stays the standard preset; sessions opt into Computer
+ * Use by selecting `desktop-computer-use`.
  */
 export function writeDesktopOperatorPresetBundle(runtimeRoot: string): void {
   const modules = join(runtimeRoot, 'node_modules')
@@ -110,9 +112,6 @@ export function writeDesktopOperatorPresetBundle(runtimeRoot: string): void {
               allowAppLaunch: false
               visualIndicator: true
               toolCallTimeoutMs: 120000
-- id: agent-preset-registry
-  config:
-    default: ${DESKTOP_OPERATOR_PRESET_ID}
 `
   const directory = join(modules, ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/'))
   mkdirSync(directory, { recursive: true })

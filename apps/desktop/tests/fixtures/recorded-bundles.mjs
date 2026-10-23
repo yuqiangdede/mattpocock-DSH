@@ -29,8 +29,7 @@ export function apply(ctx, config) {
         const buffers = []
         for await (const chunk of request) buffers.push(chunk)
         const { task } = JSON.parse(Buffer.concat(buffers).toString())
-        const preset = scenario === 'computer-use' ? ctx.agentPresets.defaultId : 'minimal'
-        if (scenario === 'computer-use' && preset !== 'desktop-computer-use') throw new Error('Computer Use is not the default preset')
+        const preset = scenario === 'computer-use' ? 'desktop-computer-use' : 'minimal'
         parent = await ctx.agents.create({
           sessionId: SessionId('desktop-recorded-parent'),
           meta: { cwd: config.cwd, agentPreset: preset },

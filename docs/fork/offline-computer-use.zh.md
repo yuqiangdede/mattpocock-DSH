@@ -15,7 +15,7 @@
 
 ## 行为
 
-- 全新 Windows Desktop Profile 默认附加 Computer Use Preset Bundle，提供 `desktop-computer-use` Agent Preset 并设为部署默认。用户之前选择的默认 Preset 仍按 DSH 设置处理。
+- 全新 Windows Desktop Profile 默认附加 Computer Use Preset Bundle，提供 `desktop-computer-use` Agent Preset，部署默认仍是标准 Preset；需要操作 Windows 的会话在预设选择器中选择 `desktop-computer-use`。用户之前选择的默认 Preset 仍按 DSH 设置处理。
 - 老 Profile 首次升级只迁移一次，**不会在用户停用或“禁用所有插件”恢复后再次强制开启**。
 - 普通动作可操作，但 `send`、`delete`、`upload`、`purchase` 等高风险最终操作使用 `highRiskActionPolicy: confirm`；保留视觉提示并禁止默认启动新程序。
 - 插件实际生效取决于新建的 Agent Session 是否选择 `desktop-computer-use`。旧会话需要新建；用户可在插件管理中停用 `@mattpocock/dsh-desktop-operator-preset` Bundle。

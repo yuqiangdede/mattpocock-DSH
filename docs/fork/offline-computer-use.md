@@ -15,7 +15,7 @@ This fork uses the independently maintained [DSH Desktop Operator](https://githu
 
 ## Behavior
 
-- A new Windows Desktop Profile includes the Computer Use Preset Bundle by default. It provides the `desktop-computer-use` Agent Preset and makes it the deployment default. DSH settings still govern any default Preset previously selected by the user.
+- A new Windows Desktop Profile includes the Computer Use Preset Bundle by default. It provides the `desktop-computer-use` Agent Preset while the standard Preset stays the deployment default; select `desktop-computer-use` in the Preset picker for sessions that need Windows control. DSH settings still govern any default Preset previously selected by the user.
 - Existing Profiles migrate once on their first upgrade. **Restarting after manual disabling or “disable all plugins” recovery does not force the bundle on again.**
 - Ordinary actions are available, while high-risk final operations such as `send`, `delete`, `upload`, and `purchase` use `highRiskActionPolicy: confirm`. Visual indicators remain enabled, and launching new programs is disabled by default.
 - The plugin takes effect when a new Agent Session selects `desktop-computer-use`. Start a new session for existing conversations. Users can disable the `@mattpocock/dsh-desktop-operator-preset` Bundle in plugin management.
