@@ -30,6 +30,7 @@ export function markdownLabels(t: T): MarkdownLabels {
   return {
     code: { copyLabel: t('copy'), copiedLabel: t('copied'), toolbarLabels: codeToolbarLabels(t) },
     footnotes: t('markdown.footnotes'),
+    mermaidFailure: t('markdown.mermaidFailure'),
   }
 }
 

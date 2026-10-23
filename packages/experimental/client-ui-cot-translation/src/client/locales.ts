@@ -20,6 +20,7 @@ export const en = {
   unavailable: 'Translation preferences are unavailable.', readOnly: 'This deployment stores settings read-only.',
   saveFailed: 'The deployment did not accept these values; they were left for you to correct.', save: 'Save', saving: 'Saving…',
   copy: 'Copy', copied: 'Copied', codeTitle: 'Code block', wrap: 'Wrap lines', unwrap: 'Unwrap lines', footnotes: 'Footnotes',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 }
 
 /** Locale dictionary key union. */
@@ -41,6 +42,7 @@ export const zh: Record<CotTranslationKey, string> = {
   unavailable: '翻译设置暂不可用', readOnly: '本部署的设置为只读',
   saveFailed: '本部署没有接受这些值，已保留供你修改', save: '保存', saving: '保存中…',
   copy: '复制', copied: '已复制', codeTitle: '代码块', wrap: '自动换行', unwrap: '不换行', footnotes: '脚注',
+  mermaidFailure: 'Mermaid 图表无法渲染，已显示源代码。',
 }
 
 /**

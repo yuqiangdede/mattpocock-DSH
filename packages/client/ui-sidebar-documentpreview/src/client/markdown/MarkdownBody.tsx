@@ -39,12 +39,13 @@ export function MarkdownBody({ content, resourceAddress, useResource, t }: Markd
   const copyLabel = t('code.copy')
   const copiedLabel = t('code.copied')
   const footnotes = t('footnotes')
+  const mermaidFailure = t('mermaidFailure')
   const codeLabel = t('codeBlock.title')
   const wrapLabel = t('codeBlock.wrap')
   const unwrapLabel = t('codeBlock.unwrap')
   const labels = useMemo<MarkdownLabels>(() => ({
-    code: { copyLabel, copiedLabel, toolbarLabels: { codeLabel, wrapLabel, unwrapLabel } }, footnotes,
-  }), [copyLabel, copiedLabel, footnotes, codeLabel, wrapLabel, unwrapLabel])
+    code: { copyLabel, copiedLabel, toolbarLabels: { codeLabel, wrapLabel, unwrapLabel } }, footnotes, mermaidFailure,
+  }), [copyLabel, copiedLabel, footnotes, mermaidFailure, codeLabel, wrapLabel, unwrapLabel])
   const text = content.kind === 'text' ? content.text : ''
   const split = useMemo(() => splitFrontmatter(text), [text])
   if (content.kind !== 'text') return null

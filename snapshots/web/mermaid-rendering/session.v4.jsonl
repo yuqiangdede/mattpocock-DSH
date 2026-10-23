@@ -1,0 +1,8 @@
+{"type":"session","version":4,"id":"{{session:1}}","createdAt":1788240457450,"cwd":"{{cwd}}","isSeeded":false,"delegationDepth":0,"agentPreset":"standard"}
+{"type":"turn/start","data":{"turn":1}}
+{"type":"user/message","data":{"content":[{"type":"text","text":"Render the Mermaid fences."}],"source":{"kind":"user","rpcId":"{{rpc:1}}"},"role":"user","id":"{{message:1}}"},"surfaceOp":"append"}
+{"type":"session/title","data":{"title":"Mermaid rendering","messageSeqs":[1],"source":{"kind":"fallback"}}}
+{"type":"step/start","data":{"turn":1,"step":1}}
+{"type":"assistant/message","data":{"turn":1,"step":1,"message":{"role":"assistant","content":[{"type":"text","text":"## Mermaid rendering\n\nThe settled fence renders as a diagram:\n\n```mermaid\ngraph TD\n  A[Start] --> B{Ready?}\n  B -->|yes| C[Render]\n```\n\nAn invalid fence keeps its source:\n\n```mermaid\nnot a diagram\n```"}],"source":{"kind":"model","provider":"deepseek-official","model":"deepseek-v4-flash"},"id":"{{message:2}}"},"stream":[]},"surfaceOp":"append"}
+{"type":"step/end","data":{"turn":1,"step":1}}
+{"type":"turn/end","data":{"turn":1,"reason":{"kind":"completed"}}}
