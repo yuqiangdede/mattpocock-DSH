@@ -31,6 +31,7 @@ This fork-only first-stage extension is independent of the DSH Agent Loop and Se
 - Plain-prompt buttons insert text without a Skill binding.
 - Native DSH Host Settings persist the versioned CodingAction JSON (with editable labels, prompts, enabled state, shown flag, sort order and help copy). Settings supports export/import.
 - When the latest completed exchange clearly indicates a next workflow step, the matching enabled button is highlighted and a localized hint explains the recommendation.
+- The Mode row switches Manual and Automatic. While a Session owns a coding task, the launcher shows its stage progress, mode, branch, blocker, and the commands a human may send: approve a pending scoped decision, cancel the task, or pause and resume it. Each command carries the revision the panel read, so a stale panel reports a conflict instead of overwriting a newer record.
 - Each built-in action except initialization adds receiving instructions to its draft. Only Fix Review Findings also summarizes the latest completed exchange: its request (up to 1,000 characters) and result (up to 5,000 characters). Truncation is marked; excerpts require verification against original artifacts. Other actions copy no conversation text, and custom actions receive no added instructions. The user reviews and sends the draft; the launcher never sends or executes automatically.
 - Recommendations use only the latest completed user/assistant exchange and skip unavailable or disabled actions. Interrupted turns and explicit errors can recommend Bug diagnosis or Continue.
 

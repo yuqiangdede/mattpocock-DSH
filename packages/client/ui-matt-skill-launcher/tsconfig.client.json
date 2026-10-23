@@ -41,6 +41,9 @@
       "path": "../../api/session-controller/tsconfig.client.json"
     },
     {
+      "path": "../../workflow/coding-workflow"
+    },
+    {
       "path": "../locale/tsconfig.client.json"
     }
   ]
