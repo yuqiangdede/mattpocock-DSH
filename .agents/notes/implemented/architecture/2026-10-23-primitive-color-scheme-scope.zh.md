@@ -20,7 +20,7 @@ Status: implemented
 
 ## Alternatives considered
 
-**每个图表自行观察 document 上的配色属性。** 这是此前的实现。被否决，因为它把一次配色切换扩散到每个图表的观察者，并让原语耦合到一个全局 document 属性，而该属性的所有者是主题呈现器。
+**让每个图表自行观察 document 上的配色属性。** 这种做法会把一次配色切换扩散到每个图表的观察者，并让原语耦合到由主题呈现器拥有的全局 document 属性，因此由主题所有者提供共享作用域。
 
 **用 `matchMedia` 读取 `prefers-color-scheme`。** 被否决，因为应用主题是独立偏好：解析后的主题可能是暗色而操作系统报告亮色，且已注册的第三方主题会自行决定 `colorScheme`。
 
@@ -31,6 +31,6 @@ Status: implemented
 ## Consequences
 
 - 依赖配色的原语读取同一个环境作用域；新增同类原语不需要订阅，也不需要逐 owner 传 prop。
-- 配色变化时每个已挂载的图表都会重新渲染，即对落定块重跑一次 Mermaid。该开销此前就存在，并仍受可见图表数量约束。
+- 配色变化时每个已挂载的图表都会重新渲染，即对落定块重跑一次 Mermaid。该开销来自静态 SVG 内嵌调色板的渲染方式，并受可见图表数量约束。
 - 在外壳 Provider 之外渲染的图表显示亮色调色板；需要暗色图表的独立嵌入方自行挂载 Provider。
 - `dsh-client-ui-layout` 为取得该 Provider 而对 `dsh-client-ui-primitives` 增加开发依赖。
