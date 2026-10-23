@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import { useColorScheme, type ColorScheme } from '../ColorScheme.tsx'
+import { mermaidSourceRequestsResources } from './mermaid-source.ts'
 import { sanitizeMermaidSvg } from './sanitize-mermaid-svg.ts'
 import css from './MermaidDiagram.module.css'
 
@@ -16,11 +17,13 @@ interface DiagramOutcome {
  * Mermaid loads lazily so it stays out of the initial conversation bundle. The
  * source stays visible until the SVG resolves; a failed import, parse, or
  * sanitization keeps the source and adds the caller's localized failure notice.
- * The SVG embeds the palette it was rendered with, so the outcome is stored
- * with its source and color scheme: a changed fence or palette never displays
- * a previous diagram while the new render is pending. The scheme arrives from
- * the nearest `ColorSchemeProvider` mounted by the shell; a diagram outside
- * one renders the light palette.
+ * A source that would request an external resource is refused before rendering,
+ * because Mermaid fetches it during its own render. The SVG embeds the palette
+ * it was rendered with, so the outcome is stored with its source and color
+ * scheme: a changed fence or palette never displays a previous diagram while
+ * the new render is pending. The scheme arrives from the nearest
+ * `ColorSchemeProvider` mounted by the shell; a diagram outside one renders the
+ * light palette.
  *
  * @param source - Mermaid source from the fenced code block.
  * @param failureLabel - Localized notice shown when rendering fails.
@@ -40,6 +43,13 @@ export function MermaidDiagram({ source, failureLabel }: {
   useEffect(() => {
     let cancelled = false
     const isCancelled = (): boolean => cancelled
+    if (mermaidSourceRequestsResources(source)) {
+      // Mermaid requests resource URLs while it renders into its temporary
+      // container, so refusing the source is the only way to prevent the
+      // request; the sanitizer only sees the SVG after that render.
+      setOutcome({ source, scheme, svg: null })
+      return () => { cancelled = true }
+    }
     const renderId = `mermaid-${id}-${++renderSequence.current}`
     void import('mermaid')
       .then(async (module) => {
@@ -69,6 +79,8 @@ export function MermaidDiagram({ source, failureLabel }: {
   }, [id, source, scheme])
 
   if (current?.svg != null) {
+    // Only `sanitizeMermaidSvg` output reaches this insertion: it removes every
+    // external URL and CSS resource value from Mermaid's markup first.
     return <div className={css.diagram} data-mermaid-diagram="" dangerouslySetInnerHTML={{ __html: current.svg }} />
   }
   return (

@@ -95,6 +95,20 @@ describe('MermaidDiagram', () => {
     expect(container.querySelector('pre code')?.textContent).toBe(source)
   })
 
+  it('refuses a source that requests an external resource before rendering it', async () => {
+    const source = 'flowchart TD\n  A@{ img: "https://evil.test/a.png", label: "image" }'
+    const { container } = render(<ColorSchemeProvider scheme="light"><MermaidDiagram source={source} failureLabel={FAILURE_LABEL} /></ColorSchemeProvider>)
+
+    await waitFor(() => {
+      expect(container.querySelector('[role="status"]')).not.toBeNull()
+    })
+    expect(container.querySelector('[role="status"]')?.textContent).toBe(FAILURE_LABEL)
+    expect(container.querySelector('pre code')?.textContent).toBe(source)
+    // The lazy import and the renderer never run for a refused source.
+    expect(mermaidRender).not.toHaveBeenCalled()
+    expect(mermaidInitialize).not.toHaveBeenCalled()
+  })
+
   it('discards the resolved result if unmounted before the render resolves', async () => {
     const svg = '<svg/>'
     let resolveRender: (value: { svg: string }) => void = () => {}
