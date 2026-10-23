@@ -106,7 +106,7 @@ The block:
 
 ### Project knowledge (Pocket)
 
-Before working on project requirements, design, or code, read `docs/pocket/README.md` and its task-specific pointers; see `docs/pocket/meta/knowledge-policy.md` for canonical ownership, update, and maintenance rules. New or changed decisions belong under `docs/pocket/`, not solely in chat. If source, existing docs, or task instructions conflict, report the discrepancy rather than silently rewriting requirements.
+Before working on project requirements, design, or code, read `docs/pocket/README.md` and its task-specific pointers; see `docs/pocket/meta/knowledge-policy.md` for canonical ownership, update, and maintenance rules. New or changed decisions belong in the location the Pocket index records as authoritative (Pocket, or a retained legacy authority pending migration), not solely in chat. If source, existing docs, or task instructions conflict, report the discrepancy rather than silently rewriting requirements.
 ```
 
 Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn't, both are omitted.
