@@ -27,6 +27,15 @@ const setup = () => {
   }
   return { cwd, base, git, run, cleanup: () => rmSync(base, { recursive: true, force: true }) }
 }
+const configure = (e, id) => {
+  const checks = join(e.base, 'checks.json')
+  writeFileSync(checks, JSON.stringify({ checks: [
+    { kind: 'test', command: [process.execPath, '--version'] },
+    { kind: 'build', command: [process.execPath, '-p', '1+1'] },
+  ] }))
+  const result = e.run('checks', id, checks)
+  assert.equal(result.status, 0, result.stderr)
+}
 test('a clean task defaults to manual and creates a local feature branch', () => {
   const e = setup()
   try {
@@ -54,13 +63,16 @@ test('review/verification fingerprints guard local-only commit and stage order',
     const id = e.run('start', 'add proof').value.taskId
     const ev = join(e.base, 'proof.txt'); writeFileSync(ev, 'evidence')
     for (const stage of ['S1','S2','S3']) assert.equal(e.run('stage',id,stage,ev).status, 0)
+    configure(e, id)
     writeFileSync(join(e.cwd,'readme.txt'),'implemented\n')
     assert.equal(e.run('stage',id,'S4',ev).status, 0)
     const report = join(e.base,'review.json')
     writeFileSync(report, JSON.stringify({findings: []}))
     assert.equal(e.run('review',id,report).status, 0)
     assert.equal(e.run('commit',id,'--','readme.txt').status !== 0, true)
-    assert.equal(e.run('verify',id,'--',process.execPath,'--version').status, 0)
+    assert.equal(e.run('verify',id,'test','--',process.execPath,'--version').status, 0)
+    assert.notEqual(e.run('commit',id,'--','readme.txt').status, 0, 'build check required')
+    assert.equal(e.run('verify',id,'build','--',process.execPath,'-p','1+1').status, 0)
     writeFileSync(join(e.cwd,'readme.txt'),'changed after verify\n')
     assert.notEqual(e.run('commit',id,'--','readme.txt').status, 0)
     writeFileSync(join(e.cwd,'readme.txt'),'implemented\n')
@@ -77,12 +89,13 @@ test('a blocking review cannot masquerade as verified', () => {
     const id=e.run('start','review loop').value.taskId
     const ev=join(e.base,'proof.txt');writeFileSync(ev,'proof')
     for(const stage of ['S1','S2','S3']) assert.equal(e.run('stage',id,stage,ev).status,0)
+    configure(e, id)
     writeFileSync(join(e.cwd,'readme.txt'),'changed\n')
     assert.equal(e.run('stage',id,'S4',ev).status,0)
     const report=join(e.base,'review.json')
     writeFileSync(report,JSON.stringify({findings:[{id:'1',severity:'P1',status:'open',file:'readme.txt',evidence:'unhandled case'}]}))
     assert.equal(e.run('review',id,report).value.currentStage,'S6')
-    assert.notEqual(e.run('verify',id,'--',process.execPath,'--version').status,0)
+    assert.notEqual(e.run('verify',id,'test','--',process.execPath,'--version').status,0)
     assert.notEqual(e.run('repair',id,ev).status,0)
   } finally {e.cleanup()}
 })
