@@ -8,7 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
-import type { GoalRef } from '@deepseek-ai/dsh-goal/client'
+import type { GoalProjection, GoalRef } from '@deepseek-ai/dsh-goal/client'
 import { Launcher } from './Launcher.tsx'
 import { LauncherSettings } from './Settings.tsx'
 /** Host-persisted launcher configuration. */
@@ -42,11 +42,12 @@ export function apply(ctx: ClientContext): void {
     name: 'conversation.input.dock', locale: 'mattSkillLauncher', id: 'matt-skill-launcher', order: 1,
     inject: (sessionId): LauncherInjected => ({
       hooks: { actionForm: form },
-      pauseWorkflow: async goalRef => {
+      pauseWorkflow: async (goalRef) => {
         const binding = ctx.sessions.binding(sessionId)
         if (binding === undefined || binding.session.getSnapshot().openState !== 'open')
           return { ok: false, error: { message: 'Session unavailable' } }
-        const projection = binding.session.projections.faceOf('goal')?.getSnapshot()
+        // faceOf is the erased framework read; the goal key's type comes from the domain's projection map.
+        const projection = binding.session.projections.faceOf('goal').getSnapshot() as GoalProjection | null | undefined
         if (projection == null || projection.goal.id !== goalRef.id ||
             projection.goal.revision !== goalRef.revision)
           return { ok: false, error: { message: 'Workflow goal changed; refresh and retry' } }

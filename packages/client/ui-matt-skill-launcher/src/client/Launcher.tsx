@@ -6,7 +6,8 @@ import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
 import { codingWorkflowId, shouldPauseWorkflow } from './workflow-goal.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
-export function Launcher({ useInput, useConversation, useSession, useProjection, inputActions, useActionForm, fetchSkillNames, pauseWorkflow, t }: Props) {
+export function Launcher({ useInput, useConversation, useSession, useProjection, inputActions, useActionForm,
+  fetchSkillNames, pauseWorkflow, t }: Props) {
   const snapshot = useActionForm(x => x)
   const input = useInput(x => x)
   const chat = useConversation(x => x.views.get('chat'))
@@ -85,7 +86,7 @@ export function Launcher({ useInput, useConversation, useSession, useProjection,
         return
       }
       const lead = '/coding-workflow ' + t('autoInstruction')
-      const value = lead + (input.draft.length ? '\n\n' : '\n\n')
+      const value = lead + (input.draft.length ? '\n\n' : '')
       if (!inputActions.insertText(value, span)) { setNotice(t('draftChanged')); return }
       inputActions.persistDraft()
     } catch (error) {
@@ -100,7 +101,8 @@ export function Launcher({ useInput, useConversation, useSession, useProjection,
       setNotice(t('pauseUnavailable'))
       return
     }
-    if (shouldPauseWorkflow(mode, next, workflowGoal?.objective ?? null, workflowGoal?.phase ?? null)) {
+    if (workflowGoal &&
+        shouldPauseWorkflow(mode, next, workflowGoal.objective, workflowGoal.phase)) {
       setPending(true)
       try {
         const result = await pauseWorkflow({ id: workflowGoal.id, revision: workflowGoal.revision })
