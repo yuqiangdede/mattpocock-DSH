@@ -3,7 +3,7 @@ kind: upgrade-guide
 description: "Windows Desktop profiles now bundle Computer Use as an optional preset while the standard preset stays the default."
 ---
 
-# Windows Desktop Computer Use default preset
+# Windows Desktop optional Computer Use preset
 
 English | [中文](guide.zh.md)
 
@@ -16,5 +16,5 @@ The new preset exposes Windows Computer Use tools (`mcp__computer_use__*`) to th
 ## Migration
 
 1. Launch the upgraded Desktop application on Windows. The migration automatically adds `@mattpocock/dsh-desktop-operator-preset` to `dsh.profile.bundles` and writes the migration marker `.desktop-operator-default-v0.12.1`.
-2. To stop using Computer Use, open the Plugins view and disable it, or remove `@mattpocock/dsh-desktop-operator-preset` from `dsh.profile.bundles` in `%USERPROFILE%\.dsh\profiles\desktop\package.json`. The standard preset remains the default. Desktop respects the manual configuration and will not re-enable the bundle on subsequent launches.
+2. If `desktop-computer-use` is your new-task default, first set Standard as the default in Agent Presets settings. Then disable Computer Use in Plugins or remove `@mattpocock/dsh-desktop-operator-preset` from `dsh.profile.bundles` in `%USERPROFILE%\.dsh\profiles\desktop\package.json`. Desktop respects the manual configuration and will not re-enable the bundle on subsequent launches.
 3. Start a new session and inspect the tool catalog to confirm that the desired preset and tools are active.

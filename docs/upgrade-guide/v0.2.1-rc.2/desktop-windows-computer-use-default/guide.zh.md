@@ -3,7 +3,7 @@ kind: upgrade-guide
 description: "Windows Desktop profile 预装 Computer Use 预设，标准预设仍是默认，已有 profile 自动追加该预设。"
 ---
 
-# Windows Desktop Computer Use 默认预设
+# Windows Desktop 可选 Computer Use 预设
 
 [English](guide.md) | 中文
 
@@ -16,5 +16,5 @@ description: "Windows Desktop profile 预装 Computer Use 预设，标准预设�
 ## 迁移
 
 1. 在 Windows 上启动升级后的 Desktop 应用。迁移过程会自动将 `@mattpocock/dsh-desktop-operator-preset` 追加到 `dsh.profile.bundles` 中，并写入迁移标记 `.desktop-operator-default-v0.12.1`。
-2. 如需停用 Computer Use，可在 Plugins 界面停用，或在 `%USERPROFILE%\.dsh\profiles\desktop\package.json` 的 `dsh.profile.bundles` 中移除 `@mattpocock/dsh-desktop-operator-preset`；标准预设仍是默认。Desktop 会遵从手工配置，后续启动不会重新激活该 bundle。
+2. 如果 `desktop-computer-use` 当前是新任务默认预设，先在 Agent Presets 设置中将默认项改为 Standard，再到 Plugins 界面停用 Computer Use，或从 `%USERPROFILE%\.dsh\profiles\desktop\package.json` 的 `dsh.profile.bundles` 中移除 `@mattpocock/dsh-desktop-operator-preset`。Desktop 会遵从手工配置，后续启动不会重新激活该 bundle。
 3. 新建会话并查看工具目录，确认当前激活的预设与工具符合预期。
