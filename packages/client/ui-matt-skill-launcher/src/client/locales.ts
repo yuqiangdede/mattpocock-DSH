@@ -3,6 +3,9 @@
 export const zh = {
   'more': '更多',
   'workflowMode': '编码模式',
+  'goalStatus': '自动任务 Goal 状态',
+  'goalNotStage': '阶段详细进度待接入',
+  'pauseFailed': '暂停自动任务失败，未切换模式：',
   'manualMode': '手动',
   'autoMode': '全自动',
   'autoStages': '需求 → 固化 → 实现 → 走读 → 修复 → 验证 → 本地提交',
@@ -88,6 +91,9 @@ export type LauncherLocaleKey = keyof typeof zh
 export const en: Record<LauncherLocaleKey, string> = {
   'more': 'More',
   'workflowMode': 'Coding mode',
+  'goalStatus': 'Automatic task Goal status',
+  'goalNotStage': 'Detailed stage progress not yet available',
+  'pauseFailed': 'Unable to pause workflow; mode unchanged: ',
   'manualMode': 'Manual',
   'autoMode': 'Automatic',
   'autoStages': 'Discuss → Spec → Implement → Review → Fix → Verify → Local commit',

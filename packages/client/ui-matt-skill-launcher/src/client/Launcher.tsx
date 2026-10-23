@@ -5,11 +5,14 @@ import type { LauncherInjected } from './index.ts'
 import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
-export function Launcher({ useInput, useConversation, useSession, inputActions, useActionForm, fetchSkillNames, t }: Props) {
+export function Launcher({ useInput, useConversation, useSession, useProjection, inputActions, useActionForm, fetchSkillNames, pauseWorkflow, t }: Props) {
   const snapshot = useActionForm(x => x)
   const input = useInput(x => x)
   const chat = useConversation(x => x.views.get('chat'))
   const sessionRunning = useSession(x => x.running)
+  const goalProjection = useProjection('goal')
+  // Pause only explicitly associated workflow goals, never unrelated DSH goals.
+  const workflowGoal = goalProjection && /^\[coding-workflow:[0-9a-f-]{36}\]/u.test(goalProjection.goal.objective) ? goalProjection.goal : null
   const entries = sessionRunning ? [] : chatEntries(chat)
   const recommendation = recommend(entries)
   const morePanelId = useId()
@@ -90,16 +93,40 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
       if (alive.current) setPending(false)
     }
   }
+  const changeMode = async (next: 'manual' | 'auto') => {
+    if (mode === next || pending) return
+    if (next === 'manual' && workflowGoal?.phase === 'active') {
+      setPending(true)
+      try {
+        const result = await pauseWorkflow({ id: workflowGoal.id, revision: workflowGoal.revision })
+        if (!alive.current) return
+        if (!result.ok) { setNotice(t('pauseFailed') + result.error.message); return }
+      } catch (error) {
+        if (alive.current) setNotice(t('pauseFailed') + String(error))
+        return
+      } finally { if (alive.current) setPending(false) }
+    }
+    if (!alive.current) return
+    setMode(next)
+    setMoreOpen(false)
+    setNotice('')
+  }
   const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={visibleRecommendation?.ids.includes(a.id) ? css.recommended : css.action}
     title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommendationTooltip').replace('{reason}', t(visibleRecommendation.reason)) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
     <div className={css.modeRow} role="group" aria-label={t('workflowMode')}>
       <span className={css.modeLabel}>{t('workflowMode')}</span>
       <button type="button" aria-pressed={mode === 'manual'} className={mode === 'manual' ? css.modeActive : css.modeButton}
-        onClick={() => { setMode('manual'); setNotice('') }}>{t('manualMode')}</button>
+        disabled={pending} onClick={() => { void changeMode('manual') }}>{t('manualMode')}</button>
       <button type="button" aria-pressed={mode === 'auto'} className={mode === 'auto' ? css.modeActive : css.modeButton}
-        onClick={() => { setMode('auto'); setMoreOpen(false); setNotice('') }}>{t('autoMode')}</button>
+        disabled={pending} onClick={() => { void changeMode('auto') }}>{t('autoMode')}</button>
     </div>
+    {workflowGoal && <div className={css.goalStatus} aria-live="polite">
+      {t('goalStatus')}: {workflowGoal.phase}
+      {workflowGoal.phase === 'blocked' && workflowGoal.blockedReason?.message
+        ? ' — ' + workflowGoal.blockedReason.message : ''}
+      <span>{t('goalNotStage')}</span>
+    </div>}
     {mode === 'auto' && <div className={css.autoPanel}>
       <span>{t('autoStages')}</span>
       <button type="button" disabled={!available} className={css.action}
