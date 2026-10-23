@@ -3,5 +3,7 @@
 - button "Develop"
 - button "Diagnose Bug"
 - button "Code Review"
+- button "Fix Review Findings"
+- button "Build"
 - button "Commit Code"
 - button "More"

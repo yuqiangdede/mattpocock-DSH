@@ -22,14 +22,15 @@ This fork-only first-stage extension is independent of the DSH Agent Loop and Se
 ## Behavior
 
 - Above the Composer, one shortcut row shows the buttons selected in settings; every other enabled button stays under a single More button that expands and collapses its list.
-- Six presets start shown — discussing requirements, finalizing the spec, developing, diagnosing a bug, reviewing code and committing. A shown button is not repeated under More. Placement only chooses where a button appears; Enable turns it off everywhere.
+- Eight presets start shown — discussing requirements, finalizing the spec, developing, diagnosing a bug, reviewing code, fixing review findings, building and committing. A shown button is not repeated under More. Placement only chooses where a button appears; Enable turns it off everywhere.
+- Each built-in prompt is limited to one stage: requirements discussion writes no code, development does not review code or run a full build, review does not edit code, review repair does not re-review, and build or commit do not change business code. Tooltips drop fixed labels and state the applicable scope, boundaries and an example directly.
 - Consultation, ticket breakdown and development use `ask-matt`, `to-tickets` and `implement`. Additional Skills include domain modeling, research, retrospective and context handoff; the UI image prompt is last.
 - Reading version 1 settings upgrades unchanged preset fields and adds six new actions, preserving custom fields, disabled states and an intentionally empty list. The unchanged duplicate task-splitting preset is removed; customized copies remain. Saving or exporting writes version 3, whose actions may carry a `pinned` flag that marks a shown button; version-2 clients drop unknown action fields on save, so they reject version 3 instead of losing the placement. This client omits the retired `group` field and ignores it when reading older documents. Later deletions stay deleted.
 - Skill buttons look up the *effective current Session* catalog before inserting /skill-name. DSH deterministically loads the full SKILL.md when the user explicitly sends.
 - Plain-prompt buttons insert text without a Skill binding.
 - Native DSH Host Settings persist the versioned CodingAction JSON (with editable labels, prompts, enabled state, shown flag, sort order and help copy). Settings supports export/import.
 - When the latest completed exchange clearly indicates a next workflow step, the matching enabled button is highlighted and a localized hint explains the recommendation.
-- Each built-in action except initialization adds receiving instructions to its draft. When a completed exchange is available, its request (up to 1,000 characters) and result (up to 5,000 characters) accompany manual selections as well as recommended ones. Truncation is marked; excerpts require verification against original artifacts. Custom actions receive no added instructions. The user reviews and sends the draft; the launcher never sends or executes automatically.
+- Each built-in action except initialization adds receiving instructions to its draft. Only Fix Review Findings also summarizes the latest completed exchange: its request (up to 1,000 characters) and result (up to 5,000 characters). Truncation is marked; excerpts require verification against original artifacts. Other actions copy no conversation text, and custom actions receive no added instructions. The user reviews and sends the draft; the launcher never sends or executes automatically.
 - Recommendations use only the latest completed user/assistant exchange and skip unavailable or disabled actions. Interrupted turns and explicit errors can recommend Bug diagnosis or Continue.
 
 Skills are deliberately not guessed or silently synthesized. Install their bundles in <DSH_HOME>/skills/<name>/SKILL.md or the current project's .dsh/skills/<name>/SKILL.md. See docs in this fork for specific installation instructions. Missing skills are shown as a non-destructive error.
@@ -43,7 +44,7 @@ Receivers verify the current workspace before acting. Recommendations are text-b
 | Discuss / finalize spec | Confirmed requirements, sources, scope, exclusions, acceptance criteria and open questions |
 | Split into tickets / develop | Spec or ticket reference, dependencies, blockers, acceptance checks and remaining work |
 | Review / fix review findings | Review base and diff, finding IDs, priorities, file locations, impact, required checks and per-finding status |
-| Build / commit | Actual changes and checks separated into passed, failed, not run and environment-blocked; unresolved items block commit |
+| Build / commit | Build: actual checks separated into passed, failed, not run and environment-blocked. Commit: commit identifier plus added and deleted lines grouped by directory or module; no repeated build or tests |
 | Prototype / improve architecture | Design question or target module, constraints, evaluation criteria, artifacts and candidates to discuss |
 | Domain modeling / research | Ambiguous concepts or research question, glossary or sources, conclusions and evidence gaps |
 | Retrospective / context handoff / continue | Original goal, decisions, artifact references, checks, failures, remaining work, blockers and next steps; handoff redacts secrets |

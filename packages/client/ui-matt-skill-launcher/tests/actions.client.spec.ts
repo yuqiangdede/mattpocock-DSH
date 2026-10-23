@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ACTION_SCHEMA_VERSION, DEFAULT_ACTIONS, encodeActions, parseActions, missingDefaultActions, displayOrder } from '../src/client/actions.ts'
+import { ACTION_SCHEMA_VERSION, DEFAULT_ACTIONS, encodeActions, parseActions, missingDefaultActions, displayOrder, presentDefaultActions } from '../src/client/actions.ts'
 import { LEGACY_ACTIONS, LEGACY_ENGLISH_PRESENTATION } from '../src/client/legacy-actions.ts'
 
 describe('mattpocock-DSH CodingAction document', () => {
@@ -10,15 +10,37 @@ describe('mattpocock-DSH CodingAction document', () => {
     expect(actions.every(a => a.enabled)).toBe(true)
     expect(new Set(actions.map(a => a.id)).size).toBe(actions.length)
   })
-  it('shows six common shortcuts and leaves every other button under More', () => {
+  it('shows the workflow shortcuts and leaves every other button under More', () => {
     const actions = parseActions(undefined)
     expect(actions.filter(a => a.pinned).map(a => a.id))
-      .toEqual(['discussion', 'spec', 'execute', 'bug', 'review', 'commit'])
+      .toEqual(['discussion', 'spec', 'execute', 'bug', 'review', 'commit', 'review-fix', 'compile'])
+    expect(actions.filter(a => a.pinned).sort((a, b) => displayOrder(a) - displayOrder(b)).map(a => a.id))
+      .toEqual(['discussion', 'spec', 'execute', 'bug', 'review', 'review-fix', 'compile', 'commit'])
     expect(actions.filter(a => !a.pinned).map(a => a.id))
       .toContain('ask')
     expect(actions.find(a => a.id === 'ask')?.skillId).toBe('ask-matt')
     expect(actions.find(a => a.id === 'plan')?.skillId).toBe('to-tickets')
     expect(actions.find(a => a.id === 'execute')?.skillId).toBe('implement')
+  })
+  it('writes tooltips without instructional labels and keeps stage boundaries in prompts', () => {
+    const actions = presentDefaultActions(parseActions(undefined), true)
+    for (const action of [...DEFAULT_ACTIONS, ...actions]) {
+      expect(action.description).not.toMatch(/什么时候使用|具体例子|When to use|Example:/)
+      expect(action.example).not.toMatch(/什么时候使用|具体例子|When to use|Example:/)
+    }
+    expect(actions.filter(action => /[\u4e00-\u9fff]/.test(action.description + action.example)).map(action => action.id)).toEqual([])
+    const prompt = (id: string) => actions.find(action => action.id === id)?.prompt ?? ''
+    expect(prompt('discussion')).toContain('不写或改代码')
+    expect(prompt('execute')).toContain('不做代码审查或代码走读')
+    expect(prompt('execute')).toContain('不执行完整项目编译')
+    expect(prompt('review')).toContain('不修改代码')
+    expect(prompt('review-fix')).toContain('不提交')
+    expect(prompt('compile')).toContain('不改业务代码')
+    expect(prompt('commit')).toContain('不修改代码')
+    expect(prompt('commit')).toContain('不执行编译')
+    expect(prompt('commit')).toContain('分类汇总')
+    expect(prompt('plan')).toContain('不编码')
+    expect(prompt('spec')).toContain('不实现代码')
   })
   it('keeps the old built-in visual action adjacent to text discussion without rewriting saved order', () => {
     const visual = DEFAULT_ACTIONS.find(action => action.id === 'visual')

@@ -110,13 +110,25 @@ export function chatEntries(view: unknown): ChatEntry[] {
   return entries.reverse()
 }
 
+/** Defect evidence naming a severity or a file/line beside the problem. */
+const findingEvidence = String.raw`\bP[0-3]\b|(?:问题|缺陷|错误|finding|defect|issue|error).{0,40}(?:\.tsx?|\.js|\.py|:\d+)`
+
+/** Stage links in priority order; a request matches at most one workflow step. */
 const links: readonly {
   trigger: RegExp
   success: RegExp
   ids: readonly string[]
   reason: RecommendationReason
+  /** Actions kept when the matched reply confirms nothing and the turn failed. */
+  failureIds?: readonly string[]
 }[] = [
-  { trigger: /代码审查|code.review/i, success: /审查(完成|结果|结论|发现|报告)|review (complete|findings|result)|\bP[012]\b/i, ids: ['review-fix'], reason: 'reasonReviewFindings' },
+  {
+    trigger: /代码审查|代码走读|代码评审|走读|code.review|\breview\b/i,
+    success: new RegExp(String.raw`(?:审查|走读|评审|检视)(?:完成|结果|结论|发现|报告)|review (?:complete|findings|result)|${findingEvidence}`, 'i'),
+    ids: ['review-fix'],
+    reason: 'reasonReviewFindings',
+    failureIds: ['review-fix', 'bug'],
+  },
   { trigger: /需求讨论|可视化讨论|grill.with/i, success: /需求(已确认|结论|明确|确定)|讨论(结果|结论)|confirmed requirements/i, ids: ['spec'], reason: 'reasonRequirementsReady' },
   { trigger: /固化需求|to.spec/i, success: /规格(已|文档|完成)|验收(标准|条件)|specification complete/i, ids: ['plan'], reason: 'reasonSpecReady' },
   { trigger: /拆分工单|to-tickets|制定计划|writing.plans/i, success: /工单|计划(已|完成|任务|步骤)|implementation plan|tickets? (created|ready)/i, ids: ['execute'], reason: 'reasonPlanReady' },
@@ -129,9 +141,10 @@ const links: readonly {
   { trigger: /domain-modeling|领域建模/i, success: /术语(已|表)|建模完成|glossary.*(updated|complete)/i, ids: ['discussion'], reason: 'reasonDomainReady' },
   { trigger: /\/handoff\b|上下文交接/i, success: /交接文档|handoff.*\.md/i, ids: ['continue'], reason: 'reasonHandoffReady' },
 ]
-const failures = /失败|未完成|中断|无法继续|error:|build failed|tests failed/i
+/** Stopped or failed turn outcomes; bare 失败 and error: text describe findings, not turn state. */
+const failures = /中断|无法继续|未完成|(?:测试|构建|编译)失败|tests? failed|build failed/i
 const negative = /没有(发现|检测到).{0,12}(问题|缺陷)|未发现.{0,12}(问题|缺陷)|no (issues|findings|defects)/i
-const positiveFinding = /\bP[0-3]\b|(?:问题|缺陷|错误).{0,24}(?:\.ts|\.tsx|\.js|\.py|:\d+)/i
+const positiveFinding = new RegExp(findingEvidence, 'i')
 
 /**
  * Recommend the next enabled workflow step from the latest completed exchange.
@@ -150,7 +163,11 @@ export function recommend(entries: readonly ChatEntry[], running = false): Recom
   const request = /^\/[a-z][a-z-]*(?=\s|$)/.exec(requestText)?.[0] ?? requestText
   const failed = assistant.failed === true || failures.test(response)
   for (const link of links) {
-    if (!link.trigger.test(request) || !link.success.test(response)) continue
+    if (!link.trigger.test(request)) continue
+    if (!link.success.test(response)) {
+      if (failed && link.failureIds) return { ids: link.failureIds, evidence: response.slice(0, 5000), reason: 'reasonPreviousFailed' }
+      continue
+    }
     if (link.reason === 'reasonReviewFindings' && negative.test(response) && !positiveFinding.test(response)) {
       if (failed) break
       return { ids: ['commit'], evidence: response.slice(0, 5000), reason: 'reasonReviewClean' }
@@ -163,13 +180,15 @@ export function recommend(entries: readonly ChatEntry[], running = false): Recom
 }
 
 /**
- * Add action-specific receiving instructions and bounded prior output to an editable draft.
+ * Add action-specific receiving instructions to an editable draft.
+ * Only review repair carries a bounded summary of the earlier exchange; every other action
+ * inserts its prompt without restating the conversation.
  * @param prompt - Configured action prompt.
  * @param recommendation - Current advisory recommendation.
  * @param actionId - Action being inserted.
  * @param entries - Latest completed exchange, independent of recommendation matching.
  * @param english - Whether the receiving instructions use English.
- * @returns A draft carrying source text, verification requirements and the action's receiving task.
+ * @returns A draft carrying the action's receiving task and, for review repair, the earlier excerpt.
  */
 export function withEvidence(
   prompt: string,
@@ -180,17 +199,19 @@ export function withEvidence(
 ): string {
   const instruction = receivingInstructions[actionId] ?? (documentActions.has(actionId) ? documentReceiving : undefined)
   if (!instruction) return prompt
+  const copy = draftContextCopy[english ? 'en' : 'zh']
   const assistant = entries[entries.length - 1]
   const user = entries[entries.length - 2]
-  const response = assistant?.role === 'assistant' && user?.role === 'user' ? assistant.text : recommendation?.ids.includes(actionId) ? recommendation.evidence : ''
-  const copy = draftContextCopy[english ? 'en' : 'zh']
+  const response = actionId === 'review-fix' && assistant?.role === 'assistant' && user?.role === 'user'
+    ? assistant.text
+    : actionId === 'review-fix' && recommendation?.ids.includes(actionId) ? recommendation.evidence : ''
   const bounded = (text: string, limit: number) => text.length <= limit ? text : text.slice(0, limit) + copy.truncated
   const request = response && user?.role === 'user' ? bounded(user.text.split('\n\n【')[0] ?? user.text, 1000) : ''
   const context = response ? copy.heading
     + (request ? copy.request + request + '\n' : '')
     + copy.result + bounded(response, 5000) : ''
   return prompt + context + '\n\n' + instruction[english ? 1 : 0]
-    + copy.verify
+    + (context ? copy.verify : '')
 }
 
 const documentActions = new Set(['api-docs', 'requirements', 'overview', 'outline', 'database', 'doc-merge', 'docx'])
