@@ -56,6 +56,7 @@ A stage that no longer matches the repository (`Branch changed`, `HEAD changed o
 - [`src/spec.ts`](src/spec.ts) declares the durable `coding-workflow` domain (`workItems`, one record per task) with the zod schemas that validate the stored format.
 - [`src/index.ts`](src/index.ts) is the service: it opens the domain, resolves the Session directory, applies one transition per call, and emits `coding-workflow/changed` after each accepted mutation.
 - [`src/tool.ts`](src/tool.ts) is the model-facing `coding_workflow` tool; every verb delegates to the service.
+- [`src/guard.ts`](src/guard.ts) is the monotonic tool guard: while a task is active it blocks direct Git mutations, refuses repository writes while the task waits for a human, and confines `write`/`edit` paths to the planned implementation scope.
 
 The durable record is product state, not session history: it lives in the shared storage backend rather than the Session log, so it survives a restart without changing the Session format.
 
@@ -80,7 +81,7 @@ No effect on its own: the tool schema is part of the stable tool catalog, and th
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **Tool-level, not kernel-level enforcement** — the Web Client and the tool refuse unsafe transitions, but arbitrary shell commands are only blocked by the guards in the owning profile; this package cannot confine a model-written script that ignores its contract.
+- **Guard covers tool calls, not shell contents** — the registered guard refuses direct Git mutations and writes outside the planned paths through `write`, `edit`, `bash`, and `pwsh`, but a program launched from a shell that writes files is only caught by its change set at review and verification time.
 - **In-process writes only** — the storage domain serializes writes inside one Host process; two Host processes writing the same Work Item are not coordinated, so the revision compare-and-set is the only conflict detector.
 - **No push path by design** — the package has no verb that fetches, pushes, merges, or opens a pull request.
 

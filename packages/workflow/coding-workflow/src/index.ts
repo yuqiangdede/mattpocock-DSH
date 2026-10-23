@@ -47,6 +47,7 @@ import {
   verifyEvidence,
 } from './repository.ts'
 import type { RepositoryRunner } from './repository.ts'
+import { codingWorkflowGuard } from './guard.ts'
 import { registerCodingWorkflowTool } from './tool.ts'
 import type {
   CheckKind,
@@ -145,6 +146,10 @@ export class CodingWorkflowService extends TypertRemoteService {
     this.runner = new LocalRepositoryRunner()
     ctx.inject(['tools'], (toolsCtx) => {
       toolsCtx.effect(() => registerCodingWorkflowTool(toolsCtx, this), 'codingWorkflow.tool')
+      toolsCtx.effect(
+        () => toolsCtx.tools.guard(codingWorkflowGuard(agent => this.inspect(agent))),
+        'codingWorkflow.guard',
+      )
     })
   }
 
@@ -213,6 +218,16 @@ export class CodingWorkflowService extends TypertRemoteService {
       .filter(item => item.sessionId === agent.session.id)
       .sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
     return owned.find(item => !['completed', 'cancelled'].includes(item.status)) ?? owned[0] ?? null
+  }
+
+  /**
+   * Read the Session's current unfinished Work Item without validating liveness.
+   * The synchronous tool guard uses this path.
+   * @param agent - calling Agent.
+   * @returns the unfinished record, or null when the Session owns none.
+   */
+  inspect(agent: Agent): WorkItem | null {
+    return this.getCurrent(agent)
   }
 
   /**

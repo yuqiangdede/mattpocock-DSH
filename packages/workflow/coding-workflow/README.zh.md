@@ -56,6 +56,7 @@ kind: "package-reference"
 - [`src/spec.ts`](src/spec.ts) 声明持久化 `coding-workflow` 域（`workItems`，每个任务一条记录）以及校验存储格式的 zod schema。
 - [`src/index.ts`](src/index.ts) 是服务：打开域、解析 Session 目录、每次调用应用一次变更，并在每次被接受的变更后发出 `coding-workflow/changed`。
 - [`src/tool.ts`](src/tool.ts) 是面向模型的 `coding_workflow` 工具；每个动词都委托给服务。
+- [`src/guard.ts`](src/guard.ts) 是单调工具守卫：任务进行中拦截直接 Git 变更；任务等待人工决定时拒绝仓库写入；把 `write`/`edit` 路径限制在计划实现范围内。
 
 持久记录属于产品状态而非会话历史：它存放在共享存储后端而不是会话日志中，因此重启后仍可读取且不改变会话格式。
 
@@ -80,7 +81,7 @@ kind: "package-reference"
 
 <a id="known-limitations-and-deferred-work"></a>
 
-- **工具级而非内核级强制** — Web Client 与工具会拒绝不安全的变更，但任意 shell 命令只由所属 profile 的守卫拦截；本包无法约束忽略其约定、由模型编写的脚本。
+- **守卫覆盖工具调用而非 shell 内容** — 已注册守卫会通过 `write`、`edit`、`bash`、`pwsh` 拒绝直接 Git 变更与计划范围外的写入；但由 shell 启动的程序写文件，只会在走读与验证阶段由其变更集被发现。
 - **仅进程内写入** — 存储域只在一个 Host 进程内串行化写入；两个 Host 进程写同一 Work Item 不会协同，`revision` 比较交换是唯一的冲突检测。
 - **设计上没有 push 路径** — 本包没有任何执行 fetch、push、合并或创建 PR 的动词。
 
