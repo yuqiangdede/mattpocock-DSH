@@ -47,6 +47,10 @@ Checks JSON must contain at least one real `test` and one real `build` command, 
 
 Evidence files should be placed outside the target repository or in an existing user-approved documentation location, avoiding inclusion in an unrelated commit. JSON review report must include \`{"findings":[{"id":"F-1","severity":"P1","status":"open","file":"...","evidence":"..."}]}\`; use an empty array only after actually inspecting source/diff and requirements.
 
+## Integration with native DSH Goal
+
+Prefer the existing DSH Goal service / goal tool for authorized multi-round continuation when available. On start, inspect any active goal and never overwrite another task's goal. If no conflicting goal exists, create a goal for this exact Work Item with a bounded Round budget (recommend 30, not the DSH default of 256); only mark native goal complete after the local task reaches S9. Pause or block the native goal whenever the local checkpoint enters paused, waiting_approval, or blocked, so Goal Round automation cannot bypass human approval. Resume requires a new explicit user action after a restart. If Goal tools are missing, do not claim unattended multi-round execution: perform only safe work in the current authorized turn, persist a checkpoint, and report what remains.
+
 ## Automatic execution
 
 1. Check user goal, current workspace and tooling. If the goal is unclear about business contract or permission boundary, request a focused answer before changing code. Begin with \`start\`; a dirty tree blocks automatic ownership. On clean \`main/master\` the helper creates a dedicated \`coding/<id>\` branch.
