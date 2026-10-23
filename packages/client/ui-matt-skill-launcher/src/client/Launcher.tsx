@@ -3,6 +3,7 @@ import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-cli
 import { parseActions, actionErrorKey, presentDefaultActions, displayOrder, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
+import { codingWorkflowId, shouldPauseWorkflow } from './workflow-goal.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
 export function Launcher({ useInput, useConversation, useSession, useProjection, inputActions, useActionForm, fetchSkillNames, pauseWorkflow, t }: Props) {
@@ -12,7 +13,7 @@ export function Launcher({ useInput, useConversation, useSession, useProjection,
   const sessionRunning = useSession(x => x.running)
   const goalProjection = useProjection('goal')
   // Pause only explicitly associated workflow goals, never unrelated DSH goals.
-  const workflowGoal = goalProjection && /^\[coding-workflow:[0-9a-f-]{36}\]/u.test(goalProjection.goal.objective) ? goalProjection.goal : null
+  const workflowGoal = goalProjection && codingWorkflowId(goalProjection.goal.objective) !== null ? goalProjection.goal : null
   const entries = sessionRunning ? [] : chatEntries(chat)
   const recommendation = recommend(entries)
   const morePanelId = useId()
@@ -95,7 +96,7 @@ export function Launcher({ useInput, useConversation, useSession, useProjection,
   }
   const changeMode = async (next: 'manual' | 'auto') => {
     if (mode === next || pending) return
-    if (next === 'manual' && workflowGoal?.phase === 'active') {
+    if (shouldPauseWorkflow(mode, next, workflowGoal?.objective ?? null, workflowGoal?.phase ?? null)) {
       setPending(true)
       try {
         const result = await pauseWorkflow({ id: workflowGoal.id, revision: workflowGoal.revision })
