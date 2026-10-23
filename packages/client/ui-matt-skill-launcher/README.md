@@ -22,8 +22,9 @@ This fork-only first-stage extension is independent of the DSH Agent Loop and Se
 ## Behavior
 
 - Above the Composer, one shortcut row shows the buttons selected in settings; every other enabled button stays under a single More button that expands and collapses its list.
-- Eight presets start shown — discussing requirements, finalizing the spec, developing, diagnosing a bug, reviewing code, fixing review findings, building and committing. A shown button is not repeated under More. Placement only chooses where a button appears; Enable turns it off everywhere.
+- Nine presets start shown — discussing requirements, finalizing the spec, developing, diagnosing a bug, reviewing code, fixing review findings, building, committing and supplementing documents. A shown button is not repeated under More. Placement only chooses where a button appears; Enable turns it off everywhere.
 - Each built-in prompt is limited to one stage: requirements discussion writes no code, development does not review code or run a full build, review does not edit code, review repair does not re-review, and build or commit do not change business code. Tooltips drop fixed labels and state the applicable scope, boundaries and an example directly.
+- Coding buttons and the automatic workflow do not update product documents during coding. After finishing they list the affected existing documents and point to Supplement Docs; the automatic workflow asks once at S9 after the local commit and updates only on confirmation, leaving those changes uncommitted. The Supplement Docs button supplements only confirmed session conclusions into existing requirements, design, database and interface documents; it lists missing documents and verifies database and interface claims against actual SQL or source.
 - Consultation, ticket breakdown and development use `ask-matt`, `to-tickets` and `implement`. Additional Skills include domain modeling, research, retrospective and context handoff; the UI image prompt is last.
 - Reading version 1 settings upgrades unchanged preset fields and adds six new actions, preserving custom fields, disabled states and an intentionally empty list. The unchanged duplicate task-splitting preset is removed; customized copies remain. Saving or exporting writes version 3, whose actions may carry a `pinned` flag that marks a shown button; version-2 clients drop unknown action fields on save, so they reject version 3 instead of losing the placement. This client omits the retired `group` field and ignores it when reading older documents. Later deletions stay deleted.
 - Skill buttons look up the *effective current Session* catalog before inserting /skill-name. DSH deterministically loads the full SKILL.md when the user explicitly sends.
@@ -49,6 +50,7 @@ Receivers verify the current workspace before acting. Recommendations are text-b
 | Domain modeling / research | Ambiguous concepts or research question, glossary or sources, conclusions and evidence gaps |
 | Retrospective / context handoff / continue | Original goal, decisions, artifact references, checks, failures, remaining work, blockers and next steps; handoff redacts secrets |
 | Documents / UI image prompt | Audience or screen requirements, sources, agreed scope, output constraints and validation |
+| Supplement documents | Confirmed session conclusions, existing requirements/design/database/interface documents, and actual SQL or source for database or interface claims |
 
 ### Build and run
 From repository root, use the upstream build commands (pnpm install, pnpm run build, pnpm run dev:desktop). The fork-owned package is mounted in the default Web/Desktop client roster. Test real Electron interaction before merging.
@@ -74,6 +76,7 @@ The launcher changes no existing model prefix. The normal Session submission and
 ## Known Limitations and Deferred Work
 
 - Recommendations are conservative text-based hints, not authoritative workflow-completion events; old or unloaded history is not searched.
+- The product-document gate is Skill and prompt policy; the Host does not yet block product-document edits.
 - Windows Electron interaction, browser discussion writeback, and external document-generation dependencies require end-to-end acceptance.
 
 ### Dev Note

@@ -5,6 +5,7 @@
 ## 可实际使用的部分
 
 - `.dsh/skills/coding-workflow/SKILL.md`：全自动阶段规范（需求、固化、计划、实现、审查、修复、验证、本地 Git commit、交付报告），保留原单阶段 Skills。
+- 文档门禁：手动代码入口与全自动 S1–S8 不写产品资料文档；全自动 S9 在本地提交后询问一次，确认后只更新工作区。新增「补充文档」提示词按钮，只增量补充现有需求/设计/数据库/接口文档，缺失只列出。
 - `.dsh/skills/coding-workflow/scripts/workflow-state.mjs`：独立 Node CLI 检查点，外部持久存储在 `DSH_HOME/coding-work-items`，包括阶段顺序、真实文件证据、分支/HEAD、review/verify diff 指纹、限 3 轮修复、实际验证命令、严格的 Git 暂存范围和本地提交；提供 pause、mode、resume、approval、block、cancel 操作。
 - Node 回归测试覆盖干净建任务、脏工作区拒绝、分支任务冲突、人工审批、模式暂停、修改文件白名单、重复审查和本地提交幂等。
 - 安装脚本 `node scripts/install-coding-skills.mjs` 会同时携带新 Skill 的脚本；Windows 离线部署无新增运行时 npm 依赖（要求已安装 Node/Git）。
@@ -16,6 +17,7 @@
 3. helper 现在要求事先登记测试和构建命令并逐项实际执行；但尚未建立面向所有语言/工程框架的独立语义鉴别器，必须通过人工审查确保登记的确实是项目测试和构建入口。
 4. 当前切回手动模式可暂停带明确任务 ID 标识的 DSH Goal（若当前会话运行但尚无可识别的 Goal，界面会拒绝假切换）；**仍未**把 CLI Work Item 与会话/Workspace 绑定为原子事务，手动按钮操作不会自动回写工作项，人工确认由对话承接，尚无专门审批面板。
 5. 未执行完整 Windows Electron 打包及隔离网络环境验收。适配需要按专用测试环境验证。
+6. 文档门禁由 Skill/提示词执行，尚无 Host 强制拦截；数据库/接口文档能否核对实际 SQL 或源码，仍取决于模型按 Skill 执行。
 
 合并之前需补足上述 Host/Remote 控制、强制安全门禁、UI 实时状态与 Windows E2E；目前应保持 PR 为 **Draft**，不可将此基础实现标记为最终全量完成。
 

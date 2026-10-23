@@ -196,10 +196,14 @@ export const receivingInstructions: Readonly<Record<string, readonly [string, st
   retro: ['接收原任务、决策、失败记录、审查问题和验证结果；区分事实、原因假设及改进建议，不把一次结果推广为事实。', 'Receive the original task, decisions, failures, findings and checks; distinguish facts, causal hypotheses and improvement proposals.'],
   handoff: ['交接目标、当前阶段、规格及工单链接、关键决策、代码状态、实际验证、问题编号、未完成项、阻塞和下一步；引用已有产物，不复制全文，移除敏感信息。', 'Hand off the goal, phase, spec and ticket links, decisions, code state, checks, finding IDs, pending work, blockers and next steps; reference existing artifacts and redact secrets.'],
   image: ['接收已确认页面需求、截图或设计文档、交互状态和视觉约束；保留资料来源及待确认项。', 'Receive confirmed screen requirements, screenshots or design docs, interaction states and visual constraints; retain sources and open questions.'],
+  'doc-supplement': ['接收本会话已确认的结论、未决问题和资料路径；只增量补充现有需求、总体设计、概要设计、数据库和接口文档，缺失文档只列出，数据库/接口须对照实际 SQL、迁移或源码核实，无法核实的标“待确认”；不改代码、不提交。', 'Receive this session\'s confirmed conclusions, open questions and document paths; supplement existing requirements, system design, high-level design, database and interface documents in place; list missing documents; verify database and interface claims against actual SQL, migrations or source; mark unverifiable content as pending; do not edit code or commit.'],
 }
 
 /** Receiving instructions shared by document actions, Chinese then English. */
 export const documentReceiving = ['接收目标读者、资料路径、已确认范围和输出要求；先读取原始产物，缺失内容标记待确认，交付时说明文件位置及校验结果。', 'Receive the audience, source paths, agreed scope and output requirements; read primary artifacts, flag missing facts and report output paths and validation.'] as const
+
+/** Document policy shared by the code-writing actions, Chinese then English. */
+export const codingDocPolicy = ['编码阶段不更新产品资料文档（需求、总体设计、概要设计、数据库设计、接口文档）；完成后只列出受影响的现有文档，并提示使用「补充文档」按钮；不自行更新。README 和 JSDoc 仍按仓库规则随代码更新。', 'Do not update product documents (requirements, system design, high-level design, database design or interface documents) during coding. After finishing, list the affected existing documents and point to the Supplement Docs button; do not update them yourself. README and JSDoc still follow repository rules.'] as const
 
 /** Localized framing for bounded conversation excerpts. */
 export const draftContextCopy = {

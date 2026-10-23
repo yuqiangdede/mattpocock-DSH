@@ -1,4 +1,4 @@
-import { receivingInstructions, documentReceiving, draftContextCopy } from './locales.ts'
+import { receivingInstructions, documentReceiving, draftContextCopy, codingDocPolicy } from './locales.ts'
 
 /** Read-only recommendations derived from finalized, visible chat messages. */
 export interface ChatEntry {
@@ -199,6 +199,7 @@ export function withEvidence(
 ): string {
   const instruction = receivingInstructions[actionId] ?? (documentActions.has(actionId) ? documentReceiving : undefined)
   if (!instruction) return prompt
+  const policy = codeActions.has(actionId) ? codingDocPolicy[english ? 1 : 0] : ''
   const copy = draftContextCopy[english ? 'en' : 'zh']
   const assistant = entries[entries.length - 1]
   const user = entries[entries.length - 2]
@@ -210,8 +211,9 @@ export function withEvidence(
   const context = response ? copy.heading
     + (request ? copy.request + request + '\n' : '')
     + copy.result + bounded(response, 5000) : ''
-  return prompt + context + '\n\n' + instruction[english ? 1 : 0]
+  return prompt + context + '\n\n' + instruction[english ? 1 : 0] + (policy ? '\n' + policy : '')
     + (context ? copy.verify : '')
 }
 
 const documentActions = new Set(['api-docs', 'requirements', 'overview', 'outline', 'database', 'doc-merge', 'docx'])
+const codeActions = new Set(['execute', 'bug', 'tdd', 'review-fix'])
