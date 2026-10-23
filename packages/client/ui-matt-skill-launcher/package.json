@@ -15,7 +15,11 @@
       "default": "./lib/client.js"
     },
     "./src/*": "./src/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./todo-progress-guard": {
+      "types": "./lib/types/todo-progress-guard.d.ts",
+      "default": "./lib/todo-progress-guard.js"
+    }
   },
   "dsh": {
     "client": {
@@ -59,6 +63,7 @@
   },
   "files": [
     "lib/index.js",
+    "lib/todo-progress-guard.js",
     "lib/client.js",
     "lib/types/**/*.d.ts"
   ],

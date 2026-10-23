@@ -10,3 +10,5 @@
 
 .recommended{composes:action;border-color:var(--dsw-alias-border-l2);box-shadow:0 0 0 1px var(--dsw-alias-border-l2);font-weight:500}
 .hint{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
+
+.progressWarning{font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary);padding:3px 5px;border-left:2px solid var(--dsw-alias-border-l2);overflow-wrap:anywhere}

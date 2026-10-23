@@ -2,6 +2,7 @@
 /** Simplified Chinese copy. */
 export const zh = {
   'more': '更多',
+  'todoStale': '任务列表已持续 {minutes} 分钟未变化（按当前页面观察时间计算）；Agent 可能仍在工作，请核对进度。',
   'showButton': '显示在快捷栏',
   'defaultLocale': 'zh',
   'fillMissing': '补齐缺失预设（待保存）',
@@ -79,6 +80,7 @@ export type LauncherLocaleKey = keyof typeof zh
 /** English copy with the same keys. */
 export const en: Record<LauncherLocaleKey, string> = {
   'more': 'More',
+  'todoStale': 'Task status has not changed for {minutes} min (observed in this view); the Agent may still be working. Review the plan.',
   'showButton': 'Show in launcher',
   'defaultLocale': 'en',
   'fillMissing': 'Add missing presets (unsaved)',

@@ -84,3 +84,13 @@ Launcher 不改变已有的模型前缀。普通 Session 提交和 Skill 加载�
 ### 开发备注
 
 本 Fork 独立于上游 Agent Loop 和 Session 存储维护此插件。
+
+## Todo 进度滞后保护（Fork 插件）
+
+本 Fork 在标准 / PTC Agent 预设中挂载 \`@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard\`，它仅在同一 Agent 成功调用 \`todo_write\` 且仍有未完成项目时开始计数。后续超过 5 次工具调用且距离上次成功更新至少 90 秒时，向 Agent 注入一次核对提醒；冷却期为 90 秒。每个 Agent 独立计数，遇到新的用户轮次即清空。中断、错误、只做了文件编辑都不会被自动标为完成。
+
+快捷栏的保守提示仅按当前界面观察到的 **Todo 状态变化** 计算，不能反推出 Host 实际 \`todo_write\` 时间；同内容重复写入不会重置显示计时。界面只在 Agent 正运行、Todo 尚有未完成项且状态至少 90 秒不变时显示提示，完成、空任务和闲置状态不显示。此设计避免将编辑记录伪装成完成率，不改变上游 \`TodoPanel\`、\`todo/write\` 或 Agent Loop。
+
+守卫不会自己调用 \`todo_write\`，也不保证模型遵循提醒；若需要严格阶段完成保证，应由后续编码工作流的验收事件来驱动。新增插件通过既有 Fork 包构建并随 Windows/Desktop 离线安装包交付，改动集中在 Fork 包及预设挂载行；上游同步时留意标准 / PTC 预设对应的新增行。
+
+验证重点：\`todo_write\` 成功→连续操作→超时提示；未达到双阈值不提示；反复提醒受冷却期约束；完成或新轮次清空；不同 Agent 隔离；断开或会话切换不串 UI 提示。

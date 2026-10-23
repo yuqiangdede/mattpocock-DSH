@@ -5,11 +5,25 @@ import type { LauncherInjected } from './index.ts'
 import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
-export function Launcher({ useInput, useConversation, useSession, inputActions, useActionForm, fetchSkillNames, t }: Props) {
+export function Launcher({ useInput, useConversation, useSession, useProjection, inputActions, useActionForm, fetchSkillNames, t }: Props) {
   const snapshot = useActionForm(x => x)
   const input = useInput(x => x)
   const chat = useConversation(x => x.views.get('chat'))
   const sessionRunning = useSession(x => x.running)
+  const todos = useProjection('todos')
+  const planSignature = JSON.stringify(todos ?? [])
+  const planOpen = todos?.some(todo => todo.status === 'pending' || todo.status === 'in_progress') ?? false
+  const [planChangedAt, setPlanChangedAt] = useState(() => Date.now())
+  const [clock, setClock] = useState(() => Date.now())
+  // This is time since a visible state change, NOT the host's last todo_write timestamp.
+  useEffect(() => { setPlanChangedAt(Date.now()); setClock(Date.now()) }, [planSignature])
+  useEffect(() => {
+    if (!sessionRunning || !planOpen) return
+    const timer = setInterval(() => { setClock(Date.now()) }, 15000)
+    return () => { clearInterval(timer) }
+  }, [sessionRunning, planOpen])
+  const unchangedMinutes = Math.floor((clock - planChangedAt) / 60000)
+  const planMayBeStale = sessionRunning && planOpen && clock - planChangedAt >= 90000
   const entries = sessionRunning ? [] : chatEntries(chat)
   const recommendation = recommend(entries)
   const morePanelId = useId()
@@ -73,6 +87,9 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
       <div className={css.row}>{moreActions.map(render)}</div>
     </div>}
     {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
+    {planMayBeStale && <div className={css.progressWarning} role="status">
+      {t('todoStale').replace('{minutes}', String(unchangedMinutes))}
+    </div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
 }
