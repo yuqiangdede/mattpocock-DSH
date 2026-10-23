@@ -1,6 +1,6 @@
-# Pocket initialization templates
+# Pocket initialization conventions (Fork extension)
 
-Copy and adapt only the relevant sections; paths below are **inside the target project repository**, not the mattpocock-DSH installation. Use `writing-for-agents` to keep the always-loaded pointer small.
+Copy and adapt only the relevant sections; paths below are **inside the target project repository**, not the mattpocock-DSH installation. This companion file is read by `/setup-matt-pocock-skills`; do not create another setup Skill. Use `writing-for-agents` to keep the always-loaded pointer small.
 
 ## Root Agent instruction: add/update exactly one section
 
@@ -57,6 +57,23 @@ Review affected entries after requirement/design changes and significant PRs. Ru
 - After requirements, architectural changes, or substantial PRs, inspect affected knowledge and correct its index. Monthly, run `/pocket-maintenance` to propose duplicates, conflicts, stale docs, and archival candidates.
 - Maintain history through Git and explicit successor links. Never automatically delete an ADR, erase an unresolved decision, or silently rewrite an approved requirement.
 ```
+
+## `docs/agents/domain.md` — Pocket-aware domain consumer rules
+
+When Pocket is selected as canonical, replace the upstream root-glossary path examples in the generated domain consumer config with a pointer like this, adapted to current contents:
+
+```md
+# Domain Docs
+
+The active project knowledge map is `docs/pocket/README.md`. Follow its task pointers and `docs/pocket/meta/knowledge-policy.md` before changing an ADR or the glossary. New canonical domain terms belong in `docs/pocket/meta/glossary.md` (create lazily); new major accepted decisions belong under `docs/pocket/adr/`. Read the relevant files before domain modeling.
+
+If legacy `GLOSSARY.md`, `GLOSSARY-MAP.md`, `docs/adr/`, or context-local ADRs remain authoritative, list their precise paths and migration status below. Continue reading/writing those existing authorities until migration is expressly approved; do not create a competing second version.
+
+## Legacy authorities, pending migration
+- None in a fresh project.
+```
+
+The imported `domain-modeling` Skill explicitly mentions root `GLOSSARY.md` and `docs/adr/`, and `to-spec` publishes specs to the configured issue tracker. Root Agent instructions and this configuration provide a project preference, but **do not guarantee those imported Skills have been fully rewired**. Flag possible output conflicts, and propose a separately reviewed adapter if the entire coding flow must automatically write Pocket.
 
 ## Category conventions (lazily created)
 

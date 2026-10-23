@@ -69,7 +69,7 @@ Source: [mattpocock/skills](https://github.com/mattpocock/skills). Each link goe
 
 See [`matt-source.json`](.dsh/skills/matt-source.json) for the pinned revision and imported list, or browse the [bundled Skills directory](.dsh/skills/).
 
-### 10 fork-maintained Skills
+### 9 fork-maintained Skills
 
 These links point to **this fork's own `SKILL.md` files**:
 
@@ -83,12 +83,11 @@ These links point to **this fork's own `SKILL.md` files**:
 | [`outline-design`](.dsh/skills/outline-design/SKILL.md) | High-level design documentation |
 | [`overall-design`](.dsh/skills/overall-design/SKILL.md) | System design documentation |
 | [`requirements-spec`](.dsh/skills/requirements-spec/SKILL.md) | Requirements specifications and reverse analysis |
-| [`setup-project-pocket`](.dsh/skills/setup-project-pocket/SKILL.md) | Initialize Matt engineering setup and a progressive-disclosure project knowledge map |
 | [`pocket-maintenance`](.dsh/skills/pocket-maintenance/SKILL.md) | Audit and prune stale, duplicate, and conflicting Pocket documents |
 
 ## Project Pocket knowledge (optional)
 
-Run `/setup-project-pocket` in a **target project repository** to reuse Matt's setup conventions, explicitly apply the upstream `writing-for-agents` guidance, and create a Git-tracked `docs/pocket/` knowledge map. Agent instructions carry a short pointer; the Agent follows task-specific links instead of loading all docs or requiring RAG. Run `/pocket-maintenance` after material changes or during a monthly manual review to propose safe consolidation and archiving. Both commands require user submission; neither silently changes an existing project's authoritative docs or schedules background work. The imported upstream `setup-matt-pocock-skills` and `domain-modeling` files remain unchanged; legacy path conventions may require a separate migration.
+Run the existing imported `/setup-matt-pocock-skills` in a **target project repository**. This fork extends its prompt with `writing-for-agents` guidance and a Git-tracked `docs/pocket/` knowledge map. Agent instructions carry a short pointer; the Agent follows task-specific links instead of loading all docs or requiring RAG. Run `/pocket-maintenance` after material changes or during a monthly manual review to propose safe consolidation and archiving. Both commands require user submission; neither silently changes an existing project's authoritative docs or schedules background work. The imported `setup-matt-pocock-skills` has a small Fork-specific addition referencing `.dsh/skills/_shared/POCKET_SETUP.md`; future upstream Skill syncs should reconcile this delta. Other imported Skills remain unchanged, so legacy output paths may require a separate migration.
 
 ## Build from source
 

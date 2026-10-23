@@ -10,7 +10,7 @@ Run on the **target project** after significant requirement/architecture/PR chan
 
 ## 1. Read and inventory
 
-1. Locate the repository root, inspect Git status and read `docs/pocket/README.md` and `docs/pocket/meta/knowledge-policy.md`. If absent, stop and recommend `/setup-project-pocket`; do not invent an index.
+1. Locate the repository root, inspect Git status and read `docs/pocket/README.md` and `docs/pocket/meta/knowledge-policy.md`. If absent, stop and recommend `/setup-matt-pocock-skills`; do not invent an index.
 2. Call the `writing-for-agents` Skill for the pruning, context-pointer, deduplication, and document hierarchy rules before making suggestions.
 3. Inventory tracked Markdown under `docs/pocket/`, root `AGENTS.md`/`CLAUDE.md`, and *only* legacy project docs linked from the Pocket index. Read index metadata first; open full documents when a suspected issue requires evidence. Use local file search and Git history as needed.
 4. Examine current requirements, related source/tests/config, ADR successors, task states, and references. A file's age alone does **not** establish it is stale; recent edits do **not** establish correctness.
