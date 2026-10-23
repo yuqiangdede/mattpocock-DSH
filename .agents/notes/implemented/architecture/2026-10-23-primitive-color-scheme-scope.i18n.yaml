@@ -2,4 +2,21 @@
 # section, a hash of its English and Chinese blocks outside code blocks and generated regions.
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-23-primitive-color-scheme-scope.md
-
+/agent-note-primitive-color-scheme-scope:
+  en: 9e98c9cf82a7c143
+  zh: a157c03ccea388b4
+/agent-note-primitive-color-scheme-scope/problem:
+  en: cf090b70b101584d
+  zh: b12760aa34ac394b
+/agent-note-primitive-color-scheme-scope/decision:
+  en: e69d5a2c83e9ed35
+  zh: ba6b37f88bfd38a8
+/agent-note-primitive-color-scheme-scope/verification:
+  en: b2b148baeb6af28c
+  zh: ebfa242ed5b60832
+/agent-note-primitive-color-scheme-scope/alternatives-considered:
+  en: 28107536f9336f90
+  zh: 0f25c2177466de8f
+/agent-note-primitive-color-scheme-scope/consequences:
+  en: c848eb2cee5b2ea1
+  zh: 4eba7cec92fb7ab1
