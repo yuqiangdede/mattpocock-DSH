@@ -26,9 +26,9 @@ describe('mermaidSourceRequestsResources', () => {
   })
 
   it('refuses directives that re-enable HTML labels', () => {
-    expect(mermaidSourceRequestsResources('%%{init: {"flowchart":{"htmlLabels":true}}}%%\\nflowchart TD\\n  A --> B')).toBe(true)
-    expect(mermaidSourceRequestsResources("%%{ init: { 'htmlLabels': true } }%%\\nflowchart TD\\n  A --> B")).toBe(true)
-    expect(mermaidSourceRequestsResources('%%{init: {"htmlLabels":false}}%%\\nflowchart TD\\n  A --> B')).toBe(false)
+    expect(mermaidSourceRequestsResources('%%{init: {"flowchart":{"htmlLabels":true}}}%%\nflowchart TD\n  A --> B')).toBe(true)
+    expect(mermaidSourceRequestsResources("%%{ init: { 'htmlLabels': true } }%%\nflowchart TD\n  A --> B")).toBe(true)
+    expect(mermaidSourceRequestsResources('%%{init: {"htmlLabels":false}}%%\nflowchart TD\n  A --> B')).toBe(false)
   })
 
   it('refuses the image shape that carries a URL', () => {
