@@ -65,7 +65,7 @@ it.each([
     return row
   })
   h.viewport.updateTurns(rows.map((row, index) => ({
-    turn: index + 1, anchorKey: row.dataset.chatAnchorKey!, prompt: '', response: '',
+    turn: index + 1, anchorKey: row.dataset.chatAnchorKey!, human: true, prompt: '', response: '',
   })))
   const selected = Math.floor(count * 0.73)
   h.column.scrollTop = selected * 100 + 10
@@ -100,7 +100,7 @@ it('uses outer group geometry and keeps the preceding Turn in a gap', () => {
   vi.spyOn(hidden, 'getBoundingClientRect').mockImplementation(() => new DOMRect(0, 180 - h.column.scrollTop, 500, 0))
   const next = h.row(h.column, 'next', 300)
   next.dataset.chatTurn = '3'
-  h.viewport.updateTurns([1, 2, 3].map(turn => ({ turn, anchorKey: String(turn), prompt: '', response: '' })))
+  h.viewport.updateTurns([1, 2, 3].map(turn => ({ turn, anchorKey: String(turn), human: true, prompt: '', response: '' })))
 
   for (const collapsed of [false, true]) {
     body.toggleAttribute('hidden', collapsed)
@@ -130,7 +130,7 @@ it('reads only the supplied column and reuses a known Turn landing', () => {
   })
   vi.spyOn(list, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 500, 300))
   h.viewport.attach(list, h.column)
-  h.viewport.updateTurns([{ turn: 7, anchorKey: 'seven', prompt: '', response: '' }])
+  h.viewport.updateTurns([{ turn: 7, anchorKey: 'seven', human: true, prompt: '', response: '' }])
   const row = h.row(h.column, 'seven', 0)
   row.dataset.chatTurn = '7'
   const rail = document.createElement('nav')
@@ -280,7 +280,7 @@ it('navigates by Node identity while retaining a distinct visible part anchor', 
   const group = h.group()
   const reasoning = h.row(group, 'assistant', 100, 'reasoning')
   const response = h.row(group, 'assistant', 200, 'response')
-  h.viewport.updateTurns([{ turn: 1, anchorKey: 'assistant', prompt: '', response: '' }])
+  h.viewport.updateTurns([{ turn: 1, anchorKey: 'assistant', human: true, prompt: '', response: '' }])
 
   expect(h.viewport.scrollToTurn(1)?.position?.anchorKey).toBe(reasoning.dataset.chatAnchorKey)
   reasoning.setAttribute('hidden', 'until-found')
@@ -321,7 +321,7 @@ it('skips hidden group members when navigating to a fallback Turn row', () => {
 it('retains the original capture and Turn navigation path for ungrouped Nodes', () => {
   const h = fixture()
   h.row(h.column, 'whole', 90)
-  h.viewport.updateTurns([{ turn: 1, anchorKey: 'whole', prompt: '', response: '' }])
+  h.viewport.updateTurns([{ turn: 1, anchorKey: 'whole', human: true, prompt: '', response: '' }])
   expect(h.viewport.capturePosition()?.anchorKey).toBe('whole')
   expect(h.viewport.scrollToTurn(1)?.metrics.top).toBe(66)
 })

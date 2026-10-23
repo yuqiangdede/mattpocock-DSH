@@ -18,6 +18,7 @@ afterEach(() => {
 
 const items: readonly TurnRailItem[] = Array.from({ length: 1_000 }, (_, index) => ({
   turn: index + 1,
+  human: true,
   prompt: `prompt ${String(index + 1)}`,
   response: '',
   anchor: { kind: 'loaded', key: `turn:${String(index + 1)}` },
@@ -28,7 +29,7 @@ describe('TurnNavigator', () => {
   it('places the latest committed active turn on its first viewport size without scroll commands', () => {
     const observer = installTurnNavigatorObserver(null)
     const onNavigate = vi.fn()
-    const view = render(<TurnNavigator items={items} activeTurn={1} busyTurn={null} onNavigate={onNavigate} t={t} />)
+    const view = render(<TurnNavigator items={items} activeTurn={1} busyTurn={null} stepCount={1_000} onNavigate={onNavigate} t={t} />)
     const nav = view.getByRole('navigation')
     const scroller = nav.firstElementChild as HTMLElement
     const scrollTo = vi.spyOn(scroller, 'scrollTo')
@@ -36,7 +37,7 @@ describe('TurnNavigator', () => {
     Object.defineProperty(scroller, 'scrollHeight', { get: () => { throw new Error('scroll extent read') } })
     Object.defineProperty(scroller, 'clientHeight', { get: () => { throw new Error('viewport height read') } })
 
-    view.rerender(<TurnNavigator items={items} activeTurn={1_000} busyTurn={null} onNavigate={onNavigate} t={t} />)
+    view.rerender(<TurnNavigator items={items} activeTurn={1_000} busyTurn={null} stepCount={1_000} onNavigate={onNavigate} t={t} />)
     act(() => { observer.resize(300) })
 
     expect(scroller.scrollTop).toBe(9_702)
@@ -51,7 +52,9 @@ describe('TurnNavigator', () => {
     installTurnNavigatorObserver()
     const ref = createRef<TurnNavigatorHandle>()
     const onNavigate = vi.fn()
-    const view = render(<TurnNavigator ref={ref} items={items} activeTurn={1} busyTurn={null} onNavigate={onNavigate} t={t} />)
+    const view = render(
+      <TurnNavigator ref={ref} items={items} activeTurn={1} busyTurn={null} stepCount={1_000} onNavigate={onNavigate} t={t} />,
+    )
     await view.findByRole('button', { name: '跳转到第 1 轮' })
     const scroller = view.getByRole('navigation').firstElementChild as HTMLElement
     Object.defineProperty(scroller, 'scrollHeight', { get: () => { throw new Error('scroll extent read') } })
@@ -72,7 +75,7 @@ describe('TurnNavigator', () => {
     const ref = createRef<TurnNavigatorHandle>()
     const view = render(
       <StrictMode>
-        <TurnNavigator ref={ref} items={items} activeTurn={1} busyTurn={null} onNavigate={vi.fn()} t={t} />
+        <TurnNavigator ref={ref} items={items} activeTurn={1} busyTurn={null} stepCount={1_000} onNavigate={vi.fn()} t={t} />
       </StrictMode>,
     )
     const first = await view.findByRole('button', { name: '跳转到第 1 轮' })
@@ -90,7 +93,7 @@ describe('TurnNavigator', () => {
 
   it('keeps active marks inside the safe band still and centers only after crossing either edge', async () => {
     installTurnNavigatorObserver(288)
-    const props = { items, activeTurn: 50, busyTurn: null, onNavigate: vi.fn(), t }
+    const props = { items, activeTurn: 50, busyTurn: null, stepCount: 1_000, onNavigate: vi.fn(), t }
     const view = render(<TurnNavigator {...props} />)
     await view.findByRole('button', { name: '跳转到第 50 轮' })
     const scroller = view.getByRole('navigation').firstElementChild as HTMLElement
@@ -120,9 +123,26 @@ describe('TurnNavigator', () => {
     expect(scrollTo).toHaveBeenCalledWith(expect.objectContaining({ top: 352 }))
   })
 
+  it('counts only human steps and marks notice-woken turns apart', async () => {
+    installTurnNavigatorObserver(288)
+    const mixed: readonly TurnRailItem[] = [
+      { turn: 1, human: true, prompt: 'asked', response: '', anchor: { kind: 'loaded', key: 'a' } },
+      { turn: 2, human: false, prompt: '', response: '', anchor: { kind: 'loaded', key: 'b' } },
+    ]
+    const view = render(
+      <TurnNavigator items={mixed} activeTurn={1} busyTurn={null} stepCount={1} onNavigate={vi.fn()} t={t} />,
+    )
+    const first = await view.findByRole('button', { name: '跳转到第 1 轮' })
+    const second = view.getByRole('button', { name: '跳转到第 2 轮' })
+    expect(view.getByRole('navigation').getAttribute('aria-label')).toBe('轮次导航：共 1 步')
+    expect(view.container.querySelector('[data-turn-step-count]')?.textContent).toBe('1')
+    expect(first.hasAttribute('data-turn-auto')).toBe(false)
+    expect(second.hasAttribute('data-turn-auto')).toBe(true)
+  })
+
   it('does not let scroll-induced pointer entry replace a hover or focused preview', async () => {
     installTurnNavigatorObserver()
-    const view = render(<TurnNavigator items={items} activeTurn={1} busyTurn={null} onNavigate={vi.fn()} t={t} />)
+    const view = render(<TurnNavigator items={items} activeTurn={1} busyTurn={null} stepCount={1_000} onNavigate={vi.fn()} t={t} />)
     const twentieth = await view.findByRole('button', { name: '跳转到第 20 轮' })
     const nav = view.getByRole('navigation')
     const scroller = nav.firstElementChild as HTMLElement

@@ -17,6 +17,13 @@ export interface TurnOutlineEntry {
   readonly turn: number
   /** The turn's `turn/start` event seq — paging a window back through this seq loads the whole turn. */
   readonly seq: SessionSeq
+  /**
+   * Whether a human input opened the turn (`user/message` with the `user`
+   * source), set by the turn's first such message and never cleared. Notice-
+   * woken turns (goal rounds, reminders, injected context) stay `false`, and
+   * an image-only human prompt is `true` with an empty preview.
+   */
+  readonly human: boolean
   /** Bounded first-human-prompt preview (one rail-card line); `''` until an eligible prompt lands. */
   readonly prompt: string
   /** Bounded final-response preview (up to three rail-card lines); `''` until the turn ends with assistant text. */
@@ -35,6 +42,8 @@ export interface TurnOutlineState {
   readonly turns: readonly TurnOutlineEntry[]
   /** Newest text-bearing assistant preview of the open turn; `''` outside one. */
   readonly draft: string
+  /** Whether the newest turn already took its first input, which fixes its `human` flag. */
+  readonly claimed: boolean
 }
 
 declare module '@deepseek-ai/dsh-session-projection/types' {

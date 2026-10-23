@@ -13,6 +13,8 @@ import type { TurnNavigationItem } from '../contract/snapshot.ts'
 /** One rail mark: a loaded Turn scrolls to its row; an unloaded one pages history through its seq first. */
 export interface TurnRailItem {
   readonly turn: number
+  /** Whether human input opened the Turn; the rail counts only these marks. */
+  readonly human: boolean
   /** Bounded prompt preview (loaded window first, outline fallback). */
   readonly prompt: string
   /** Bounded response preview (loaded window first, outline fallback). */
@@ -30,16 +32,20 @@ const EMPTY_ITEMS: readonly TurnRailItem[] = []
  * wire). `turn` and `seq` are the load-bearing fields — a mark cannot exist
  * or jump without them — so their damage drops the entry; the previews are
  * decorative, so a malformed one degrades to `''` and the turn stays
- * navigable by number.
+ * navigable by number. A damaged `human` falls back to a populated preview,
+ * the pre-flag evidence that a human prompt opened the turn.
  */
-function outlineEntry(value: unknown): { turn: number; seq: SessionSeq; prompt: string; response: string } | undefined {
+function outlineEntry(
+  value: unknown,
+): { turn: number; seq: SessionSeq; human: boolean; prompt: string; response: string } | undefined {
   if (typeof value !== 'object' || value === null) return undefined
-  const entry = value as { turn?: unknown; seq?: unknown; prompt?: unknown; response?: unknown }
+  const entry = value as { turn?: unknown; seq?: unknown; human?: unknown; prompt?: unknown; response?: unknown }
   if (typeof entry.turn !== 'number' || !Number.isSafeInteger(entry.turn) || entry.turn < 0) return undefined
   if (typeof entry.seq !== 'number' || !Number.isSafeInteger(entry.seq) || entry.seq < 0 || Object.is(entry.seq, -0)) return undefined
   return {
     turn: entry.turn,
     seq: SessionSeq(entry.seq),
+    human: typeof entry.human === 'boolean' ? entry.human : typeof entry.prompt === 'string' && entry.prompt !== '',
     prompt: typeof entry.prompt === 'string' ? entry.prompt : '',
     response: typeof entry.response === 'string' ? entry.response : '',
   }
@@ -52,10 +58,10 @@ function outlineEntries(outline: unknown): readonly unknown[] {
 
 /**
  * Merge the host outline with the loaded rail items into the full ladder.
- * A turn present in both sides keeps the loaded anchor, taking an outline
- * preview only where the window's own is empty (a mid-Turn window head, or a
- * turn whose loaded nodes carry no text); turns on one side only pass
- * through. Result ascends by turn.
+ * A turn present in both sides keeps the loaded anchor and the loaded
+ * human-input answer, taking an outline preview only where the window's own
+ * is empty (a mid-Turn window head, or a turn whose loaded nodes carry no
+ * text); turns on one side only pass through. Result ascends by turn.
  * @param loaded - loaded-window rail items (timeline order).
  * @param outline - `turnOutline` projection value, treated as wire data.
  * @returns every known turn, ascending; a stable empty array when none.
@@ -70,6 +76,7 @@ export function mergeTurnRailItems(
     if (entry === undefined) continue
     byTurn.set(entry.turn, {
       turn: entry.turn,
+      human: entry.human,
       prompt: entry.prompt,
       response: entry.response,
       anchor: { kind: 'unloaded', seq: entry.seq },
@@ -79,6 +86,7 @@ export function mergeTurnRailItems(
     const preview = byTurn.get(item.turn)
     byTurn.set(item.turn, {
       turn: item.turn,
+      human: item.human || preview?.human === true,
       prompt: item.prompt !== '' ? item.prompt : preview?.prompt ?? '',
       response: item.response !== '' ? item.response : preview?.response ?? '',
       anchor: { kind: 'loaded', key: item.anchorKey },

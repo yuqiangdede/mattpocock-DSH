@@ -59,6 +59,12 @@ export interface TurnNavigationItem {
   readonly turn: number
   /** Stable Conversation Context key the rail scrolls to. */
   readonly anchorKey: string
+  /**
+   * Whether the loaded window holds the human input that opened this Turn.
+   * The outline projection is authoritative; this is the fallback for a Turn
+   * outside it, where a populated preview also proves human input.
+   */
+  readonly human: boolean
   /** Bounded prompt preview; empty when the loaded window starts mid-Turn. */
   readonly prompt: string
   /** Bounded assistant-response preview; empty until the Turn answers. */

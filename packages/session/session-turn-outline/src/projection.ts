@@ -61,6 +61,7 @@ function preview(content: MessageContent, limit: number): string {
 const turnOutlineEntriesSchema: ZodType<readonly TurnOutlineEntry[]> = z.array(z.object({
   turn: z.number().int().nonnegative(),
   seq: z.number().int().nonnegative().transform(SessionSeq),
+  human: z.boolean(),
   prompt: z.string().max(PROMPT_PREVIEW_LIMIT),
   response: z.string().max(RESPONSE_PREVIEW_LIMIT),
 }).strict()).superRefine((turns, context) => {
@@ -77,14 +78,15 @@ const turnOutlineEntriesSchema: ZodType<readonly TurnOutlineEntry[]> = z.array(z
 const turnOutlineStateSchema: ZodType<TurnOutlineState> = z.object({
   turns: turnOutlineEntriesSchema,
   draft: z.string().max(RESPONSE_PREVIEW_LIMIT),
+  claimed: z.boolean(),
 }).strict()
 
-const EMPTY_OUTLINE: TurnOutlineState = { turns: [], draft: '' }
+const EMPTY_OUTLINE: TurnOutlineState = { turns: [], draft: '', claimed: false }
 
 /** The `turnOutline` unit registered on `ctx.sessionProjections` (exported for the unit spec). */
 export const turnOutlineProjectionDefinition = {
   key: 'turnOutline',
-  stateVersion: 2,
+  stateVersion: 3,
   stateSchema: turnOutlineStateSchema,
   init: () => EMPTY_OUTLINE,
   apply: (state, event) => {
@@ -99,32 +101,52 @@ export const turnOutlineProjectionDefinition = {
         // standing entry.
         if (last !== undefined && event.data.turn <= last.turn) return state
         return {
-          turns: [...state.turns, { turn: event.data.turn, seq: event.seq, prompt: '', response: '' }],
+          turns: [...state.turns, { turn: event.data.turn, seq: event.seq, human: false, prompt: '', response: '' }],
           draft: '',
+          claimed: false,
         }
       }
       case 'user/message': {
-        // Only the newest turn can still be waiting for its opening human
-        // prompt; later human messages in the same turn (steering) keep the
-        // first preview.
-        if (event.data.source.kind !== 'user') return state
+        // `claimed` records that the newest turn already took its first input,
+        // so a human message later in a notice-woken turn cannot relabel it as
+        // human. Only the newest turn can still be waiting for that opener.
+        if (event.data.source.kind !== 'user') {
+          return state.claimed ? state : { ...state, claimed: true }
+        }
         const last = state.turns.at(-1)
-        if (last === undefined || last.prompt !== '') return state
+        if (last === undefined) return state
         const prompt = preview(event.data.content, PROMPT_PREVIEW_LIMIT)
-        if (prompt === '') return state
-        return { turns: [...state.turns.slice(0, -1), { ...last, prompt }], draft: state.draft }
+        if (!state.claimed) {
+          // The opener proves the turn is human even when it renders no text
+          // (an image-only prompt), so the flag lands before the preview does.
+          return {
+            turns: [...state.turns.slice(0, -1), { ...last, human: true, prompt }],
+            draft: state.draft,
+            claimed: true,
+          }
+        }
+        // A later human message may still supply the preview of a human turn
+        // whose opening prompt rendered no text; it never changes the flag.
+        if (!last.human || last.prompt !== '' || prompt === '') return state
+        return { turns: [...state.turns.slice(0, -1), { ...last, prompt }], draft: state.draft, claimed: true }
       }
       case 'assistant/message': {
         // Newest text-bearing message wins; the buffer commits at turn/end.
         const draft = preview(event.data.message.content, RESPONSE_PREVIEW_LIMIT)
         if (draft === '' || draft === state.draft) return state
-        return { turns: state.turns, draft }
+        return { turns: state.turns, draft, claimed: state.claimed }
       }
       case 'turn/end': {
         if (state.draft === '') return state
         const last = state.turns.at(-1)
-        if (last === undefined || last.response === state.draft) return { turns: state.turns, draft: '' }
-        return { turns: [...state.turns.slice(0, -1), { ...last, response: state.draft }], draft: '' }
+        if (last === undefined || last.response === state.draft) {
+          return { turns: state.turns, draft: '', claimed: state.claimed }
+        }
+        return {
+          turns: [...state.turns.slice(0, -1), { ...last, response: state.draft }],
+          draft: '',
+          claimed: state.claimed,
+        }
       }
       default:
         return state

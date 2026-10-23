@@ -80,6 +80,9 @@ export function ChatView({
     () => mergeTurnRailItems(turnNavigationItems, turnOutline),
     [turnNavigationItems, turnOutline],
   )
+  // Steps are the Turns a human opened; notice-woken Turns stay on the rail
+  // for navigation but never count as an operation.
+  const stepCount = useMemo(() => railItems.filter(item => item.human).length, [railItems])
   const inbox = useProjection('inbox') as InboxState | undefined
   // Workspace root off the session list row: path summaries display relative to it.
   const cwd = useSessions(s => s.byId[sessionId]?.cwd)
@@ -201,6 +204,7 @@ export function ChatView({
           items={railItems}
           activeTurn={scroll.activeTurn}
           busyTurn={scroll.busyTurn}
+          stepCount={stepCount}
           onNavigate={scroll.navigateToTurn}
           t={t}
         />

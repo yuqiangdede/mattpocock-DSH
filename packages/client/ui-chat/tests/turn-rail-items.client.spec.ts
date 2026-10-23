@@ -4,8 +4,13 @@ import { describe, expect, it } from 'vitest'
 import { mergeTurnRailItems } from '../src/client/chat/turn-rail-items.ts'
 import type { TurnNavigationItem } from '../src/client/contract/snapshot.ts'
 
-function loadedItem(turn: number, prompt = `p${String(turn)}`, response = `r${String(turn)}`): TurnNavigationItem {
-  return { turn, anchorKey: `anchor-${String(turn)}`, prompt, response }
+function loadedItem(
+  turn: number,
+  prompt = `p${String(turn)}`,
+  response = `r${String(turn)}`,
+  human = true,
+): TurnNavigationItem {
+  return { turn, anchorKey: `anchor-${String(turn)}`, human, prompt, response }
 }
 
 describe('mergeTurnRailItems', () => {
@@ -15,12 +20,12 @@ describe('mergeTurnRailItems', () => {
 
   it('maps outline-only turns to unloaded marks with both previews in ascending order', () => {
     const items = mergeTurnRailItems([], [
-      { turn: 1, seq: 0, prompt: 'first', response: 'first answer' },
-      { turn: 2, seq: 9, prompt: '', response: '' },
+      { turn: 1, seq: 0, human: true, prompt: 'first', response: 'first answer' },
+      { turn: 2, seq: 9, human: false, prompt: '', response: '' },
     ])
     expect(items).toEqual([
-      { turn: 1, prompt: 'first', response: 'first answer', anchor: { kind: 'unloaded', seq: 0 } },
-      { turn: 2, prompt: '', response: '', anchor: { kind: 'unloaded', seq: 9 } },
+      { turn: 1, human: true, prompt: 'first', response: 'first answer', anchor: { kind: 'unloaded', seq: 0 } },
+      { turn: 2, human: false, prompt: '', response: '', anchor: { kind: 'unloaded', seq: 9 } },
     ])
   })
 
@@ -28,50 +33,62 @@ describe('mergeTurnRailItems', () => {
     const items = mergeTurnRailItems(
       [loadedItem(2, '', ''), loadedItem(3)],
       [
-        { turn: 1, seq: 0, prompt: 'one', response: 'answer one' },
-        { turn: 2, seq: 8, prompt: 'two from outline', response: 'answer two from outline' },
-        { turn: 3, seq: 16, prompt: 'three from outline', response: 'answer three from outline' },
+        { turn: 1, seq: 0, human: true, prompt: 'one', response: 'answer one' },
+        { turn: 2, seq: 8, human: true, prompt: 'two from outline', response: 'answer two from outline' },
+        { turn: 3, seq: 16, human: true, prompt: 'three from outline', response: 'answer three from outline' },
       ],
     )
     expect(items).toEqual([
-      { turn: 1, prompt: 'one', response: 'answer one', anchor: { kind: 'unloaded', seq: 0 } },
+      { turn: 1, human: true, prompt: 'one', response: 'answer one', anchor: { kind: 'unloaded', seq: 0 } },
       {
         turn: 2,
+        human: true,
         prompt: 'two from outline',
         response: 'answer two from outline',
         anchor: { kind: 'loaded', key: 'anchor-2' },
       },
-      { turn: 3, prompt: 'p3', response: 'r3', anchor: { kind: 'loaded', key: 'anchor-3' } },
+      { turn: 3, human: true, prompt: 'p3', response: 'r3', anchor: { kind: 'loaded', key: 'anchor-3' } },
+    ])
+  })
+
+  it('keeps the outline human-input answer when the loaded window disagrees', () => {
+    const items = mergeTurnRailItems(
+      [loadedItem(5, '', '', false)],
+      [{ turn: 5, seq: 40, human: true, prompt: 'queued prompt', response: '' }],
+    )
+    expect(items).toEqual([
+      { turn: 5, human: true, prompt: 'queued prompt', response: '', anchor: { kind: 'loaded', key: 'anchor-5' } },
     ])
   })
 
   it('passes loaded turns through when the outline is absent or lagging', () => {
     expect(mergeTurnRailItems([loadedItem(7)], undefined)).toEqual([
-      { turn: 7, prompt: 'p7', response: 'r7', anchor: { kind: 'loaded', key: 'anchor-7' } },
+      { turn: 7, human: true, prompt: 'p7', response: 'r7', anchor: { kind: 'loaded', key: 'anchor-7' } },
     ])
-    expect(mergeTurnRailItems([loadedItem(4)], [{ turn: 3, seq: 1, prompt: 'older', response: '' }])).toEqual([
-      { turn: 3, prompt: 'older', response: '', anchor: { kind: 'unloaded', seq: 1 } },
-      { turn: 4, prompt: 'p4', response: 'r4', anchor: { kind: 'loaded', key: 'anchor-4' } },
+    expect(mergeTurnRailItems([loadedItem(4)], [{ turn: 3, seq: 1, human: false, prompt: 'older', response: '' }])).toEqual([
+      { turn: 3, human: false, prompt: 'older', response: '', anchor: { kind: 'unloaded', seq: 1 } },
+      { turn: 4, human: true, prompt: 'p4', response: 'r4', anchor: { kind: 'loaded', key: 'anchor-4' } },
     ])
   })
 
   it('drops entries with damaged navigation fields but degrades malformed previews to empty', () => {
     expect(mergeTurnRailItems([loadedItem(1)], 'not an outline')).toEqual([
-      { turn: 1, prompt: 'p1', response: 'r1', anchor: { kind: 'loaded', key: 'anchor-1' } },
+      { turn: 1, human: true, prompt: 'p1', response: 'r1', anchor: { kind: 'loaded', key: 'anchor-1' } },
     ])
     const items = mergeTurnRailItems([], [
-      { turn: -1, seq: 0, prompt: 'negative turn', response: '' },
-      { turn: 2, seq: 0.5, prompt: 'fractional seq', response: '' },
-      { turn: 4, seq: -0, prompt: 'negative zero seq', response: '' },
-      { turn: 5, seq: Number.MAX_SAFE_INTEGER + 1, prompt: 'unsafe seq', response: '' },
-      { turn: 3, seq: 4, prompt: 5, response: 6 },
-      { turn: 6, seq: 7, prompt: 'kept', response: 8 },
+      { turn: -1, seq: 0, human: true, prompt: 'negative turn', response: '' },
+      { turn: 2, seq: 0.5, human: true, prompt: 'fractional seq', response: '' },
+      { turn: 4, seq: -0, human: true, prompt: 'negative zero seq', response: '' },
+      { turn: 5, seq: Number.MAX_SAFE_INTEGER + 1, human: true, prompt: 'unsafe seq', response: '' },
+      { turn: 3, seq: 4, human: 'yes', prompt: 5, response: 6 },
+      { turn: 6, seq: 7, human: false, prompt: 'kept', response: 8 },
       null,
     ])
-    // turn/seq are load-bearing (drop); previews are decorative (degrade).
+    // turn/seq are load-bearing (drop); previews are decorative (degrade), and
+    // a damaged human flag falls back to the populated-preview evidence.
     expect(items).toEqual([
-      { turn: 3, prompt: '', response: '', anchor: { kind: 'unloaded', seq: 4 } },
-      { turn: 6, prompt: 'kept', response: '', anchor: { kind: 'unloaded', seq: 7 } },
+      { turn: 3, human: false, prompt: '', response: '', anchor: { kind: 'unloaded', seq: 4 } },
+      { turn: 6, human: false, prompt: 'kept', response: '', anchor: { kind: 'unloaded', seq: 7 } },
     ])
   })
 })

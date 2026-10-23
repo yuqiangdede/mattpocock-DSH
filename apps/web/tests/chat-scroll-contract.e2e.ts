@@ -1223,7 +1223,7 @@ describe('web e2e: long Chat scroll contract', () => {
       const backToBottom = world.page.getByRole('button', { name: 'Back to bottom', exact: true })
       const expectControls = async (): Promise<void> => {
         await expect.poll(() => host.evaluate((element) => {
-          const rail = element.querySelector('nav[aria-label="Turn navigation"]')
+          const rail = element.querySelector('nav[aria-label^="Turn navigation"]')
           const button = element.querySelector('button[aria-label="Back to bottom"]')
           const composer = element.querySelector('[data-composer-seat]')
           if (rail === null || button === null || composer === null) return Infinity

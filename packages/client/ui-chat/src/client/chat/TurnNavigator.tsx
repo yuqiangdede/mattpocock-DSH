@@ -13,6 +13,8 @@ interface TurnNavigatorProps {
   readonly activeTurn: number | null
   /** Turn whose jump is still paging history in; its mark pulses. */
   readonly busyTurn: number | null
+  /** How many marks a human opened; notice-woken Turns are marked but not counted. */
+  readonly stepCount: number
   readonly onNavigate: (item: TurnRailItem) => void
   readonly t: ChatViewSlotProps['t']
 }
@@ -53,6 +55,7 @@ const TurnMark = memo(function TurnMark({
   item, index, active, busy, previewId, registerElement, onNavigate, onPreview, onFocusChange, t,
 }: TurnMarkProps) {
   const classes = [css.mark]
+  if (!item.human) classes.push(css.markAuto)
   if (item.anchor.kind === 'unloaded') classes.push(css.markUnloaded)
   if (active) classes.push(css.markActive)
   else if (previewId !== undefined) classes.push(css.markPreview)
@@ -63,6 +66,7 @@ const TurnMark = memo(function TurnMark({
       data-index={index}
       type="button"
       className={classes.join(' ')}
+      data-turn-auto={item.human ? undefined : ''}
       aria-label={t(
         item.anchor.kind === 'loaded' ? 'chat.turnNavigation.jump' : 'chat.turnNavigation.jumpLoad',
         { turn: item.turn },
@@ -79,7 +83,7 @@ const TurnMark = memo(function TurnMark({
 })
 
 function TurnNavigatorRail(
-  { items, activeTurn, busyTurn, onNavigate, t }: TurnNavigatorProps,
+  { items, activeTurn, busyTurn, stepCount, onNavigate, t }: TurnNavigatorProps,
   ref: ForwardedRef<TurnNavigatorHandle>,
 ) {
   const [previewTurn, setPreviewTurn] = useState<number | null>(null)
@@ -234,7 +238,7 @@ function TurnNavigatorRail(
     <div className={css.slot}>
       <nav
         className={css.frame}
-        aria-label={t('chat.turnNavigation.label')}
+        aria-label={t('chat.turnNavigation.label', { count: stepCount })}
         onPointerEnter={() => { pointerInsideRef.current = true }}
         onPointerLeave={() => {
           pointerInsideRef.current = false
@@ -264,6 +268,7 @@ function TurnNavigatorRail(
             })}
           </div>
         </div>
+        <div className={css.count} aria-hidden="true" data-turn-step-count>{stepCount}</div>
         {preview !== undefined && previewPosition !== undefined && (
           <div
             id={previewId}

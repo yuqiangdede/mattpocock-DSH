@@ -41,6 +41,7 @@ Mount the plugin beside the session store and the projection registry when clien
 |---|---|
 | `turn` | Host-assigned turn number from the `turn/start` payload |
 | `seq` | The turn's `turn/start` event seq — paging a window back through this seq loads the whole turn |
+| `human` | Whether the turn's first input was a human `user/message` (`source.kind === 'user'`); set by that first input and never cleared, so notice-woken turns stay `false` while an images-only human prompt is `true` with an empty preview |
 | `prompt` | Preview of the turn's first human prompt (space-joined text blocks, collapsed whitespace, 50-character cap with a trailing ellipsis when clipped — one rail-card line); `''` until an eligible prompt lands |
 | `response` | Preview of the turn's final text-bearing assistant message (same normalization, 120-character cap — up to three rail-card lines); `''` until the turn ends with assistant text |
 

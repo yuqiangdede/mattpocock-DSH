@@ -55,6 +55,18 @@ function responseText(node: ChatNode): string {
 }
 
 /**
+ * Whether one node's input source names human input.
+ * @param node - the Turn's first loaded node, when it has one.
+ * @returns whether that input came from a human, per the message source vocabulary.
+ */
+function humanSource(node: ChatNode | undefined): boolean {
+  if (node === undefined) return false
+  if (!('source' in node.data)) return false
+  const source = node.data.source as { kind?: unknown } | null
+  return source?.kind === 'user'
+}
+
+/**
  * Whether two items carry the same rail state, so the reader can keep its array.
  * @param left - previously published item, when the Turn had one.
  * @param right - freshly derived item, when the Turn still has one.
@@ -65,7 +77,7 @@ export function sameTurnNavigationItem(
   right: TurnNavigationItem | undefined,
 ): boolean {
   if (left === undefined || right === undefined) return left === right
-  return left.turn === right.turn && left.anchorKey === right.anchorKey
+  return left.turn === right.turn && left.anchorKey === right.anchorKey && left.human === right.human
     && left.prompt === right.prompt && left.response === right.response
 }
 
@@ -88,9 +100,14 @@ export function turnNavigationItem(
   const anchor = user ?? loaded[0]
   if (anchor === undefined) return undefined
   const response = loaded.findLast(node => responseText(node) !== '')
+  // The first loaded input proves the Turn is human only while the window
+  // still holds that input; `turnOutline` is authoritative for every Turn it
+  // lists, and this answer covers a Turn the loaded window knows alone.
+  const opener = loaded[0]
   return {
     turn,
     anchorKey: anchor.key,
+    human: humanSource(opener),
     prompt: user === undefined ? '' : promptText(user),
     response: response === undefined ? '' : responseText(response),
   }

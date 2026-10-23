@@ -166,7 +166,7 @@ const user = (seq: number, text: string): UserMessageNode => ({
   seq,
   time: seq * 1000,
   content: [{ type: 'text', text }] as never,
-  source: null,
+  source: { kind: 'user' },
 })
 const userInTurn = (seq: number, text: string, turn: number): ConversationNode => ({
   ...user(seq, text),
@@ -1252,12 +1252,12 @@ describe('ChatView', () => {
       turnEnds: new Map([[1, 3], [2, 6]]),
     })
     expect(snapshot.navigation.items()).toEqual([
-      { turn: 1, anchorKey: 'fixture:user:1', prompt: 'first prompt', response: 'first response' },
-      { turn: 2, anchorKey: 'fixture:user:4', prompt: 'second prompt', response: 'second response' },
+      { turn: 1, anchorKey: 'fixture:user:1', human: true, prompt: 'first prompt', response: 'first response' },
+      { turn: 2, anchorKey: 'fixture:user:4', human: true, prompt: 'second prompt', response: 'second response' },
     ])
     const h = makeHarness({}, {}, snapshot)
     const view = render(<h.ChatView {...h.props} />)
-    const navigation = view.getByRole('navigation', { name: '轮次导航' })
+    const navigation = view.getByRole('navigation', { name: /轮次导航/ })
     const first = await view.findByRole('button', { name: '跳转到第 1 轮' })
     expect(within(navigation).getAllByRole('button').map(mark => mark.getAttribute('aria-label'))).toEqual([
       '跳转到第 1 轮', '跳转到第 2 轮',
@@ -1427,7 +1427,7 @@ describe('ChatView', () => {
       response: '',
     })))
     const view = render(<h.ChatView {...h.props} />)
-    const nav = view.getByRole('navigation', { name: '轮次导航' })
+    const nav = view.getByRole('navigation', { name: /轮次导航/ })
     const scroller = nav.querySelector('[class*="scroller"]') as HTMLElement
     const latest = await within(nav).findByRole('button', { name: '跳转到第 60 轮' })
     expect(scroller.scrollTop).toBe(302)
