@@ -63,13 +63,14 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git switch -c "$branch"
 
-          # Keep upstream commit ancestry, preserving the fork's custom changes.
-          # Never push to master. A conflict requires manual resolution.
+          # Preserve upstream ancestry and fork customizations on successful merges.
+          # On conflicts, open a draft PR based on upstream itself for manual repair.
+          conflicted=false
           if ! git merge --no-ff --no-edit upstream/master; then
             git merge --abort || true
-            echo "::error::Upstream merge conflict: resolve manually and open a sync PR."
-            echo "Upstream merge conflicted; no branch or PR was created." >> "$GITHUB_STEP_SUMMARY"
-            exit 1
+            git reset --hard upstream/master
+            conflicted=true
+            echo "::warning::Merge conflict: preparing a draft PR for manual resolution."
           fi
 
           git push --set-upstream origin "$branch"
@@ -87,9 +88,16 @@ jobs:
           EOF
           )"
 
-          if ! pr_url="$(gh pr create --base master --head "$branch" \
-            --title "chore: sync upstream deepseek-harness ($upstream_short)" \
-            --body "$body")"; then
+          pr_args=(--base master --head "$branch" \
+            --title "chore: sync upstream deepseek-harness ($upstream_short)")
+          if [ "$conflicted" = true ]; then
+            pr_args+=(--draft)
+            body+="
+
+          **Merge conflicts:** This draft branch temporarily points at the upstream commit only. Merge the fork's \`master\` into this branch and resolve all conflicts before running CI or merging the PR."
+          fi
+
+          if ! pr_url="$(gh pr create "${pr_args[@]}" --body "$body")"; then
             echo "::error::PR creation failed. Check Settings > Actions > General > Allow GitHub Actions to create and approve pull requests."
             git push origin --delete "$branch" || true
             exit 1
@@ -97,7 +105,11 @@ jobs:
 
           echo "Created sync PR: $pr_url" >> "$GITHUB_STEP_SUMMARY"
 
-          # PRs created by GITHUB_TOKEN may require approval to start PR-event CI.
-          # Explicit dispatch runs the existing Windows CI against the PR branch.
-          gh workflow run ci.yml --ref "$branch"
-          echo "Dispatched Windows CI (ci.yml) for $branch." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$conflicted" = true ]; then
+            echo "Created a draft PR with merge conflicts; resolve them before running Windows CI." >> "$GITHUB_STEP_SUMMARY"
+          else
+            # GITHUB_TOKEN PR events may leave CI approval-pending.
+            # Explicitly dispatch existing Windows CI for a clean merge.
+            gh workflow run ci.yml --ref "$branch"
+            echo "Dispatched Windows CI (ci.yml) for $branch." >> "$GITHUB_STEP_SUMMARY"
+          fi
