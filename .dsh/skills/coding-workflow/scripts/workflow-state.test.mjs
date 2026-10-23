@@ -80,7 +80,7 @@ test('a blocking review cannot masquerade as verified', () => {
     writeFileSync(join(e.cwd,'readme.txt'),'changed\n')
     assert.equal(e.run('stage',id,'S4',ev).status,0)
     const report=join(e.base,'review.json')
-    writeFileSync(report,JSON.stringify({findings:[{id:'1',severity:'P1',status:'open'}]}))
+    writeFileSync(report,JSON.stringify({findings:[{id:'1',severity:'P1',status:'open',file:'readme.txt',evidence:'unhandled case'}]}))
     assert.equal(e.run('review',id,report).value.currentStage,'S6')
     assert.notEqual(e.run('verify',id,'--',process.execPath,'--version').status,0)
     assert.notEqual(e.run('repair',id,ev).status,0)
