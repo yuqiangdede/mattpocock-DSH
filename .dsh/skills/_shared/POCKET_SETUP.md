@@ -61,7 +61,7 @@ When Pocket is selected as canonical, replace the upstream root-glossary path ex
 ```md
 # Domain Docs
 
-The active project knowledge map is `docs/pocket/README.md`. Follow its task pointers and `docs/pocket/meta/knowledge-policy.md` before changing an ADR or the glossary. New canonical domain terms belong in `docs/pocket/meta/glossary.md` (create lazily); new major accepted decisions belong under `docs/pocket/adr/`. Read the relevant files before domain modeling.
+The active project knowledge map is `docs/pocket/README.md`. Follow its task pointers and `docs/pocket/meta/knowledge-policy.md` before changing an ADR or the glossary. New canonical domain terms and major accepted decisions belong in `docs/pocket/meta/glossary.md` and `docs/pocket/adr/` (create lazily) unless a retained legacy authority below still owns them; in that case keep writing that authority. Read the relevant files before domain modeling.
 
 If legacy `GLOSSARY.md`, `GLOSSARY-MAP.md`, `docs/adr/`, or context-local ADRs remain authoritative, list their precise paths and migration status below. Continue reading/writing those existing authorities until migration is expressly approved; do not create a competing second version.
 

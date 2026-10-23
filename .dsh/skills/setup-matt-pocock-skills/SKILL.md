@@ -69,7 +69,7 @@ Call the model-invocable **`writing-for-agents` Skill** before drafting. Apply i
 
 Show the user a draft of:
 
-- The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
+- The `## Agent skills` block to add or update in each loaded root instruction file (`CLAUDE.md` and/or `AGENTS.md`; see step 4 for selection rules)
 - The contents of `docs/agents/issue-tracker.md`, `docs/agents/domain.md`, and `docs/agents/triage-labels.md` (the last only when `triage` is installed)
 - The small `docs/pocket/README.md`, `docs/pocket/meta/knowledge-policy.md`, and root Agent instruction pointer. Include any known legacy-to-Pocket migration decisions.
 
