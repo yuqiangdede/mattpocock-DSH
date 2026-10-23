@@ -295,8 +295,16 @@ const main = () => {
       const command = [executable, ...args]
       const planned = task.checks?.find(c => c.kind === kind)
       ensure(planned && JSON.stringify(planned.command) === JSON.stringify(command), 'Command is not part of the approved implementation plan')
+      // Windows .cmd/.bat needs a command interpreter, but never allow its metacharacters
+      // in the executable or arguments. Native executables must not enter a shell.
+      const needsShell = process.platform === 'win32' &&
+        (/[.]cmd$|[.]bat$/i.test(executable) || /^(?:pnpm|npm|npx|yarn)$/i.test(executable))
+      ensure(!needsShell || command.every(value => !/[&|<>^%!"\r\n]/u.test(value)),
+        'Unsafe shell metacharacters in Windows build command')
+      ensure(!/^(?:git|svn|ssh|scp|curl|wget)(?:[.]exe)?$/i.test(path.basename(executable)),
+        'VCS/network command cannot be used as a verification gate')
       const result = spawnSync(executable, args, {
-        cwd: root, encoding: 'utf8', shell: process.platform === 'win32',
+        cwd: root, encoding: 'utf8', shell: needsShell,
         timeout: 30 * 60 * 1000, maxBuffer: 16 * 1024 * 1024,
       })
       const changed = snapshot(root)
@@ -343,9 +351,14 @@ const main = () => {
       git(root, 'add', '--', ...listed)
       const staged = git(root, 'diff', '--cached', '--name-only', '-z').split('\0').filter(Boolean).sort()
       ensure(JSON.stringify(staged) === JSON.stringify(listed), 'Staged scope mismatch')
+      const plannedTree = git(root, 'write-tree').trim()
       const message = 'feat: ' + task.title.slice(0, 65) + ' (' + task.taskId.slice(0,8) + ')'
       git(root, 'commit', '-m', message)
-      task.commitRef = head(root)
+      const committedHead = head(root)
+      const committedTree = git(root, 'rev-parse', 'HEAD^{tree}').trim()
+      ensure(committedTree === plannedTree, 'Commit hooks changed the staged tree; local commit exists and requires manual inspection: ' + committedHead)
+      ensure(git(root, 'status', '--porcelain').trim() === '', 'Post-commit changes detected; local commit exists and requires manual inspection: ' + committedHead)
+      task.commitRef = committedHead
       task.stages.S8 = { status: 'completed', attempts: task.stages.S8.attempts + 1, evidence: { commit: task.commitRef, files: listed } }
       task.currentStage = 'S9'
       task.status = 'ready'
