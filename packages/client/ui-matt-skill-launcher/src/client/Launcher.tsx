@@ -14,6 +14,8 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
   const recommendation = recommend(entries)
   const morePanelId = useId()
   const [moreOpen, setMoreOpen] = useState(false)
+  // Never arm automatic execution on mount or after a session/application restart.
+  const [mode, setMode] = useState<'manual' | 'auto'>('manual')
   const [pending, setPending] = useState(false)
   const [notice, setNotice] = useState('')
   const alive = useRef(true)
@@ -60,19 +62,60 @@ export function Launcher({ useInput, useConversation, useSession, inputActions, 
     if (!inputActions.insertText(value, span)) { setNotice(t('draftChanged')); return }
     inputActions.persistDraft()
   }
+  // An explicit Send is still required. Never bypass the editor's insertion span:
+  // this preserves attachments, citations and the protection against stale drafts.
+  const insertAuto = async () => {
+    if (!available) return
+    setNotice('')
+    const span = inputActions.captureInsertion()
+    if (span.start !== 0 || span.end !== 0 || input.draft.startsWith('/')) {
+      setNotice(t('start'))
+      return
+    }
+    setPending(true)
+    try {
+      const names = await fetchSkillNames()
+      if (!alive.current) return
+      if (!names.includes('coding-workflow')) {
+        setNotice(t('missing') + 'coding-workflow' + t('install'))
+        return
+      }
+      const lead = '/coding-workflow ' + t('autoInstruction')
+      const value = lead + (input.draft.length ? '\n\n' : '\n\n')
+      if (!inputActions.insertText(value, span)) { setNotice(t('draftChanged')); return }
+      inputActions.persistDraft()
+    } catch (error) {
+      if (alive.current) setNotice(t('readFailed') + String(error))
+    } finally {
+      if (alive.current) setPending(false)
+    }
+  }
   const render = (a: CodingAction) => <button type="button" key={a.id} disabled={!available} className={visibleRecommendation?.ids.includes(a.id) ? css.recommended : css.action}
     title={a.description + '\n' + a.example + (visibleRecommendation?.ids.includes(a.id) ? '\n' + t('recommendationTooltip').replace('{reason}', t(visibleRecommendation.reason)) : '')} onClick={() => { void insert(a) }}>{a.label}</button>
   return <div className={css.root} data-matt-skill-launcher>
-    {hasActions && <div className={css.row}>
+    <div className={css.modeRow} role="group" aria-label={t('workflowMode')}>
+      <span className={css.modeLabel}>{t('workflowMode')}</span>
+      <button type="button" aria-pressed={mode === 'manual'} className={mode === 'manual' ? css.modeActive : css.modeButton}
+        onClick={() => { setMode('manual'); setNotice('') }}>{t('manualMode')}</button>
+      <button type="button" aria-pressed={mode === 'auto'} className={mode === 'auto' ? css.modeActive : css.modeButton}
+        onClick={() => { setMode('auto'); setMoreOpen(false); setNotice('') }}>{t('autoMode')}</button>
+    </div>
+    {mode === 'auto' && <div className={css.autoPanel}>
+      <span>{t('autoStages')}</span>
+      <button type="button" disabled={!available} className={css.action}
+        title={t('autoTooltip')} onClick={() => { void insertAuto() }}>{t('autoPrepare')}</button>
+      <span className={css.autoNote}>{t('autoHelp')}</span>
+    </div>}
+    {mode === 'manual' && hasActions && <div className={css.row}>
       {shownActions.map(render)}
       {moreActions.length > 0 && <button type="button" className={moreRecommended ? css.recommended : css.action}
         aria-expanded={moreOpen} aria-controls={morePanelId}
         onClick={() => { setMoreOpen(open => !open) }}>{t('more')}</button>}
     </div>}
-    {moreActions.length > 0 && <div id={morePanelId} hidden={!moreOpen} className={css.morePanel}>
+    {mode === 'manual' && moreActions.length > 0 && <div id={morePanelId} hidden={!moreOpen} className={css.morePanel}>
       <div className={css.row}>{moreActions.map(render)}</div>
     </div>}
-    {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
+    {mode === 'manual' && visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
 }

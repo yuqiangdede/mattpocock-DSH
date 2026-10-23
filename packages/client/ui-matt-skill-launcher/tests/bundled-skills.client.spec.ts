@@ -13,6 +13,12 @@ describe('bundled coding skills', () => {
       expect(source.split(/\r?\n/)).toContain(`name: ${action.skillId}`)
     }
   })
+  it('bundles the fork-owned automatic workflow and its safety instructions', () => {
+    const source = readFileSync(join(root, 'coding-workflow', 'SKILL.md'), 'utf8')
+    expect(source).toContain('name: coding-workflow')
+    expect(source).toContain('local-only Git commit')
+    expect(existsSync(join(root, 'coding-workflow', 'scripts', 'workflow-state.mjs'))).toBe(true)
+  })
   it('ships Matt support files and licenses without Superpowers skills', () => {
     const manifest = JSON.parse(readFileSync(join(root, 'matt-source.json'), 'utf8')) as { repository: string; revision: string; skills: string[] }
     expect(manifest.repository).toBe('https://github.com/mattpocock/skills')

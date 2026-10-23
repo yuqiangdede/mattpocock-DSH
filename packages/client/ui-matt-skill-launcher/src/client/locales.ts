@@ -2,6 +2,14 @@
 /** Simplified Chinese copy. */
 export const zh = {
   'more': '更多',
+  'workflowMode': '编码模式',
+  'manualMode': '手动',
+  'autoMode': '全自动',
+  'autoStages': '需求 → 固化 → 实现 → 走读 → 修复 → 验证 → 本地提交',
+  'autoPrepare': '准备全自动任务',
+  'autoInstruction': '按本次消息中的具体目标连续执行全自动编码工作流。默认仅异常需要人工确认，严格检查阶段证据，修复最多 3 轮，验证后只允许本地 Git commit；禁止 push、创建 PR、部署。若未提供开发目标，先询问用户，不要自行开发。',
+  'autoTooltip': '先把光标移到草稿开头，点击插入 workflow Skill；检查需求文本后手动发送才开始执行。',
+  'autoHelp': '先填写目标，光标移至开头后点准备；手动发送才授权开始。异常暂停，重启后不会自动继续。',
   'showButton': '显示在快捷栏',
   'defaultLocale': 'zh',
   'fillMissing': '补齐缺失预设（待保存）',
@@ -79,6 +87,14 @@ export type LauncherLocaleKey = keyof typeof zh
 /** English copy with the same keys. */
 export const en: Record<LauncherLocaleKey, string> = {
   'more': 'More',
+  'workflowMode': 'Coding mode',
+  'manualMode': 'Manual',
+  'autoMode': 'Automatic',
+  'autoStages': 'Discuss → Spec → Implement → Review → Fix → Verify → Local commit',
+  'autoPrepare': 'Prepare automatic task',
+  'autoInstruction': 'Execute the end-to-end coding workflow for the objective in this message. Ask for human approval only on exceptions, require evidence for completed stages, allow at most three repair rounds, and commit locally only after verification. Never push, create a PR or deploy. If no objective was provided, ask before acting.',
+  'autoTooltip': 'Move the cursor to the beginning, insert the workflow Skill, review the draft and explicitly send to start.',
+  'autoHelp': 'Type the goal, move the cursor to the beginning, prepare then send. Restart never resumes automatically.',
   'showButton': 'Show in launcher',
   'defaultLocale': 'en',
   'fillMissing': 'Add missing presets (unsaved)',
