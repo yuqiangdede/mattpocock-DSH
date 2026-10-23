@@ -293,7 +293,7 @@ export function apply(ctx) {
         toolNames: string[]
       }
       if (preset.id !== DESKTOP_OPERATOR_PRESET_ID || preset.broken !== null
-        || preset.defaultId !== DESKTOP_OPERATOR_PRESET_ID || !preset.operatorMounted
+        || preset.defaultId !== 'standard' || !preset.operatorMounted
         || !preset.toolNames.some(name => /desktop|computer|operator/iu.test(name))) {
         throw new Error(`desktop Computer Use: preset not active: ${JSON.stringify(preset)}`)
       }

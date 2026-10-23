@@ -25,10 +25,10 @@
 
 1. 完成 `pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts`。
 2. 验证 Windows x64 安装包构建和运行时烟测成功，离线 Bundle 未被标记 skipped，插件和 exe 哈希符合上游 Release。
-3. 在全新 Windows 电脑**断开外网**安装，检查新 Session 中 `desktop-computer-use` 工具可用，先只读列出窗口，再做点击/输入/确认链路。
+3. 在全新 Windows 电脑**断开外网**安装，新建 Session 时选择 `desktop-computer-use`，确认其中的工具可用；先只读列出窗口，再做点击/输入/确认链路。
 4. 将模型指向内网可访问的支持图片输入的模型 API；不能把“无外网访问插件安装”混同于“离线大模型推理”。
 5. 验证升级旧 Profile、人工停用、程序重启、恢复模式及断网日志。验证数据、截图和控制请求是否只到授权内网服务。
 
 **验收边界**：构建与 Host 烟测不能代替 Windows 实机 GUI 操作、断网启动及内网模型请求链路验证。发布前须完成上述实机验收。
 
-在 Windows 上，`pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t computer-use` 通过已发布 Web profile 回放生成的默认 Preset，无需模型 API Key。测试使用不存在的应用过滤条件调用真实原生只读窗口列表工具，并比较模型 schema、流事件及持久化 Session 输出。Profile 迁移先原子替换清单，再写入完成标记；替换失败时保留原清单以便重试。
+在 Windows 上，`pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t computer-use` 通过已发布 Web profile 回放显式选择 `desktop-computer-use` 的 Session，无需模型 API Key。测试使用不存在的应用过滤条件调用真实原生只读窗口列表工具，并比较模型 schema、流事件及持久化 Session 输出。Profile 迁移先原子替换清单，再写入完成标记；替换失败时保留原清单以便重试。
