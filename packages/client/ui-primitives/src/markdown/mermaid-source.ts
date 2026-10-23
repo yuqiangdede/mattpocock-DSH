@@ -31,9 +31,9 @@ function requestsCssUrl(source: string): boolean {
   // CSS tokenization removes comments and decodes escapes before Mermaid's
   // temporary DOM is mounted. Mirror those steps so obfuscated url() calls
   // are refused before they can trigger a browser request.
-  const normalized = decodeCssEscapes(source).replace(/\\/\\*[\\s\\S]*?\\*\\//gu, '')
+  const normalized = decodeCssEscapes(source).replace(/\/\*[\s\S]*?\*\//gu, '')
   if (normalized.includes('/*')) return true
-  const calls = /\\burl\\s*\\(\\s*(?:'([^']*)'|"([^"]*)"|([^)]*))/giu
+  const calls = /\burl\s*\(\s*(?:'([^']*)'|"([^"]*)"|([^)]*))/giu
   for (const [, single, double, bare] of normalized.matchAll(calls)) {
     const target = (single ?? double ?? bare ?? '').trim()
     if (!target.startsWith('#')) return true
@@ -43,7 +43,7 @@ function requestsCssUrl(source: string): boolean {
 
 /** Refuse Mermaid directives that can re-enable HTML label rendering. */
 function enablesHtmlLabels(source: string): boolean {
-  return /%%\\{[\\s\\S]*?\\b["']?htmlLabels["']?\\s*:\\s*true\\b[\\s\\S]*?\\}%%/iu.test(source)
+  return /%%\{[\s\S]*?\b["']?htmlLabels["']?\s*:\s*true\b[\s\S]*?\}%%/iu.test(source)
 }
 
 /** Decode CSS escapes using the same token normalization as the SVG sanitizer. */
@@ -51,7 +51,7 @@ function decodeCssEscapes(css: string): string {
   let decoded = ''
   for (let index = 0; index < css.length; index++) {
     const char = css.charAt(index)
-    if (char !== '\\\\') {
+    if (char !== '\\') {
       decoded += char
       continue
     }
@@ -60,7 +60,7 @@ function decodeCssEscapes(css: string): string {
       decoded += char
       continue
     }
-    if (next === '\\n' || next === '\\r') {
+    if (next === '\n' || next === '\r') {
       index++
       continue
     }
@@ -72,10 +72,10 @@ function decodeCssEscapes(css: string): string {
     }
     const codePoint = Number.parseInt(hex[0], 16)
     decoded += codePoint === 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)
-      ? '\\uFFFD'
+      ? '\uFFFD'
       : String.fromCodePoint(codePoint)
     index += hex[0].length
-    if (/\\s/u.test(css.charAt(index + 1))) index++
+    if (/\s/u.test(css.charAt(index + 1))) index++
   }
   return decoded
 }
