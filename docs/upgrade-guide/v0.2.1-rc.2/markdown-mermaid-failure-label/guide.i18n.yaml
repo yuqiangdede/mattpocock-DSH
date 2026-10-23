@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for guide.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.2/markdown-mermaid-failure-label/guide.md
+/:
+  en: a5c90fee47ae78bd
+  zh: e3f404140dae208a
+/markdownlabels-requires-a-mermaid-failure-notice:
+  en: 5b34e38d20f630c0
+  zh: cc646cb62a157c51
+/markdownlabels-requires-a-mermaid-failure-notice/change:
+  en: 73bd70f74223c7a8
+  zh: 1d4f27ea3aba16f1
+/markdownlabels-requires-a-mermaid-failure-notice/migration:
+  en: 48c902289af4bbb5
+  zh: 9d0680e2d5ec72cd
