@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-23-primitive-color-scheme-scope.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-23-primitive-color-scheme-scope.md
+/agent-note-primitive-color-scheme-scope:
+  en: 46c16134253ad27f
+  zh: a0d3637a7268ebc7
+/agent-note-primitive-color-scheme-scope/problem:
+  en: cf090b70b101584d
+  zh: b12760aa34ac394b
+/agent-note-primitive-color-scheme-scope/decision:
+  en: e69d5a2c83e9ed35
+  zh: ba6b37f88bfd38a8
+/agent-note-primitive-color-scheme-scope/verification:
+  en: b2b148baeb6af28c
+  zh: ebfa242ed5b60832
+/agent-note-primitive-color-scheme-scope/alternatives-considered:
+  en: d5ca320c0f509a2e
+  zh: 1e6da86c16c8e511
+/agent-note-primitive-color-scheme-scope/consequences:
+  en: 1c691f64692e0043
+  zh: d182af1a18c1444e

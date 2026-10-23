@@ -4,6 +4,8 @@ import type { GlobalStandardProps, RenderOpts } from '@deepseek-ai/dsh-client-ui
 import { allowAllAccess, bindSnapshotSelector } from '@deepseek-ai/dsh-client-test-runtime'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { act, cleanup, render } from '@testing-library/react'
+import type { ThemeSnapshot } from '@deepseek-ai/dsh-client-ui-theme/client'
+import { useColorScheme } from '@deepseek-ai/dsh-client-ui-primitives'
 import { AppFrame } from '../src/client/AppFrame.tsx'
 import type { AppFrameProps } from '../src/client/AppFrame.tsx'
 import type { MainPanelId, RightbarOwnerProps, SidebarOwnerProps } from '../src/client/index.ts'
@@ -15,9 +17,21 @@ const useResource = (() => ({ status: 'none' as const, value: undefined, failure
 let selectedSession: SessionId | undefined
 let selectedSessionTitle: string | undefined
 let workspacesReady = true
+/** Resolved scheme the injected theme source publishes to the frame. */
+let themeScheme: 'light' | 'dark' = 'light'
 type AttentionSnapshot = Parameters<Parameters<AppFrameProps['useSessionStatus']>[0]>[0]
 const noAttention: AttentionSnapshot = new Map()
 const useSessionStatus: AppFrameProps['useSessionStatus'] = selector => selector(noAttention)
+const useTheme: AppFrameProps['useTheme'] = selector => selector({
+  preference: themeScheme, fontSizes: { text: 14, code: 11, terminal: 13 },
+  fontFamilies: { text: '', code: '', terminal: '' },
+  active: { id: themeScheme, colorScheme: themeScheme, tokens: {} }, themes: [], revision: 0,
+} satisfies ThemeSnapshot)
+
+/** Read the ambient palette the frame scopes to its content. */
+function SchemeProbe() {
+  return <span data-testid="scheme-probe">{useColorScheme()}</span>
+}
 
 let observers: ResizeObserverStub[]
 class ResizeObserverStub {
@@ -66,7 +80,11 @@ function mountFrame(windowWidth = frameWidth) {
   const slotCalls: { key: string; props: object; options: RenderOpts | undefined }[] = []
   const renderSlot: AppFrameProps['renderSlot'] = (key, owner, options) => {
     slotCalls.push({ key, props: owner, options })
-    return <div data-testid={`${key}-content`} data-entry-key={options?.entryKey} />
+    return (
+      <div data-testid={`${key}-content`} data-entry-key={options?.entryKey}>
+        {key === 'main' && <SchemeProbe />}
+      </div>
+    )
   }
   const useSessions: AppFrameProps['useSessions'] = sel => sel({
     ids: selectedSession === undefined ? [] : [selectedSession],
@@ -95,6 +113,7 @@ function mountFrame(windowWidth = frameWidth) {
       renderSlot={renderSlot}
       useSessions={useSessions}
       usePanelInfo={usePanelInfo}
+      useTheme={useTheme}
       useSessionStatus={useSessionStatus}
       useSessionRetainInfo={() => undefined}
       useResource={useResource}
@@ -147,6 +166,7 @@ beforeEach(() => {
   selectedSession = 's-test' as SessionId
   selectedSessionTitle = undefined
   workspacesReady = true
+  themeScheme = 'light'
   observers = []
   animationFrames = new Map()
   nextFrame = 1
@@ -218,6 +238,15 @@ describe('AppFrame', () => {
     expect(getByTestId('rightbar-content')).toBeTruthy()
     expect(getByTestId('shell.bottom-content').parentElement?.hasAttribute('data-shell-bottom')).toBe(true)
     expect(tracks(frame)).toEqual([280, 0])
+  })
+
+  it('scopes the resolved theme scheme to its content', () => {
+    themeScheme = 'dark'
+    const { getByTestId, rerenderFrame } = mountFrame()
+    expect(getByTestId('scheme-probe').textContent).toBe('dark')
+    themeScheme = 'light'
+    rerenderFrame()
+    expect(getByTestId('scheme-probe').textContent).toBe('light')
   })
 
   it('renders both occupants before workspace baselines settle', () => {

@@ -6,6 +6,8 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, waitFor } from '@testing-library/react'
+import { ColorSchemeProvider } from '../src/ColorScheme.tsx'
+import type { ColorScheme } from '../src/ColorScheme.tsx'
 import { MarkdownText } from './markdown-test-components.tsx'
 import { MermaidDiagram } from '../src/markdown/MermaidDiagram.tsx'
 
@@ -21,10 +23,14 @@ vi.mock('mermaid', () => ({
 
 const FAILURE_LABEL = 'Mermaid diagram could not be rendered. Showing its source.'
 const flushEffects = () => new Promise(resolve => setTimeout(resolve, 0))
+const diagram = (scheme: ColorScheme) => (
+  <ColorSchemeProvider scheme={scheme}>
+    <MermaidDiagram source={'graph TD\n  A --> B'} failureLabel={FAILURE_LABEL} />
+  </ColorSchemeProvider>
+)
 
 afterEach(() => {
   cleanup()
-  document.body.removeAttribute('data-ds-dark-theme')
   vi.clearAllMocks()
 })
 
@@ -128,17 +134,16 @@ describe('MermaidDiagram', () => {
     expect(view.container.querySelector('pre code')?.textContent).toBe('new')
   })
 
-  it('renders dark diagrams with Mermaid’s dark theme and refreshes on palette change', async () => {
+  it('renders dark diagrams with Mermaid’s dark theme and re-renders when the scoped scheme changes', async () => {
     mermaidRender.mockImplementation((id: string) => Promise.resolve({ svg: `<svg id="${id}"/>` }))
-    document.body.setAttribute('data-ds-dark-theme', '')
-    const view = render(<MermaidDiagram source={'graph TD\n  A --> B'} failureLabel={FAILURE_LABEL} />)
+    const view = render(diagram('dark'))
 
     await waitFor(() => {
       expect(mermaidInitialize).toHaveBeenLastCalledWith(expect.objectContaining({ theme: 'dark' }))
     })
     expect(view.container.querySelector('svg')).not.toBeNull()
 
-    document.body.removeAttribute('data-ds-dark-theme')
+    view.rerender(diagram('light'))
     await waitFor(() => {
       expect(mermaidInitialize).toHaveBeenLastCalledWith(expect.objectContaining({ theme: 'default' }))
     })

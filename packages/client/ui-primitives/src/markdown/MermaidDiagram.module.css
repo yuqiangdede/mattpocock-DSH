@@ -19,7 +19,7 @@
   margin: 16px 0;
   color: var(--dsw-alias-label-primary);
   background: var(--dsw-alias-markdown-code-block);
-  border-radius: 12px;
+  border-radius: var(--dsw-radius-md);
   overflow-x: auto;
 }
 
