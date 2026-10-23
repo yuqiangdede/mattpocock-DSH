@@ -10,13 +10,13 @@ A model-authored `mermaid` fence is untrusted content, and Mermaid renders it by
 
 ## Decision
 
-**A fence whose source would request an external resource is refused before Mermaid is imported.** `mermaidSourceRequestsResources` matches three constructs: a CSS `url()` whose argument is not a same-document `#fragment`, Mermaid's image shape (`@{ img: … }`), and labels carrying `img`, `image`, `iframe`, `object`, `embed`, `link`, or `script` markup. A refused fence renders the same localized failure notice and visible source as any other rendering failure, and the lazy import and `mermaid.render` never run.
+**A fence whose source would request an external resource is refused before Mermaid is imported.** `mermaidSourceRequestsResources` matches four constructs: a CSS `url()` whose argument is not a same-document `#fragment` (after CSS escape decoding and comment removal), Mermaid's image shape (`@{ img: … }`), labels carrying `img`, `image`, `iframe`, `object`, `embed`, `link`, or `script` markup, and a per-diagram directive that turns HTML labels back on. A refused fence renders the same localized failure notice and visible source as any other rendering failure, and the lazy import and `mermaid.render` never run.
 
 `sanitizeMermaidSvg` stays as the post-render defense for everything Mermaid generates, including values that reach the SVG through constructs this preflight does not model. The two checks cover different moments: the preflight prevents the request, the sanitizer constrains the inserted markup.
 
 ## Verification
 
-Unit specs pin each accepted and refused form, including quoted, unquoted, uppercase, and same-document `url()` calls, the image shape, and resource markup, plus the component behavior that a refused fence shows the failure notice without importing or rendering Mermaid. A Chromium probe of Mermaid 11.17 confirmed that the image shape triggers the request while a URL in a label, a `url(#fragment)` style, icon shapes, and theme variables do not.
+Unit specs pin each accepted and refused form, including quoted, unquoted, uppercase, and same-document `url()` calls, escaped and comment-obfuscated `url()` spellings, the image shape, resource markup, and nested or quoted `htmlLabels` directives, plus the component behavior that a refused fence shows the failure notice without importing or rendering Mermaid. A Chromium probe of Mermaid 11.17 confirmed that the image shape triggers the request while a URL in a label, a `url(#fragment)` style, icon shapes, and theme variables do not.
 
 ## Alternatives considered
 
@@ -30,6 +30,6 @@ Unit specs pin each accepted and refused form, including quoted, unquoted, upper
 
 ## Consequences
 
-- A diagram that uses the image shape or an external `url()` renders as source with the localized failure notice.
+- A diagram that uses the image shape, an external `url()`, or an `htmlLabels: true` directive renders as source with the localized failure notice.
 - The policy recognizes constructs by text, so a future Mermaid release that adds another resource-bearing field needs a matching pattern; the sanitizer still limits the inserted markup in the meantime.
 - The policy owns no configuration: it is a fixed security invariant of rendering untrusted diagrams, not a deployment-varying tunable.

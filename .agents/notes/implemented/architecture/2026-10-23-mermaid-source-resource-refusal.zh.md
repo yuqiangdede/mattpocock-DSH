@@ -10,13 +10,13 @@ Status: implemented
 
 ## Decision
 
-**源码会请求外部资源的围栏在导入 Mermaid 之前即被拒绝。** `mermaidSourceRequestsResources` 匹配三类写法：参数不是同文档 `#fragment` 的 CSS `url()`、Mermaid 的 image shape（`@{ img: … }`），以及带有 `img`、`image`、`iframe`、`object`、`embed`、`link` 或 `script` 标记的 label。被拒绝的围栏与其它渲染失败一样显示 owner 提供的本地化失败提示和源码，且延迟导入与 `mermaid.render` 都不会执行。
+**源码会请求外部资源的围栏在导入 Mermaid 之前即被拒绝。** `mermaidSourceRequestsResources` 匹配四类写法：参数不是同文档 `#fragment` 的 CSS `url()`（先做 CSS 转义解码并移除注释）、Mermaid 的 image shape（`@{ img: … }`）、带有 `img`、`image`、`iframe`、`object`、`embed`、`link` 或 `script` 标记的 label，以及重新开启 HTML label 的按图指令。被拒绝的围栏与其它渲染失败一样显示 owner 提供的本地化失败提示和源码，且延迟导入与 `mermaid.render` 都不会执行。
 
 `sanitizeMermaidSvg` 仍作为渲染后的防线，处理 Mermaid 生成的一切内容，包括通过本预检未建模的写法进入 SVG 的值。两项检查覆盖不同时刻：预检阻止请求，净化器约束插入的标记。
 
 ## Verification
 
-单元测试固定了每种可接受与拒绝的写法，包括带引号、无引号、大写以及同文档 `url()` 调用、image shape 与资源标记，并固定了组件行为：被拒绝的围栏显示失败提示且不导入、不渲染 Mermaid。针对 Mermaid 11.17 的 Chromium 探测确认 image shape 会触发请求，而 label 中的 URL、`url(#fragment)` 样式、图标形状与主题变量不会。
+单元测试固定了每种可接受与拒绝的写法，包括带引号、无引号、大写以及同文档 `url()` 调用、经转义或注释混淆的 `url()` 拼写、image shape、资源标记与嵌套或带引号的 `htmlLabels` 指令，并固定了组件行为：被拒绝的围栏显示失败提示且不导入、不渲染 Mermaid。针对 Mermaid 11.17 的 Chromium 探测确认 image shape 会触发请求，而 label 中的 URL、`url(#fragment)` 样式、图标形状与主题变量不会。
 
 ## Alternatives considered
 
@@ -30,6 +30,6 @@ Status: implemented
 
 ## Consequences
 
-- 使用 image shape 或外部 `url()` 的图表会以源码形式呈现，并显示本地化失败提示。
+- 使用 image shape、外部 `url()` 或 `htmlLabels: true` 指令的图表会以源码形式呈现，并显示本地化失败提示。
 - 该策略按文本识别写法，因此未来 Mermaid 版本若新增携带资源的字段，需要补充对应模式；在此期间净化器仍限制插入的标记。
 - 该策略不带配置项：它是渲染不可信图表的固定安全不变量，而非随部署变化的可调参数。

@@ -6,17 +6,17 @@ Status: implemented
 
 ## Problem
 
-落定的 Mermaid 图表是一份把调色板写进标记的静态 SVG，因此无法通过 CSS token 重新上色：应用配色变化时，必须使用 Mermaid 的明色或暗色主题重新渲染。`MermaidDiagram` 最初用自带的 `MutationObserver` 观察 `body[data-ds-dark-theme]` 来获知该配色，于是每个已挂载的图表都成为该 document 属性的订阅者。包含大量图表的会话或文档预览因此把一次配色切换扩散到多个观察者，而这个零 Cordis 原语还承载了本属于主题所有者的 document 知识。
+落定的 Mermaid 图表是一份把调色板写进标记的静态 SVG，因此无法通过 CSS token 重新上色：应用配色变化时，必须使用 Mermaid 的明色或暗色主题重新渲染。若每个图表都用自带的 `MutationObserver` 观察 `body[data-ds-dark-theme]`，每个已挂载的图表都会成为该 document 属性的订阅者。包含大量图表的会话或文档预览就会把一次配色切换扩散到多个观察者，而这个零 Cordis 原语还会承载本属于主题所有者的 document 知识。
 
 ## Decision
 
-**主题服务保持配色权威，由外壳把解析后的配色作用域传给展示原语。** `ui-layout` 的 root 注册注入一个 `theme` observable，其来源是 `ctx.theme.getTheme()` 与 `theme/change` 事件。`AppFrame` 通过合成的 `useTheme(snapshot => snapshot.active.colorScheme)` hook 读取它，并用 `ColorSchemeProvider` 包裹内容，因此整棵应用树（包括 portal 出来的对话框）共用同一个绑定。`MermaidDiagram` 调用 `useColorScheme()`，只渲染针对当前源码与配色保存的结果；它自身不订阅任何东西。
+**主题服务保持配色权威，由外壳把解析后的配色作用域传给展示原语。** `ui-layout` 的 root 注册注入一个 `theme` observable，其来源是 `ctx.theme.getTheme()` 与 `theme/change` 事件。`AppFrame` 通过合成的 `useTheme(snapshot => snapshot.active.colorScheme)` hook 读取它，并用 `ColorSchemeProvider` 包裹内容，因此整棵应用树（包括 portal 出来的对话框）共用同一个绑定。`MermaidDiagram` 调用 `useColorScheme()`，只渲染针对当前源码与配色保存的结果；它自身不订阅任何东西。Mermaid 只有一份进程级配置，因此每个图表都通过 `mermaid-render.ts` 中共享的 `renderMermaidSvg` 队列渲染：每次初始化都与本次渲染配对，在另一次渲染进行中挂载的图表无法重置该渲染的调色板。
 
 `ColorScheme` 是由 `dsh-client-ui-primitives` 与 Provider 及其 hook 一同导出的二值联合类型（`light` | `dark`）。不在 Provider 内时该 hook 返回 `light`，因此单独渲染原语的测试、类 story 的 fixture 与嵌入场景保持确定性。
 
 ## Verification
 
-单元测试分别固定作用域本身（Provider 外、嵌套替换、配色变化后随重渲染更新）、图表各分支（`default` 与 `dark` 的 Mermaid 初始化、作用域配色变化后重新渲染，以及 pending、失败与取消），以及框架接线（`AppFrame` 之下挂一个探针读取解析后的配色）。录制的 Web 快照通过发布组合渲染真实 Mermaid 围栏与非法围栏，从而持续覆盖延迟导入、净化器与浏览器 chunk。
+单元测试分别固定作用域本身（Provider 外、嵌套替换、配色变化后随重渲染更新）、图表各分支（`default` 与 `dark` 的 Mermaid 初始化、作用域配色变化后重新渲染，以及 pending、失败与取消）、共享渲染器（第二个图表的初始化会等待进行中的渲染），以及框架接线（`AppFrame` 之下挂一个探针读取解析后的配色）。录制的 Web 快照通过发布组合渲染真实 Mermaid 围栏与非法围栏，从而持续覆盖延迟导入、净化器与浏览器 chunk。
 
 ## Alternatives considered
 
@@ -32,5 +32,6 @@ Status: implemented
 
 - 依赖配色的原语读取同一个环境作用域；新增同类原语不需要订阅，也不需要逐 owner 传 prop。
 - 配色变化时每个已挂载的图表都会重新渲染，即对落定块重跑一次 Mermaid。该开销来自静态 SVG 内嵌调色板的渲染方式，并受可见图表数量约束。
+- 由于 Mermaid 只有一份配置，图表渲染逐个执行；包含多个图表的会话按挂载顺序绘制，每个图表等待上一次渲染完成。
 - 在外壳 Provider 之外渲染的图表显示亮色调色板；需要暗色图表的独立嵌入方自行挂载 Provider。
 - `dsh-client-ui-layout` 为取得该 Provider 而对 `dsh-client-ui-primitives` 增加开发依赖。
