@@ -42,7 +42,7 @@ export const zh: Record<CotTranslationKey, string> = {
   unavailable: '翻译设置暂不可用', readOnly: '本部署的设置为只读',
   saveFailed: '本部署没有接受这些值，已保留供你修改', save: '保存', saving: '保存中…',
   copy: '复制', copied: '已复制', codeTitle: '代码块', wrap: '自动换行', unwrap: '不换行', footnotes: '脚注',
-  mermaidFailure: 'Mermaid 图表无法渲染，已显示源代码。',
+  mermaidFailure: 'Mermaid 图表无法渲染，已显示源代码',
 }
 
 /**
