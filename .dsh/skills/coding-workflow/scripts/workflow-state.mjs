@@ -103,7 +103,7 @@ const invalidate = (task, stage) => {
     if (task.stages[id].status !== 'pending') task.stages[id] = { status: 'stale', attempts: task.stages[id].attempts }
   }
   if (index <= 4) { task.review = null; task.verification = null }
-  if (index <= 6) task.verification = null
+  if (index <= 6) { task.verification = null; task.verificationRuns = [] }
 }
 const output = value => console.log(JSON.stringify(value, null, 2))
 const args = process.argv.slice(2)
@@ -126,13 +126,17 @@ const start = () => {
     schemaVersion: 1, revision: 1, taskId: id, title, mode: 'manual',
     repositoryRoot: root, branch: currentBranch, baseCommit: head(root),
     status: 'ready', currentStage: 'S1', stages, repairRounds: 0,
-    review: null, verification: null, commitRef: null, blocker: null,
+    review: null, verification: null, verificationRuns: [], checks: null, commitRef: null, blocker: null,
     noProgressRounds: 0, createdAt: now, updatedAt: now,
   }
   save(root, task)
   return task
 }
-const requireWritable = task => ensure(!['cancelled','completed'].includes(task.status), 'Task is terminal')
+const requireNonterminal = task => ensure(!['cancelled','completed'].includes(task.status), 'Task is terminal')
+const requireWritable = task => {
+  requireNonterminal(task)
+  ensure(!['blocked','waiting_approval','paused'].includes(task.status), 'Task is stopped; explicit resume or approval required')
+}
 const main = () => {
   if (verb === 'start') return output(start())
   const id = identifier(args.shift())
@@ -141,21 +145,21 @@ const main = () => {
     if (verb === 'mode') {
       const mode = args.shift()
       ensure(mode === 'manual' || mode === 'auto', 'Expected manual or auto')
-      requireWritable(task)
+      requireNonterminal(task)
       task.mode = mode
       task.status = 'paused' // Switching never implicitly resumes an agent.
       return task
     }
     if (verb === 'pause') {
-      requireWritable(task); task.status = 'paused'; return task
+      requireNonterminal(task); task.status = 'paused'; return task
     }
     if (verb === 'resume') {
-      requireWritable(task); checkpoint(root, task)
+      requireNonterminal(task); checkpoint(root, task)
       ensure(task.status !== 'waiting_approval', 'Approval required')
       task.status = 'ready'; task.blocker = null; return task
     }
     if (verb === 'block' || verb === 'approval') {
-      requireWritable(task)
+      requireNonterminal(task)
       const reason = args.join(' ').trim()
       ensure(reason.length >= 10, 'Give a concrete reason and proposed recovery')
       task.status = verb === 'approval' ? 'waiting_approval' : 'blocked'
@@ -163,7 +167,7 @@ const main = () => {
       return task
     }
     if (verb === 'approve') {
-      requireWritable(task)
+      requireNonterminal(task)
       ensure(task.status === 'waiting_approval', 'No pending approval')
       const decision = args.join(' ').trim()
       ensure(decision.length >= 8, 'Missing scoped decision')
@@ -181,11 +185,35 @@ const main = () => {
       requirePrevious(task, name)
       const proof = evidence(file)
       if (task.stages[name].status === 'completed') invalidate(task, name)
-      if (name === 'S4') ensure(changes(root).length > 0, 'Implementation has no code changes')
+      if (name === 'S4') {
+        ensure(task.checks?.length >= 2, 'Test and build checks must be planned before implementation')
+        ensure(changes(root).length > 0, 'Implementation has no code changes')
+      }
       if (name === 'S9') ensure(task.commitRef, 'No commit reference')
       task.stages[name] = { status: 'completed', attempts: task.stages[name].attempts + 1, evidence: proof }
       task.currentStage = steps[steps.indexOf(name) + 1] || name
       task.status = name === 'S9' ? 'completed' : 'ready'
+      return task
+    }
+    if (verb === 'checks') {
+      ensure(completed(task, 'S3') && !completed(task, 'S4'), 'Checks must be configured between plan and implementation')
+      const proof = evidence(args.shift())
+      const plan = JSON.parse(fs.readFileSync(proof.path, 'utf8'))
+      ensure(Array.isArray(plan.checks), 'Expected checks JSON')
+      const checks = plan.checks
+      ensure(checks.length >= 2 && checks.length <= 12, 'Expected 2-12 test/build checks')
+      const kinds = checks.map(c => c?.kind)
+      ensure(kinds.includes('test') && kinds.includes('build'), 'Test and build checks are required')
+      ensure(new Set(kinds).size === kinds.length, 'Each check kind must be unique')
+      for (const check of checks) {
+        ensure(['test','build','lint','typecheck','integration'].includes(check.kind), 'Invalid check kind')
+        ensure(Array.isArray(check.command) && check.command.length > 0 &&
+          check.command.length <= 32 && check.command.every(a => typeof a === 'string' && a.length >= 1 && a.length <= 500),
+          'Invalid actual command')
+      }
+      task.checks = checks.map(c => ({ kind: c.kind, command: [...c.command] }))
+      task.checksEvidence = proof
+      task.verificationRuns = []
       return task
     }
     if (verb === 'review') {
@@ -216,6 +244,7 @@ const main = () => {
       task.stages.S5 = { status: open.length ? 'failed' : 'completed', attempts: task.stages.S5.attempts + 1, evidence: proof }
       task.stages.S6 = open.length ? { status: 'pending', attempts: task.stages.S6.attempts } : { status: 'skipped', attempts: task.stages.S6.attempts, reason: 'No blocking findings' }
       task.stages.S7 = { status: 'stale', attempts: task.stages.S7.attempts }
+      task.verificationRuns = []
       task.currentStage = open.length ? 'S6' : 'S7'
       task.status = 'ready'
       return task
@@ -232,6 +261,7 @@ const main = () => {
       task.stages.S7 = { status: 'stale', attempts: task.stages.S7.attempts }
       task.currentStage = 'S5'
       task.verification = null
+      task.verificationRuns = []
       task.status = 'ready'
       return task
     }
@@ -240,23 +270,31 @@ const main = () => {
       ensure(task.review?.blockers === 0, 'Unresolved blocking review findings')
       const current = snapshot(root)
       ensure(task.review.fingerprint === current.fingerprint, 'Source changed after review')
-      ensure(args[0] === '--', 'Usage: verify <task> -- <command> [args]')
+      const kind = args.shift()
+      ensure(args[0] === '--', 'Usage: verify <task> <check-kind> -- <command> [args]')
       args.shift()
       const executable = args.shift()
-      ensure(executable, 'Missing actual test/build command')
+      const command = [executable, ...args]
+      const planned = task.checks?.find(c => c.kind === kind)
+      ensure(planned && JSON.stringify(planned.command) === JSON.stringify(command), 'Command is not part of the approved implementation plan')
       const result = spawnSync(executable, args, {
         cwd: root, encoding: 'utf8', shell: process.platform === 'win32',
         timeout: 30 * 60 * 1000, maxBuffer: 16 * 1024 * 1024,
       })
       const changed = snapshot(root)
       const passed = !result.error && result.status === 0 && changed.fingerprint === current.fingerprint
-      task.verification = {
-        command: [executable, ...args], exitCode: result.status, passed,
+      const run = {
+        kind, command, exitCode: result.status, passed,
         fingerprint: current.fingerprint, logSha256: sha((result.stdout || '') + (result.stderr || '')),
         error: String(result.error?.message || ''), ranAt: new Date().toISOString(),
       }
-      task.stages.S7 = { status: passed ? 'completed' : 'failed', attempts: task.stages.S7.attempts + 1, evidence: task.verification }
-      task.currentStage = passed ? 'S8' : 'S7'
+      task.verificationRuns = [...(task.verificationRuns || []).filter(c => c.kind !== kind), run]
+      const allPassed = task.checks.every(c => task.verificationRuns.some(r =>
+        r.kind === c.kind && r.passed && r.fingerprint === current.fingerprint))
+      task.verification = allPassed ? { passed: true, fingerprint: current.fingerprint, runs: task.verificationRuns } : null
+      task.stages.S7 = { status: !passed ? 'failed' : allPassed ? 'completed' : 'pending',
+        attempts: task.stages.S7.attempts + 1, evidence: run }
+      task.currentStage = allPassed ? 'S8' : 'S7'
       task.status = passed ? 'ready' : 'blocked'
       if (!passed) task.blocker = { reason: 'Verification failed or changed source; inspect actual command and rerun', stage: 'S7' }
       return task
@@ -266,6 +304,15 @@ const main = () => {
       const current = snapshot(root)
       ensure(task.review?.fingerprint === current.fingerprint, 'Review is stale')
       ensure(task.verification?.passed && task.verification.fingerprint === current.fingerprint, 'Verification is stale')
+      ensure(task.checks.every(c => task.verificationRuns.some(r => r.kind === c.kind &&
+        r.passed && r.fingerprint === current.fingerprint)), 'Missing test/build evidence')
+      const allEvidence = ['S1','S2','S3','S4','S5']
+        .map(name => task.stages[name].evidence).filter(Boolean)
+      for (const proof of allEvidence) {
+        ensure(evidence(proof.path).sha256 === proof.sha256, 'Stage evidence changed after verification')
+      }
+      ensure(task.checksEvidence && evidence(task.checksEvidence.path).sha256 === task.checksEvidence.sha256,
+        'Planned checks changed after verification')
       ensure(task.branch !== 'main' && task.branch !== 'master', 'Commit on main/master disallowed')
       ensure(git(root, 'diff', '--cached', '--name-only').trim() === '', 'Foreign staged changes; refusing commit')
       ensure(args[0] === '--', 'Usage: commit <task> -- <exact file paths>')
