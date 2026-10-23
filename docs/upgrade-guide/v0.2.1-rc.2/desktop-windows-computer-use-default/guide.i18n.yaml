@@ -3,14 +3,14 @@
 # After editing either side, bring the other along and re-record with:
 #   pnpm run verify-translation-pairing --write docs/upgrade-guide/v0.2.1-rc.2/desktop-windows-computer-use-default/guide.md
 /:
-  en: 596ac8836fe8a1c7
-  zh: 629c64fb0e2153b1
-/windows-desktop-computer-use-default-preset:
-  en: 6e8472490864b240
-  zh: 0b72171e1ba155cf
-/windows-desktop-computer-use-default-preset/change:
-  en: 2c0604e258ce4122
-  zh: dd600264754049be
-/windows-desktop-computer-use-default-preset/migration:
-  en: f30a8483bdd50942
-  zh: 1df652fbce816d13
+  en: 063ec271403793b8
+  zh: cde86056f905af9a
+/windows-desktop-optional-computer-use-preset:
+  en: 6ef20db8e931339a
+  zh: 3a6976707fa143b7
+/windows-desktop-optional-computer-use-preset/change:
+  en: d1c7fcf7842d82d7
+  zh: 276945102e5772c0
+/windows-desktop-optional-computer-use-preset/migration:
+  en: 12be07f212285f4c
+  zh: 1501945b04d2edc5

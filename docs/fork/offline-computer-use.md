@@ -15,7 +15,7 @@ This fork uses the independently maintained [DSH Desktop Operator](https://githu
 
 ## Behavior
 
-- A new Windows Desktop Profile includes the Computer Use Preset Bundle by default. It provides the `desktop-computer-use` Agent Preset and makes it the deployment default. DSH settings still govern any default Preset previously selected by the user.
+- A new Windows Desktop Profile includes the Computer Use Preset Bundle by default. It provides the `desktop-computer-use` Agent Preset while the standard Preset stays the deployment default; select `desktop-computer-use` in the Preset picker for sessions that need Windows control. DSH settings still govern any default Preset previously selected by the user.
 - Existing Profiles migrate once on their first upgrade. **Restarting after manual disabling or “disable all plugins” recovery does not force the bundle on again.**
 - Ordinary actions are available, while high-risk final operations such as `send`, `delete`, `upload`, and `purchase` use `highRiskActionPolicy: confirm`. Visual indicators remain enabled, and launching new programs is disabled by default.
 - The plugin takes effect when a new Agent Session selects `desktop-computer-use`. Start a new session for existing conversations. Users can disable the `@mattpocock/dsh-desktop-operator-preset` Bundle in plugin management.
@@ -25,10 +25,10 @@ This fork uses the independently maintained [DSH Desktop Operator](https://githu
 
 1. Run `pnpm exec vitest run apps/desktop/tests/project-manager.spec.ts apps/desktop/tests/bundled-desktop-operator.spec.ts`.
 2. Verify that Windows x64 installer packaging and runtime smoke tests succeed, the offline Bundle is not skipped, and the plugin and executable hashes match the upstream release.
-3. Install on a clean Windows machine **disconnected from the external network**. Verify that a new Session exposes `desktop-computer-use` tools. Start with read-only window listing, then test clicking, typing, and confirmation.
+3. Install on a clean Windows machine **disconnected from the external network**. Create a new Session with `desktop-computer-use` selected and verify its tools. Start with read-only window listing, then test clicking, typing, and confirmation.
 4. Point the model at an internally accessible model API that supports image input. Installing plugins without external network access does not provide offline model inference.
 5. Verify existing-Profile upgrades, manual disabling, restart, recovery mode, and offline logs. Verify that data, screenshots, and control requests reach only authorized internal services.
 
 **Acceptance limits**: build and Host smoke tests do not replace physical Windows GUI operations, offline startup, or internal model-request verification. Complete the physical-machine acceptance above before release.
 
-On Windows, `pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t computer-use` replays the generated default Preset through the shipped Web profile. It calls the real native read-only window-listing tool with an absent-app filter and compares model schemas, stream events, and persisted Session output without a model API key. Profile migrations atomically replace the manifest before publishing their completion markers; a failed replacement preserves the previous manifest for retry.
+On Windows, `pnpm run test:snapshot snapshots/web/offline-desktop.snapshot.ts -t computer-use` replays a Session that explicitly selects `desktop-computer-use` through the shipped Web profile. It calls the real native read-only window-listing tool with an absent-app filter and compares model schemas, stream events, and persisted Session output without a model API key. Profile migrations atomically replace the manifest before publishing their completion markers; a failed replacement preserves the previous manifest for retry.
