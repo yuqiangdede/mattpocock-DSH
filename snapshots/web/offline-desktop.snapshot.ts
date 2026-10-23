@@ -68,7 +68,8 @@ describe.skipIf(process.platform !== 'win32')('Windows offline bundle recorded S
     await writeFile(join(controller, 'cordis.patch.yml'), '- insert:\n    - id: desktop-recording-controller\n      name: desktop-recording-controller\n')
   }, 180_000)
 
-  afterAll(async () => { if (root !== undefined) await rm(root, { recursive: true, force: true }) }, 30_000)
+  // Windows junctions/child process handles can outlive the close event briefly; retry EBUSY/EPERM cleanup.
+  afterAll(async () => { if (root !== undefined) await rm(root, { recursive: true, force: true, maxRetries: 12, retryDelay: 150 }) }, 30_000)
 
   it.each(scenarios)('%s replays model requests, stream events, and persisted Session output', async (scenario) => {
     const expectedDir = join(directory, `offline-desktop-${scenario}`)
