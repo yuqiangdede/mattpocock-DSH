@@ -87,6 +87,8 @@ Never create `AGENTS.md` when `CLAUDE.md` already exists (or vice versa); always
 
 If an `## Agent skills` block already exists in the chosen file, update its contents in-place rather than appending a duplicate. Don't overwrite user edits to the surrounding sections.
 
+When both `AGENTS.md` and `CLAUDE.md` already exist, DSH loads both (identical content is deduplicated). Update the `## Agent skills` block in each loaded file, or reconcile the other file's stale domain and Pocket pointers, so the repository does not carry two different knowledge destinations.
+
 The block:
 
 ```markdown
