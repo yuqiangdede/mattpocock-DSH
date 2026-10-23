@@ -157,7 +157,7 @@ export class CodingWorkflowService extends TypertRemoteService {
   protected async [Service.init](): Promise<void> {
     const domain = await this.ctx.storageDomain.open(codingWorkflowDomainSpec)
     this.ctx.effect(() => () => domain.close(), 'codingWorkflow.domainClose')
-    this.table = domain.table('workItems')
+    this.table = domain.table('work_items')
   }
 
   /**

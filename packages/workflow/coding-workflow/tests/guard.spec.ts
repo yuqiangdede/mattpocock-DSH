@@ -3,7 +3,7 @@ import { resolve } from 'node:path'
 import { brandString } from '@deepseek-ai/dsh-brand'
 import type { SessionId } from '@deepseek-ai/dsh-session/types'
 import { guardDecision } from '../src/guard.ts'
-import type { TaskId, WorkItem } from '../src/types.ts'
+import type { StageId, StageState, TaskId, WorkItem } from '../src/types.ts'
 
 /** Workspace root of the fixture task, absolute on every platform. */
 const ROOT = resolve('repo-root')
@@ -11,7 +11,7 @@ const ROOT = resolve('repo-root')
 /** One task record with the fields the guard reads. */
 function item(over: Partial<WorkItem> = {}): WorkItem {
   const stages = Object.fromEntries(['S0', 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9']
-    .map(stage => [stage, { status: 'pending' as const, attempts: 0 }]))
+    .map(stage => [stage, { status: 'pending' as const, attempts: 0 }])) as Record<StageId, StageState>
   return {
     schemaVersion: 1,
     revision: 1,

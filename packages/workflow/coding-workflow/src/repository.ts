@@ -177,14 +177,15 @@ export async function readSnapshot(runner: RepositoryRunner, root: string): Prom
 }
 
 /**
- * Hash one evidence file inside the workspace.
- * @param root - repository root that bounds readable evidence.
+ * Hash one evidence file. Evidence may live outside the workspace (temporary
+ * notes, captured output); only its digest enters the record, so a file
+ * outside the repository can never enter the task commit.
+ * @param root - repository root that resolves a relative evidence path.
  * @param file - absolute or workspace-relative evidence path.
  * @returns the canonical reference accepted into the record.
  */
 export function readEvidence(root: string, file: string): EvidenceRef {
   const absolute = resolve(root, file)
-  if (!absolute.startsWith(root + sep)) throw new WorkflowError('Evidence file must stay inside the workspace', 'WORKFLOW_EVIDENCE_INVALID')
   if (!existsSync(absolute) || !statSync(absolute).isFile()) {
     throw new WorkflowError('Evidence file missing', 'WORKFLOW_EVIDENCE_INVALID')
   }

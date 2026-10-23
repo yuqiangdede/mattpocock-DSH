@@ -138,12 +138,12 @@ export type CodingWorkflowDomainState = z.infer<typeof codingWorkflowDomainState
  * rewrite never rewrites every stored task.
  */
 export const codingWorkflowDomainSpec = defineDomain({
-  name: 'coding-workflow',
+  name: 'coding_workflow',
   version: 1,
   layout: 'per-record',
   global: {
     schema: codingWorkflowDomainState,
     initial: { initialized: false },
   },
-  tables: { workItems: domainTable<TaskId, WorkItemRecord>(workItemRecord) },
+  tables: { work_items: domainTable<TaskId, WorkItemRecord>(workItemRecord) },
 })

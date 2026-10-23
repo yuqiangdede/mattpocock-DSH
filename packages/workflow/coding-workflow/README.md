@@ -24,7 +24,7 @@ English | [中文](README.zh.md)
 <a id="use-this-package"></a>
 ## Use this package
 
-Mount the package wherever a Session should be able to claim a coding task. It registers the `ctx.codingWorkflow` service, opens the `coding-workflow` storage domain, and registers the model-facing `coding_workflow` tool on the same Context.
+Mount the package wherever a Session should be able to claim a coding task. It registers the `ctx.codingWorkflow` service, opens the `coding_workflow` storage domain, and registers the model-facing `coding_workflow` tool on the same Context.
 
 ```yaml
 - name: '@deepseek-ai/dsh-coding-workflow'

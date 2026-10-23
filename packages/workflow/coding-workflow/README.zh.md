@@ -24,7 +24,7 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
-在需要让某个 Session 领取编码任务时挂载本包。它会注册 `ctx.codingWorkflow` 服务、打开 `coding-workflow` 存储域，并在同一 Context 上注册面向模型的 `coding_workflow` 工具。
+在需要让某个 Session 领取编码任务时挂载本包。它会注册 `ctx.codingWorkflow` 服务、打开 `coding_workflow` 存储域，并在同一 Context 上注册面向模型的 `coding_workflow` 工具。
 
 ```yaml
 - name: '@deepseek-ai/dsh-coding-workflow'
