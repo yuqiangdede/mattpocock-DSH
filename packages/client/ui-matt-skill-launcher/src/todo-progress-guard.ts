@@ -1,135 +1,178 @@
 /**
- * Fork-owned, per-Agent reminder when a live todo plan stops being updated.
- * This plugin does not change todo/write, complete steps, or mutate files.
+ * Fork-owned, per-Session reminder when a live todo plan stops being updated.
+ * This plugin never calls `todo_write`, changes a status, or touches files; it
+ * only reads the `todos` Session projection and appends model-facing context.
  * Mounted inside the standard and PTC Agent presets, not the global Host plane.
+ *
+ * Progress is read from the authoritative projection, which the todo tool
+ * replaces only when it commits a `todo/write` event and which the next
+ * `turn/start` clears. A rejected write and a fresh turn therefore cancel the
+ * watch without this plugin inspecting tool decisions or message sources.
+ *
+ * @module @deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard
  */
-import { randomUUID } from 'node:crypto'
+
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { boundContextSummary, createUserMessage } from '@deepseek-ai/dsh-llm'
+import type { ContextFormed } from '@deepseek-ai/dsh-llm'
+import type { PostToolDecision } from '@deepseek-ai/dsh-tools'
+import type { Session } from '@deepseek-ai/dsh-session'
+// Type-only: resolves the required ctx.sessionProjections service declaration.
+import type {} from '@deepseek-ai/dsh-session-projection'
+// Type-only: declares the `todos` projection key this guard reads.
+import type { TodoItem } from '@deepseek-ai/dsh-tool-todo'
 
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /** The fork-owned todo-progress reminder context. */
+    'matt-todo-progress-guard': { kind: 'matt-todo-progress-guard' } & ContextFormed
+  }
+}
+
+/** Loader identity of this fork-owned guard. */
 export const name = 'matt-todo-progress-guard'
 
+/** A todo plan lives in the Session projection the todo tool owns. */
+export const inject = ['sessionProjections']
+
+/** The model-facing tool whose committed writes define one progress sync. */
+const TODO_TOOL = 'todo_write'
+
+/** Reminder policy; every field is a validated deployment choice. */
 export interface Config {
+  /** Tool calls that must follow the last sync before a reminder is possible. */
   minToolCalls?: number
+  /** Milliseconds the plan must stay unchanged before a reminder is possible. */
   staleAfterMs?: number
+  /** Milliseconds between two reminders for one live plan. */
   reminderCooldownMs?: number
 }
+
 export const Config: z<Config> = z.object({
   minToolCalls: z.number().default(5),
   staleAfterMs: z.number().default(90000),
   reminderCooldownMs: z.number().default(90000),
 })
 
+/** One Session's progress counters; derived state, never persisted. */
 export interface ProgressState {
-  lastWriteAt: number
-  callsSinceWrite: number
+  /** Wall clock of the last committed todo sync. */
+  lastSyncAt: number
+  /** Tool calls observed since that sync. */
+  callsSinceSync: number
+  /** Wall clock of the last reminder, or null before the first one. */
   lastReminderAt: number | null
 }
 
-/** Pure state transition, with an explicit clock for deterministic tests. */
+/** One observation: either no live plan, or the advanced counters and whether they are due. */
+export type Observation =
+  | { readonly state: undefined; readonly remind: false }
+  | { readonly state: ProgressState; readonly remind: boolean }
+
+/**
+ * Pure transition for one observed tool call, with an explicit clock so tests
+ * are deterministic. `undefined` means no live plan is being watched.
+ * @param state - the Session's counters, or undefined without a live plan.
+ * @param now - current wall clock in milliseconds.
+ * @param config - resolved reminder policy.
+ * @returns the next counters and whether a reminder is due now.
+ */
 export function observeTool(
   state: ProgressState | undefined,
   now: number,
   config: Required<Config>,
-): { state: ProgressState | undefined; remind: boolean } {
-  if (!state) return { state: undefined, remind: false }
-  const next = { ...state, callsSinceWrite: state.callsSinceWrite + 1 }
-  const due = next.callsSinceWrite >= config.minToolCalls
-    && now - next.lastWriteAt >= config.staleAfterMs
+): Observation {
+  if (state === undefined) return { state: undefined, remind: false }
+  const next: ProgressState = { ...state, callsSinceSync: state.callsSinceSync + 1 }
+  const due = next.callsSinceSync >= config.minToolCalls
+    && now - next.lastSyncAt >= config.staleAfterMs
     && (next.lastReminderAt === null || now - next.lastReminderAt >= config.reminderCooldownMs)
-  if (due) next.lastReminderAt = now
-  return { state: next, remind: due }
+  if (!due) return { state: next, remind: false }
+  return { state: { ...next, lastReminderAt: now }, remind: true }
 }
 
-type TodoEvent = { type: string; data?: { todos?: readonly { status: string }[] } }
-interface AgentView {
-  session: { snapshotEvents(): readonly TodoEvent[] }
-}
-interface ToolCallView {
-  agent?: AgentView
-  name: string
-}
-interface ToolResultView { isError?: boolean }
-interface Notice {
-  id: string
-  role: 'user'
-  content: { type: 'text'; text: string }[]
-  source: { kind: 'matt-todo-progress-guard'; form: 'notice'; summary: string }
-}
-interface Decision {
-  kind: string
-  additionalContexts?: readonly Notice[] | readonly unknown[]
-}
-interface HookBus {
-  on(
-    event: 'tools/post-execute',
-    listener: (exec: ToolCallView, result: ToolResultView, next: () => Promise<Decision>) => Promise<Decision>,
-  ): unknown
-  on(
-    event: 'agent/pre-step',
-    listener: (input: { agent: AgentView; messages: readonly { source: { kind: string } }[] }, next: () => Promise<unknown>) => Promise<unknown>,
-  ): unknown
+/**
+ * The reminder text. It asks for a check against evidence and forbids
+ * inferring completion from edits, so the model cannot read the nudge as a
+ * completion signal.
+ * @returns the model-facing reminder body.
+ */
+function reminderText(): string {
+  return 'Progress sync reminder: tool activity has continued while the todo list remained unchanged. '
+    + 'Compare actual outputs with each todo, call todo_write now if a step has genuinely changed, '
+    + 'and mark completed only with evidence. Do not infer completion from edits alone. '
+    + 'If the current step is still in progress, keep it in_progress and continue working.'
 }
 
-/** Read only the current turn's authoritative todo snapshot; never infer completion from tool names. */
-function hasOpenTodos(agent: AgentView): boolean {
-  const events = agent.session.snapshotEvents()
-  for (let i = events.length - 1; i >= 0; i--) {
-    const event = events[i]!
-    if (event.type === 'turn/start') return false
-    if (event.type === 'todo/write') {
-      return event.data?.todos?.some(todo => todo.status === 'pending' || todo.status === 'in_progress') ?? false
-    }
+/**
+ * Whether the projected plan still has work this guard can watch. A null
+ * projection means no plan in this turn; a plan whose items are all completed
+ * is finished work, not stale work.
+ * @param todos - the projected plan, or undefined when the unit is unmounted.
+ * @returns true only for a live plan with an unfinished item.
+ */
+function hasOpenTodos(todos: readonly TodoItem[] | null | undefined): boolean {
+  return todos !== null && todos !== undefined && todos.some(todo => todo.status !== 'completed')
+}
+
+/**
+ * Validate one positive integer policy field.
+ * @param field - field name reported in the failure.
+ * @param value - configured value.
+ * @returns the validated value.
+ * @throws when the value is not a positive integer.
+ */
+function positiveInteger(field: keyof Config, value: number): number {
+  if (!Number.isSafeInteger(value) || value < 1) {
+    throw new Error(`matt-todo-progress-guard: \`${field}\` must be a positive integer, got ${String(value)}`)
   }
-  return false
-}
-
-function validatePositiveInteger(name: string, value: number): number {
-  if (!Number.isSafeInteger(value) || value < 1) throw new Error('matt-todo-progress-guard: invalid ' + name)
   return value
 }
 
+/**
+ * Install the guard's listener.
+ * @param ctx - plugin context; the listener is scoped to it and disposed with it.
+ * @param config - validated {@link Config}; fields are re-checked fail-loud here.
+ */
 export function apply(ctx: Context, config: Config = {}): void {
   const policy: Required<Config> = {
-    minToolCalls: validatePositiveInteger('minToolCalls', config.minToolCalls ?? 5),
-    staleAfterMs: validatePositiveInteger('staleAfterMs', config.staleAfterMs ?? 90000),
-    reminderCooldownMs: validatePositiveInteger('reminderCooldownMs', config.reminderCooldownMs ?? 90000),
+    minToolCalls: positiveInteger('minToolCalls', config.minToolCalls ?? 5),
+    staleAfterMs: positiveInteger('staleAfterMs', config.staleAfterMs ?? 90000),
+    reminderCooldownMs: positiveInteger('reminderCooldownMs', config.reminderCooldownMs ?? 90000),
   }
-  const states = new WeakMap<AgentView, ProgressState>()
-  // Narrow structural adapter at the Cordis event boundary: this package is deliberately
-  // independent from the upstream Agent, Session and Tools implementation imports.
-  const hooks = ctx as unknown as HookBus
-  hooks.on('tools/post-execute', async (exec, result, next) => {
+  const states = new WeakMap<Session, ProgressState>()
+  ctx.on('tools/post-execute', async (exec, result, next): Promise<PostToolDecision> => {
     const downstream = await next()
     const agent = exec.agent
-    if (!agent) return downstream
-    if (exec.name === 'todo_write') {
-      // A rejected write is not a sync. A finished plan is not watched.
-      if (!result?.isError && downstream.kind !== 'block' && hasOpenTodos(agent)) {
-        states.set(agent, { lastWriteAt: Date.now(), callsSinceWrite: 0, lastReminderAt: null })
-      } else if (!result?.isError && downstream.kind !== 'block' && !hasOpenTodos(agent)) {
-        states.delete(agent)
-      }
+    if (agent === undefined) return downstream
+    const session = agent.session
+    const todos = ctx.sessionProjections.stateOf(session, 'todos')
+    // No plan in this turn, or only finished work: there is nothing to compare progress against.
+    if (!hasOpenTodos(todos)) {
+      states.delete(session)
       return downstream
     }
-    const observed = observeTool(states.get(agent), Date.now(), policy)
-    if (observed.state) states.set(agent, observed.state)
-    if (!observed.remind) return downstream
-    const notice: Notice = {
-      id: randomUUID(),
-      role: 'user',
-      content: [{ type: 'text', text:
-        'Progress sync reminder: tool activity has continued while the todo list remained unchanged. '
-        + 'Compare actual outputs with each todo, call todo_write now if a step has genuinely changed, '
-        + 'and mark completed only with evidence. Do not infer completion from edits alone. '
-        + 'If the current step is still in progress, keep it in_progress and continue working.' }],
-      source: { kind: 'matt-todo-progress-guard', form: 'notice', summary: 'Todo progress may need review' },
+    if (exec.name === TODO_TOOL) {
+      // A committed write is the sync itself. A rejected write is neither a sync nor progress.
+      if (!result.isError) states.set(session, { lastSyncAt: Date.now(), callsSinceSync: 0, lastReminderAt: null })
+      return downstream
     }
-    return { ...downstream, additionalContexts: [notice, ...downstream.additionalContexts ?? []] }
-  })
-  hooks.on('agent/pre-step', async ({ agent, messages }, next) => {
-    // A fresh user turn clears the previous turn's projection; never leak an old plan forward.
-    if (messages.some(message => message.source.kind === 'user')) states.delete(agent)
-    return next()
+    const observed = observeTool(states.get(session), Date.now(), policy)
+    if (observed.state !== undefined) states.set(session, observed.state)
+    if (!observed.remind) return downstream
+    const reminder = createUserMessage({
+      content: [{ type: 'text', text: reminderText() }],
+      source: {
+        kind: 'matt-todo-progress-guard',
+        form: 'notice',
+        summary: boundContextSummary(`${observed.state.callsSinceSync} calls since ${TODO_TOOL}`),
+      },
+    })
+    // Enrich, never veto: the reminder rides whichever decision downstream produced.
+    if (downstream.kind === 'block') {
+      return { kind: 'block', feedback: downstream.feedback, additionalContexts: [reminder, ...downstream.additionalContexts ?? []] }
+    }
+    return { ...downstream, additionalContexts: [reminder, ...downstream.additionalContexts ?? []] }
   })
 }

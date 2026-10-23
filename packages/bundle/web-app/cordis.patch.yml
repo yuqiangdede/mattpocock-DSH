@@ -378,8 +378,12 @@
       name: '@deepseek-ai/dsh-client-ui-skill'
 
     # Fork-specific stage-one Skill Launcher; native Agent/Session untouched.
+    # todoStaleMs is the browser observation threshold for the launcher's
+    # "plan may be behind" hint; the Host guard's staleAfterMs is separate.
     - id: ui-matt-skill-launcher
       name: '@deepseek-ai/dsh-client-ui-matt-skill-launcher'
+      config:
+        todoStaleMs: 90000
 
     - id: ui-subagent
       name: '@deepseek-ai/dsh-client-ui-subagent'

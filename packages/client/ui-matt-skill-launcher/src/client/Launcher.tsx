@@ -1,29 +1,35 @@
-import { useEffect, useId, useRef, useState } from 'react'
+import { useEffect, useId, useMemo, useRef, useState } from 'react'
 import type { InjectFace, PropsLocale, PropsRuntime } from '@deepseek-ai/dsh-client-ui-slots'
 import { parseActions, actionErrorKey, presentDefaultActions, displayOrder, type CodingAction } from './actions.ts'
 import type { LauncherInjected } from './index.ts'
 import { chatEntries, recommend, withEvidence } from './contextual-actions.ts'
 import css from './Launcher.module.css'
 type Props = PropsRuntime<'conversation.input.dock'> & PropsLocale<'mattSkillLauncher'> & InjectFace<LauncherInjected>
-export function Launcher({ useInput, useConversation, useSession, useProjection, inputActions, useActionForm, fetchSkillNames, t }: Props) {
+export function Launcher({
+  useInput, useConversation, useSession, useProjection, inputActions, useActionForm, fetchSkillNames, todoStaleMs, t,
+}: Props) {
   const snapshot = useActionForm(x => x)
   const input = useInput(x => x)
   const chat = useConversation(x => x.views.get('chat'))
   const sessionRunning = useSession(x => x.running)
   const todos = useProjection('todos')
   const planSignature = JSON.stringify(todos ?? [])
-  const planOpen = todos?.some(todo => todo.status === 'pending' || todo.status === 'in_progress') ?? false
-  const [planChangedAt, setPlanChangedAt] = useState(() => Date.now())
-  const [clock, setClock] = useState(() => Date.now())
-  // This is time since a visible state change, NOT the host's last todo_write timestamp.
-  useEffect(() => { setPlanChangedAt(Date.now()); setClock(Date.now()) }, [planSignature])
+  const planOpen = todos?.some(todo => todo.status !== 'completed') ?? false
+  const watching = sessionRunning && planOpen
+  // Age is measured at render from the signature's own timestamp, so a changed
+  // plan never paints the previous plan's warning and a remount cannot inherit
+  // a stale age. The interval only schedules the next render.
+  const planChangedAt = useMemo(() => Date.now(), [planSignature])
+  const [, setTick] = useState(0)
+  const tickMs = Math.max(1000, Math.floor(todoStaleMs / 6))
   useEffect(() => {
-    if (!sessionRunning || !planOpen) return
-    const timer = setInterval(() => { setClock(Date.now()) }, 15000)
+    if (!watching) return
+    const timer = setInterval(() => { setTick(tick => tick + 1) }, tickMs)
     return () => { clearInterval(timer) }
-  }, [sessionRunning, planOpen])
-  const unchangedMinutes = Math.floor((clock - planChangedAt) / 60000)
-  const planMayBeStale = sessionRunning && planOpen && clock - planChangedAt >= 90000
+  }, [watching, tickMs])
+  const unchangedMs = Date.now() - planChangedAt
+  const planMayBeStale = watching && unchangedMs >= todoStaleMs
+  const unchangedMinutes = Math.ceil(unchangedMs / 60000)
   const entries = sessionRunning ? [] : chatEntries(chat)
   const recommendation = recommend(entries)
   const morePanelId = useId()
@@ -87,8 +93,8 @@ export function Launcher({ useInput, useConversation, useSession, useProjection,
       <div className={css.row}>{moreActions.map(render)}</div>
     </div>}
     {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
-    {planMayBeStale && <div className={css.progressWarning} role="status">
-      {t('todoStale').replace('{minutes}', String(unchangedMinutes))}
+    {watching && <div className={css.progressWarning} role="status">
+      {planMayBeStale ? t('todoStale').replace('{minutes}', String(unchangedMinutes)) : null}
     </div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
   </div>
