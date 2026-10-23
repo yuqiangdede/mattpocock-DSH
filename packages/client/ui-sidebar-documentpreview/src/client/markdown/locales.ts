@@ -4,7 +4,7 @@ export const zh = {
   'code.copy': '复制',
   'code.copied': '已复制',
   'footnotes': '脚注',
-  'mermaidFailure': 'Mermaid 图表无法渲染，已显示源代码。',
+  'mermaidFailure': 'Mermaid 图表无法渲染，已显示源代码',
 } satisfies Record<string, string>
 
 /** Markdown namespace keys. */
