@@ -96,6 +96,10 @@ export function Launcher({ useInput, useConversation, useSession, useProjection,
   }
   const changeMode = async (next: 'manual' | 'auto') => {
     if (mode === next || pending) return
+    if (next === 'manual' && sessionRunning && !workflowGoal) {
+      setNotice(t('pauseUnavailable'))
+      return
+    }
     if (shouldPauseWorkflow(mode, next, workflowGoal?.objective ?? null, workflowGoal?.phase ?? null)) {
       setPending(true)
       try {
