@@ -65,15 +65,17 @@ kind: "package-reference"
 <a id="model-experience"></a>
 ## 模型体验
 
-### 模型看到什么
+### `coding_workflow` 工具
+
+#### 模型看到什么
 
 一个工具 `coding_workflow`，使用扁平动词 schema（`start`、`status`、`stage`、`checks`、`review`、`repair`、`verify`、`commit`、`mode`、`pause`、`resume`、`approval`、`approve`、`block`、`cancel`）。每次结果携带任务标识、`revision`、状态、当前阶段、模式、分支、提交引用、阻塞原因、十个阶段状态以及下一步预期动词。
 
-### Token 影响
+#### Token 影响
 
 工具描述约 90 token；单次调用结果不足 150 token。证据与验证输出留在文件中而不进入转录；记录本身从不进入请求。
 
-### KV Cache 影响
+#### KV Cache 影响
 
 自身无影响：工具 schema 属于稳定的工具目录，记录按调用返回而不是注入提示词。模式或阶段变化不会重写更早的请求前缀。
 

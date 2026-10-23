@@ -9,7 +9,7 @@
   en: f7ee81bc465937dc
   zh: d14e19bb8cfc1e0d
 /deepseek-ai-dsh-coding-workflow/summary:
-  en: b7002169a345a4f0
+  en: 9cda03170572cdfe
   zh: fb7465f9a27a611c
 /deepseek-ai-dsh-coding-workflow/table-of-contents:
   en: 76368b6b1da79c80
@@ -29,15 +29,18 @@
 /deepseek-ai-dsh-coding-workflow/model-experience:
   en: 215e7ba838619b7b
   zh: a311da3843709f90
-/deepseek-ai-dsh-coding-workflow/model-experience/what-the-model-sees:
-  en: a83cd2dee531c2ea
-  zh: 95c9134098c44edd
-/deepseek-ai-dsh-coding-workflow/model-experience/token-effect:
-  en: c58128f9ee39c7e2
-  zh: c1766d5086bc1efc
-/deepseek-ai-dsh-coding-workflow/model-experience/kv-cache-effect:
-  en: 7fe39ca6669d7bad
-  zh: 8fc672c15ef19618
+/deepseek-ai-dsh-coding-workflow/model-experience/the-coding-workflow-tool:
+  en: 5d356bc61d833f78
+  zh: 2db45196c57d0e56
+/deepseek-ai-dsh-coding-workflow/model-experience/the-coding-workflow-tool/what-the-model-sees:
+  en: 649ef2db747e9b19
+  zh: a84d01928847d537
+/deepseek-ai-dsh-coding-workflow/model-experience/the-coding-workflow-tool/token-effect:
+  en: a05ac2c09e5aa886
+  zh: 20c2132fff308baf
+/deepseek-ai-dsh-coding-workflow/model-experience/the-coding-workflow-tool/kv-cache-effect:
+  en: 4db889cf0fac90c6
+  zh: de9bd9274df669d4
 /deepseek-ai-dsh-coding-workflow/known-limitations-and-deferred-work:
   en: 9c81fdf87e418fdf
   zh: 2960e18ca089690d

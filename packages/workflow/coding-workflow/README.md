@@ -9,7 +9,7 @@ English | [中文](README.zh.md)
 
 ## Summary
 
-`dsh-coding-workflow` runs one staged coding task from requirements through a single local commit. The Host owns the Work Item: every stage records evidence, the implementation must stay inside an explicitly planned file list, review and verification are bound to the exact source fingerprint they observed, and the commit stages only the files that fingerprint covers. The model drives the task through the `coding_workflow` tool; the Web Client reads the same record through its Remote namespace. Nothing in this package pushes, merges, or writes a remote. Choose it when a task must leave auditable evidence that it was reviewed and actually built before its commit; skip it for exploratory edits.
+`dsh-coding-workflow` runs one staged coding task from requirements to a single local commit. The Host owns the Work Item: stages record evidence, implementation stays inside a planned file list, review and verification bind to the change fingerprint they observed, and the commit stages only the files that fingerprint covers. The model drives it through the `coding_workflow` tool; the Web Client reads the same record through its Remote. Nothing here pushes, merges, or writes a remote. Use it when a task must prove it was reviewed and built before its commit.
 
 ## Table of Contents
 
@@ -65,15 +65,17 @@ The durable record is product state, not session history: it lives in the shared
 <a id="model-experience"></a>
 ## Model Experience
 
-### What the model sees
+### The `coding_workflow` tool
+
+#### What the model sees
 
 One tool, `coding_workflow`, with a flat verb schema (`start`, `status`, `stage`, `checks`, `review`, `repair`, `verify`, `commit`, `mode`, `pause`, `resume`, `approval`, `approve`, `block`, `cancel`). Each result carries the task identity, revision, status, current stage, mode, branch, commit reference, blocker, the ten stage statuses, and the next expected verb.
 
-### Token effect
+#### Token effect
 
 The tool description is about 90 tokens; one call result is under 150 tokens. Evidence and verification output stay in files, not in the transcript; the record itself never enters a request.
 
-### KV Cache effect
+#### KV Cache effect
 
 No effect on its own: the tool schema is part of the stable tool catalog, and the record is returned per call rather than injected into the prompt. A mode or stage change does not rewrite earlier request prefixes.
 

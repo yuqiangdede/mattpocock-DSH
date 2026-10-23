@@ -77,26 +77,40 @@ function completed(item: WorkItem, stage: StageId): boolean {
   return item.stages[stage].status === 'completed'
 }
 
-/** Refuse operations on a task that already ended. */
+/**
+ * Refuse operations on a task that already ended.
+ * @param item - current record.
+ */
 export function requireNonterminal(item: WorkItem): void {
   ensure(!['cancelled', 'completed'].includes(item.status), 'Task is terminal', 'WORKFLOW_TERMINAL')
 }
 
-/** Refuse progress while the task waits for a human or a resume. */
+/**
+ * Refuse progress while the task waits for a human or a resume.
+ * @param item - current record.
+ */
 export function requireWritable(item: WorkItem): void {
   requireNonterminal(item)
   ensure(!['blocked', 'waiting_approval', 'paused'].includes(item.status),
     'Task is stopped; explicit resume or approval required', 'WORKFLOW_STOPPED')
 }
 
-/** Require the tree to still be the one the task claimed. */
+/**
+ * Require the tree to still be the one the task claimed.
+ * @param item - current record.
+ * @param snapshot - current repository facts.
+ */
 export function requireCheckpoint(item: WorkItem, snapshot: RepositorySnapshot): void {
   ensure(snapshot.branch === item.branch, 'Branch changed', 'WORKFLOW_BRANCH_CHANGED')
   ensure(snapshot.head === (item.commitRef ?? item.baseCommit),
     'HEAD changed outside workflow', 'WORKFLOW_HEAD_CHANGED')
 }
 
-/** Require every earlier stage to be complete (S6 may be skipped). */
+/**
+ * Require every earlier stage to be complete (S6 may be skipped).
+ * @param item - current record.
+ * @param stage - stage whose prerequisites are checked.
+ */
 export function requirePrevious(item: WorkItem, stage: StageId): void {
   const index = stageIndex(stage)
   ensure(index > 0, 'Unknown or reserved stage', 'WORKFLOW_INVALID_STAGE')
@@ -106,7 +120,11 @@ export function requirePrevious(item: WorkItem, stage: StageId): void {
   }
 }
 
-/** Require every changed file to be an allowed implementation path. */
+/**
+ * Require every changed file to be an allowed implementation path.
+ * @param item - current record.
+ * @param snapshot - current repository facts.
+ */
 export function requireScoped(item: WorkItem, snapshot: RepositorySnapshot): void {
   const allowed = item.allowedPaths
   ensure(allowed !== null, 'Implementation plan not configured', 'WORKFLOW_PLAN_MISSING')

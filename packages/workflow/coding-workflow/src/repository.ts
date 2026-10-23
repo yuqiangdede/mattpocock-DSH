@@ -142,7 +142,11 @@ export class LocalRepositoryRunner implements RepositoryRunner {
   }
 }
 
-/** SHA-256 of one buffer. */
+/**
+ * SHA-256 of one buffer or string.
+ * @param data - bytes or text to hash.
+ * @returns the lowercase hexadecimal digest.
+ */
 export function digest(data: string | Buffer): string {
   return createHash('sha256').update(data).digest('hex')
 }
@@ -286,7 +290,11 @@ export async function commitExactly(
   return head
 }
 
-/** Whether a branch name is one the workflow must never commit to directly. */
+/**
+ * Whether a branch name is one the workflow must never commit to directly.
+ * @param branch - branch name to test.
+ * @returns true for the protected trunk names.
+ */
 export function isProtectedBranch(branch: string): boolean {
   return branch === 'main' || branch === 'master'
 }
