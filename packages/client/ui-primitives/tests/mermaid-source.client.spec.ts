@@ -25,6 +25,26 @@ describe('mermaidSourceRequestsResources', () => {
     expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:url/**/(https://evil.test/p.svg)')).toBe(true)
   })
 
+  it('decodes every CSS escape form before looking for a url() call', () => {
+    // Hex escapes terminate at whitespace, and the decoded text still names a resource.
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:u\\72 l(https://evil.test/p.svg)')).toBe(true)
+    // An escape before a non-hex character decodes to that character.
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A --> B\\q')).toBe(false)
+    // An escaped newline joins two lines, and a trailing backslash stays literal.
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A --> B\\\n  C')).toBe(false)
+    expect(mermaidSourceRequestsResources('flowchart TD\r\n  A --> B\\\r\n  C')).toBe(false)
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A --> B\\')).toBe(false)
+    // Invalid code points decode to U+FFFD, which requests nothing.
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A["\\0 \\110000 \\d800"] --> B')).toBe(false)
+    // A comment that never closes cannot hide the rest of the source.
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:url(https://evil.test/p.svg) /*')).toBe(true)
+  })
+
+  it('refuses a url() call that names no fragment', () => {
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:url()')).toBe(true)
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:url(   )')).toBe(true)
+  })
+
   it('refuses directives that re-enable HTML labels', () => {
     expect(mermaidSourceRequestsResources('%%{init: {"flowchart":{"htmlLabels":true}}}%%\nflowchart TD\n  A --> B')).toBe(true)
     expect(mermaidSourceRequestsResources("%%{ init: { 'htmlLabels': true } }%%\nflowchart TD\n  A --> B")).toBe(true)

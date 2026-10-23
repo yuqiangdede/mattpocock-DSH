@@ -33,9 +33,11 @@ function requestsCssUrl(source: string): boolean {
   // are refused before they can trigger a browser request.
   const normalized = decodeCssEscapes(source).replace(/\/\*[\s\S]*?\*\//gu, '')
   if (normalized.includes('/*')) return true
-  const calls = /\burl\s*\(\s*(?:'([^']*)'|"([^"]*)"|([^)]*))/giu
-  for (const [, single, double, bare] of normalized.matchAll(calls)) {
-    const target = (single ?? double ?? bare ?? '').trim()
+  const calls = /\burl\s*\(\s*(?:'[^']*'|"[^"]*"|[^)]*)/giu
+  for (const call of normalized.matchAll(calls)) {
+    // Drop the function token, then the quoting, so a quoted fragment and a
+    // bare fragment compare the same way.
+    const target = call[0].replace(/^url\s*\(\s*/iu, '').replace(/^(['"])([\s\S]*)\1$/u, '$2').trim()
     if (!target.startsWith('#')) return true
   }
   return false
