@@ -36,7 +36,8 @@ afterEach(() => {
 
 describe('MermaidDiagram', () => {
   it('renders the source in a fallback while the SVG is pending', async () => {
-    mermaidRender.mockReturnValue(new Promise(() => {}))
+    let resolveRender: (value: { svg: string }) => void = () => {}
+    mermaidRender.mockReturnValue(new Promise((resolve) => { resolveRender = resolve }))
     const source = 'graph TD\n  A --> B'
     const { container } = render(<MermaidDiagram source={source} failureLabel={FAILURE_LABEL} />)
     await flushEffects()
@@ -54,6 +55,9 @@ describe('MermaidDiagram', () => {
       theme: 'default',
     })
     expect(mermaidRender).toHaveBeenCalledWith(expect.stringMatching(/^mermaid-/), source)
+    // Settle the queued render so the next spec starts from a free queue.
+    resolveRender({ svg: '<svg/>' })
+    await flushEffects()
   })
 
   it('swaps to the resolved SVG via dangerouslySetInnerHTML', async () => {
@@ -135,9 +139,10 @@ describe('MermaidDiagram', () => {
 
   it('never renders a previous source’s SVG after the fence changes', async () => {
     const previous = '<svg id="previous"/>'
+    let resolveNext: (value: { svg: string }) => void = () => {}
     mermaidRender.mockImplementation((_id: string, source: string) => source === 'old'
       ? Promise.resolve({ svg: previous })
-      : new Promise(() => {}))
+      : new Promise((resolve) => { resolveNext = resolve }))
     const view = render(<MermaidDiagram source={'old'} failureLabel={FAILURE_LABEL} />)
     await waitFor(() => {
       expect(view.container.querySelector('svg#previous')).not.toBeNull()
@@ -146,6 +151,46 @@ describe('MermaidDiagram', () => {
     view.rerender(<MermaidDiagram source={'new'} failureLabel={FAILURE_LABEL} />)
     expect(view.container.querySelector('svg#previous')).toBeNull()
     expect(view.container.querySelector('pre code')?.textContent).toBe('new')
+    await waitFor(() => {
+      expect(mermaidRender).toHaveBeenCalledTimes(2)
+    })
+    // Settle the queued render so the next spec starts from a free queue.
+    resolveNext({ svg: '<svg id="next"/>' })
+    await waitFor(() => {
+      expect(view.container.querySelector('svg#next')).not.toBeNull()
+    })
+  })
+
+  it('keeps each render paired with its own initialization', async () => {
+    let resolveFirst: (value: { svg: string }) => void = () => {}
+    mermaidRender.mockImplementation((_id: string, source: string) => source === 'first'
+      ? new Promise((resolve) => { resolveFirst = resolve })
+      : Promise.resolve({ svg: '<svg id="second"/>' }))
+    const view = render(
+      <>
+        <ColorSchemeProvider scheme="light">
+          <MermaidDiagram source="first" failureLabel={FAILURE_LABEL} />
+        </ColorSchemeProvider>
+        <ColorSchemeProvider scheme="dark">
+          <MermaidDiagram source="second" failureLabel={FAILURE_LABEL} />
+        </ColorSchemeProvider>
+      </>,
+    )
+    await flushEffects()
+
+    // Mermaid keeps one process-wide configuration, so the second diagram
+    // must not initialize a palette while the first render is still drawing.
+    expect(mermaidInitialize).toHaveBeenCalledTimes(1)
+    expect(mermaidInitialize).toHaveBeenCalledWith(expect.objectContaining({ theme: 'default' }))
+    expect(mermaidRender).toHaveBeenCalledTimes(1)
+
+    resolveFirst({ svg: '<svg id="first"/>' })
+    await waitFor(() => {
+      expect(view.container.querySelector('svg#second')).not.toBeNull()
+    })
+    expect(mermaidInitialize).toHaveBeenCalledTimes(2)
+    expect(mermaidInitialize).toHaveBeenLastCalledWith(expect.objectContaining({ theme: 'dark' }))
+    expect(mermaidRender).toHaveBeenCalledTimes(2)
   })
 
   it('renders dark diagrams with Mermaid’s dark theme and re-renders when the scoped scheme changes', async () => {
