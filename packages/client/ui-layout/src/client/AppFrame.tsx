@@ -17,19 +17,28 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import type {
-  PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
+  HostObservable, InjectFace, PropsLocale, PropsRenderSlots, PropsRuntime, PropsStore,
 } from '@deepseek-ai/dsh-client-ui-slots'
+import type { ThemeSnapshot } from '@deepseek-ai/dsh-client-ui-theme/client'
+import { ColorSchemeProvider } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CENTER_MIN, clampWidth, computeColumns, RIGHTBAR_DEFAULT_RATIO, RIGHTBAR_MAX_RATIO, RIGHTBAR_MIN, SIDEBAR_AUTO_COLLAPSE, SIDEBAR_COLLAPSED, SIDEBAR_DEFAULT } from './columns.ts'
 import { DocumentTitle } from './DocumentTitle.tsx'
 import type { createLayoutStore } from './stores.ts'
 import css from './AppFrame.module.css'
 
-/** Full composed props: runtime share + child-slot render share + store share. */
+/** Registrant face: the resolved application palette the frame scopes to its content. */
+export interface AppFrameInjected {
+  /** Live theme snapshot; the frame projects only its resolved color scheme. */
+  readonly hooks: { readonly theme: HostObservable<ThemeSnapshot> }
+}
+
+/** Full composed props: runtime share + child-slot render share + store share + injected palette. */
 export type AppFrameProps =
   & PropsRuntime<'root'>
   & PropsRenderSlots<'sidebar' | 'main' | 'rightbar' | 'shell.bottom' | 'shell.overlay' | 'shell.leading'>
   & PropsStore<ReturnType<typeof createLayoutStore>>
   & PropsLocale<'common'>
+  & InjectFace<AppFrameInjected>
 
 /** Center column grid item (session-body building block). */
 function CenterColumn(props: { children?: ReactNode }) {
@@ -122,11 +131,13 @@ export function AppFrame({
   useStore,
   useSessions,
   usePanelInfo,
+  useTheme,
   actions,
   renderSlot,
   t,
 }: AppFrameProps) {
   const layoutInfo = useStore(state => state.layoutInfo)
+  const scheme = useTheme(snapshot => snapshot.active.colorScheme)
   const frameRef = useRef<HTMLDivElement | null>(null)
   const viewport = layoutInfo.viewportWidth
 
@@ -256,52 +267,54 @@ export function AppFrame({
   const leadingMounted = darwin && sidebarCollapsed
 
   return (
-    <div
-      ref={frameRef}
-      className={css.frame}
-      style={{
-        ...(document.documentElement.hasAttribute('data-windows-titlebar')
-          ? { '--dsh-windows-sidebar-width': `${cols.sidebar}px` } : {}),
-        gridTemplateColumns:
-          `${cols.sidebar}px minmax(${cols.rightbar === 0 ? 0 : CENTER_MIN}px, 1fr) minmax(0px, ${rightbarMax}px)`,
-      }}
-      data-sidebar-collapsed={sidebarCollapsed || undefined}
-      data-rightbar-collapsed={cols.rightbar === 0 || undefined}
-      data-rightbar-fullscreen={layoutInfo.rightbarFullscreen || undefined}
-      data-rightbar-instant={layoutInfo.rightbarInstant || undefined}
-      data-dragging={dragging || undefined}
-      data-animating={animating > 0 || undefined}
-    >
-      <DocumentTitle
-        productTitle={productTitle}
-        useSessions={useSessions}
-        usePanelInfo={usePanelInfo}
-      />
-      <div className={css.sidebarCol}>
-        {sidebar}
-      </div>
-      <>
-        <CenterColumn>{main}</CenterColumn>
-        <RightbarColumn>
-          {renderSlot('rightbar', { width: normal.rightbar, viewportWidth: viewport, canShow: normal.rightbar > 0 })}
-        </RightbarColumn>
-      </>
-      <div className={css.bottomRow} data-shell-bottom>
-        {renderSlot('shell.bottom', {})}
-      </div>
-      <div className={css.overlayLayer} data-shell-overlay>
-        {overlays}
-      </div>
-      {leadingMounted && (
-        <div className={css.leadingSeat} data-shell-leading>
-          {leading}
+    <ColorSchemeProvider scheme={scheme}>
+      <div
+        ref={frameRef}
+        className={css.frame}
+        style={{
+          ...(document.documentElement.hasAttribute('data-windows-titlebar')
+            ? { '--dsh-windows-sidebar-width': `${cols.sidebar}px` } : {}),
+          gridTemplateColumns:
+            `${cols.sidebar}px minmax(${cols.rightbar === 0 ? 0 : CENTER_MIN}px, 1fr) minmax(0px, ${rightbarMax}px)`,
+        }}
+        data-sidebar-collapsed={sidebarCollapsed || undefined}
+        data-rightbar-collapsed={cols.rightbar === 0 || undefined}
+        data-rightbar-fullscreen={layoutInfo.rightbarFullscreen || undefined}
+        data-rightbar-instant={layoutInfo.rightbarInstant || undefined}
+        data-dragging={dragging || undefined}
+        data-animating={animating > 0 || undefined}
+      >
+        <DocumentTitle
+          productTitle={productTitle}
+          useSessions={useSessions}
+          usePanelInfo={usePanelInfo}
+        />
+        <div className={css.sidebarCol}>
+          {sidebar}
         </div>
-      )}
-      {/* The collapsed rail is fixed-width: no resize handle while closed. */}
-      {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
-      {layoutInfo.rightbarShown && !layoutInfo.rightbarFullscreen && normal.rightbar > 0 && (
-        <DragHandle side="rightbar" left={viewport - normal.rightbar} onStart={onRightbarStart} onDrag={onRightbarDrag} onEnd={onDragEnd} />
-      )}
-    </div>
+        <>
+          <CenterColumn>{main}</CenterColumn>
+          <RightbarColumn>
+            {renderSlot('rightbar', { width: normal.rightbar, viewportWidth: viewport, canShow: normal.rightbar > 0 })}
+          </RightbarColumn>
+        </>
+        <div className={css.bottomRow} data-shell-bottom>
+          {renderSlot('shell.bottom', {})}
+        </div>
+        <div className={css.overlayLayer} data-shell-overlay>
+          {overlays}
+        </div>
+        {leadingMounted && (
+          <div className={css.leadingSeat} data-shell-leading>
+            {leading}
+          </div>
+        )}
+        {/* The collapsed rail is fixed-width: no resize handle while closed. */}
+        {!sidebarCollapsed && <DragHandle side="sidebar" left={cols.sidebar} onStart={onSidebarStart} onDrag={onSidebarDrag} onEnd={onDragEnd} />}
+        {layoutInfo.rightbarShown && !layoutInfo.rightbarFullscreen && normal.rightbar > 0 && (
+          <DragHandle side="rightbar" left={viewport - normal.rightbar} onStart={onRightbarStart} onDrag={onRightbarDrag} onEnd={onDragEnd} />
+        )}
+      </div>
+    </ColorSchemeProvider>
   )
 }

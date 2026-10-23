@@ -13,6 +13,7 @@ const labels: MarkdownLabels = {
     toolbarLabels: { codeLabel: 'Snippet', wrapLabel: 'Wrap snippet', unwrapLabel: 'Unwrap snippet' },
   },
   footnotes: 'References',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 }
 
 type WrappedBodyProps = PropsRuntime<'conversation.chat.reasoning.body'> & PropsRenderFactories

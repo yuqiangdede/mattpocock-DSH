@@ -79,7 +79,7 @@ describe('code-card controls', () => {
   })
 
   it('shows compact Markdown icon actions and preserves custom source controls', () => {
-    const view = render(<MarkdownText text={'```ts\nconst x = 1\n```'} variant="compact" labels={{ code: labels, footnotes: 'Footnotes' }} />)
+    const view = render(<MarkdownText text={'```ts\nconst x = 1\n```'} variant="compact" labels={{ code: labels, footnotes: 'Footnotes', mermaidFailure: 'Mermaid diagram could not be rendered.' }} />)
     const wrap = screen.getByRole('button', { name: 'Wrap lines' })
     expect(wrap.getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(wrap)

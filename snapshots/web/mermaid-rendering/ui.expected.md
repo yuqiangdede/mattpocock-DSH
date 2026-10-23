@@ -1,0 +1,35 @@
+- banner:
+  - navigation "Session hierarchy": Mermaid rendering
+  - button "More actions"
+  - button "Open right sidebar"
+  - tablist:
+    - tab "Chat" [selected]
+    - tab "Trajectory"
+- text: Render the Mermaid fences. 9/1 {{clock}}
+- button "Copy"
+- status: Completed
+- button "Completed in {{duration}}" [disabled]
+- heading "Mermaid rendering" [level=2]
+- paragraph: "The settled fence renders as a diagram:"
+- document: yes Start Ready? Render
+- paragraph: "An invalid fence keeps its source:"
+- status: Mermaid diagram could not be rendered. Showing its source.
+- code: not a diagram
+- button "Copy"
+- button "Good response"
+- button "Bad response"
+- button "Branch into a new conversation"
+- text: 9/1 {{clock}}
+- button "Discuss Requirements"
+- button "Finalize Spec"
+- button "Develop"
+- button "Diagnose Bug"
+- button "Code Review"
+- button "Commit Code"
+- button "More"
+- textbox "Message or run a task, / commands, @ files or sessions"
+- button "Add files or run commands"
+- 'button "Access mode, current: Workspace Write"': Workspace Write
+- button "Select model, current DeepSeek-V4-Flash": DeepSeek-V4-Flash
+- button "Send message" [disabled]
+- button "1 turns 1 steps"

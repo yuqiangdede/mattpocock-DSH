@@ -31,6 +31,7 @@ import { useMarkdownDelegate } from './MarkdownDelegate.tsx'
 import { HoverCard } from '../HoverCard.tsx'
 import { ImageLightbox } from '../ImageLightbox.tsx'
 import { ImagePreview } from '../ImagePreview.tsx'
+import { MermaidDiagram } from './MermaidDiagram.tsx'
 import type { PositionedBlock } from './incremental.ts'
 import css from './MarkdownText.module.css'
 
@@ -48,6 +49,8 @@ export interface MarkdownCodeLabels {
 export interface MarkdownLabels {
   code: MarkdownCodeLabels
   footnotes: string
+  /** Notice shown when a settled ```mermaid fence cannot render. */
+  mermaidFailure: string
 }
 
 function sanitizeUrl(url: string): string {
@@ -389,6 +392,12 @@ function renderCode(node: Md.Code, key: Key, context: MarkdownRenderContext): Re
     // ```math fences render as display TeX once settled (rehype-katex parity);
     // its text extraction saw the code block's trailing newline.
     return <Fragment key={key}>{renderTexToReact(`${node.value}\n`, true)}</Fragment>
+  }
+  if (!context.streaming && lang === 'mermaid') {
+    // ```mermaid fences render as a diagram once settled; streaming falls
+    // through to CodeBlock below so a half-received diagram does not re-render
+    // per chunk, matching the math-fence streaming deferral.
+    return <MermaidDiagram key={key} source={node.value} failureLabel={context.labels.mermaidFailure} />
   }
   return (
     <CodeBlock

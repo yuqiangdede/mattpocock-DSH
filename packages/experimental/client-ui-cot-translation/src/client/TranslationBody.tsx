@@ -43,8 +43,15 @@ export function TranslationBody(props: TranslationBodyProps) {
   }, [preferences.provider, targetLanguage, maxTextChars, translate])
   useEffect(() => { translation.current?.update(text, running) },
     [text, running, preferences.provider, targetLanguage, maxTextChars, translate])
-  const labels = useMemo(() => ({ code: { copyLabel: t('copy'), copiedLabel: t('copied'),
-    toolbarLabels: { codeLabel: t('codeTitle'), wrapLabel: t('wrap'), unwrapLabel: t('unwrap') } }, footnotes: t('footnotes') }), [t])
+  const labels = useMemo(() => ({
+    code: {
+      copyLabel: t('copy'),
+      copiedLabel: t('copied'),
+      toolbarLabels: { codeLabel: t('codeTitle'), wrapLabel: t('wrap'), unwrapLabel: t('unwrap') },
+    },
+    footnotes: t('footnotes'),
+    mermaidFailure: t('mermaidFailure'),
+  }), [t])
   const showOriginal = original || state.failed
   const actionLabel = t(showOriginal ? 'translation' : 'original')
   return <div data-cot-translation="true" data-translation-state={state.failed ? 'failed' : state.pending ? 'pending' : 'ready'}
