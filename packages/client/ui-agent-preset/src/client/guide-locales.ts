@@ -86,7 +86,7 @@ export const guideZh: Record<PresetGuideKey, string> = {
   guideCopy: '复制',
   guideCopied: '已复制',
   guideFootnotes: '脚注',
-  guideMermaidFailure: 'Mermaid 图表无法渲染，已显示源代码。',
+  guideMermaidFailure: 'Mermaid 图表无法渲染，已显示源代码',
   guideStandardIntro: '新建任务时选择「标准模式」，说明要完成什么、相关文件在哪里，以及怎样判断任务完成。',
   guideStandardExplanation: [
     '### 工作方式',
