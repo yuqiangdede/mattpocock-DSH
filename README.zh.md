@@ -71,7 +71,7 @@
 
 来源版本：[`matt-source.json`](.dsh/skills/matt-source.json) · [上游 Skills 主页](https://github.com/mattpocock/skills) · [本地使用的 Skill 目录](.dsh/skills/)。
 
-### 本 Fork 维护的 8 个 Skills
+### 本 Fork 维护的 9 个 Skills
 
 以下链接是**本仓库自己的 `SKILL.md`**，用于工程文档和交互扩展：
 
@@ -85,6 +85,13 @@
 | [`outline-design`](.dsh/skills/outline-design/SKILL.md) | 概要设计文档 |
 | [`overall-design`](.dsh/skills/overall-design/SKILL.md) | 总体设计文档 |
 | [`requirements-spec`](.dsh/skills/requirements-spec/SKILL.md) | 需求规格与源码反推 |
+| [`pocket-maintenance`](.dsh/skills/pocket-maintenance/SKILL.md) | 审计、合并与精简过时、重复和冲突的 Pocket 文档 |
+
+## 项目 Pocket 知识库（可选）
+
+在**目标项目仓库**中运行现有 `/setup-matt-pocock-skills`。本 Fork 为其增加少量初始化规则，显式采用上游 `writing-for-agents` 方法，并生成纳入 Git 管理的 `docs/pocket/` 知识索引。Agent 仅保留简短入口指针，根据任务逐级读取相关文档，不要求 RAG。重要需求或架构变化后以及建议的每月人工巡检中，可运行 `/pocket-maintenance` 检查重复、失效、冲突资料并提出合并与归档方案。两项 Skill 均需用户主动发送，不会悄悄修改现有权威文档，也不创建定时后台任务。本 Fork 仅对导入的 `setup-matt-pocock-skills` 增加简短规则，具体模板放在 `.dsh/skills/_shared/POCKET_SETUP.md`，后续同步上游需要保留或重新应用这部分差异；其他上游 Skills 保持原样，仍会沿用旧输出路径，可能需要另行迁移。
+
+如果此前用 `scripts/install-coding-skills.mjs` 安装过这些 Skill，用户目录的副本优先级高于桌面内置副本，运行的仍是旧版初始化提示词。只需备份并移走 `<DSH_HOME>/skills/setup-matt-pocock-skills`，再用默认参数重跑安装脚本以补装该 Skill，然后把本仓库的 `.dsh/skills/_shared/POCKET_SETUP.md` 复制到 `<DSH_HOME>/skills/_shared/`；其他已安装 Skill 与自定义的共享工具都保持原状。
 
 ## 源码构建与使用
 
