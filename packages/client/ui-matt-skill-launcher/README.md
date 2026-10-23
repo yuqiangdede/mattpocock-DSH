@@ -30,6 +30,8 @@ This fork-only first-stage extension is independent of the DSH Agent Loop and Se
 - Plain-prompt buttons insert text without a Skill binding.
 - Native DSH Host Settings persist the versioned CodingAction JSON (with editable labels, prompts, enabled state, shown flag, sort order and help copy). Settings supports export/import.
 - When the latest completed exchange clearly indicates a next workflow step, the matching enabled button is highlighted and a localized hint explains the recommendation.
+- Above the composer, one reserved status line qualifies a running Agent whose plan still has unfinished items and whose visible content has not changed for `todoStaleMs` (default 90 s). The line keeps its height while a running plan is watched, so the delayed hint never reflows the composer, and it disappears when the Agent idles or the plan completes. `todoStaleMs` is the launcher's own deployment value: it measures what this view observed, which is not the Host's `todo_write` timestamp, and it is separate from the guard's `staleAfterMs`.
+- The package also ships `./todo-progress-guard`, a Host plugin the standard and PTC Agent presets mount beside `todo_write`. It only reads the Session's `todos` projection and appends model-facing context; it never writes todo state, changes a status, or edits a file.
 - Each built-in action except initialization adds receiving instructions to its draft. Only Fix Review Findings also summarizes the latest completed exchange: its request (up to 1,000 characters) and result (up to 5,000 characters). Truncation is marked; excerpts require verification against original artifacts. Other actions copy no conversation text, and custom actions receive no added instructions. The user reviews and sends the draft; the launcher never sends or executes automatically.
 - Recommendations use only the latest completed user/assistant exchange and skip unavailable or disabled actions. Interrupted turns and explicit errors can recommend Bug diagnosis or Continue.
 
@@ -71,9 +73,31 @@ The submitted prompt and any Skill instructions contribute their ordinary messag
 
 The launcher changes no existing model prefix. The normal Session submission and Skill-loading path owns request assembly.
 
+### Todo progress reminder
+
+#### What the model sees
+
+The standard and PTC Agent presets mount `@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard` (the minimal preset mounts neither it nor `todo_write`). It reads only the Session's `todos` projection: after a committed `todo_write` leaves an unfinished item it counts succeeding tool calls, and once at least `minToolCalls` calls (default 5) and `staleAfterMs` (default 90 s) have passed since that commit it appends one user-role context message to the tool result. That message is logged as a `user/message` event with source `{kind: 'matt-todo-progress-guard', form: 'notice', summary: '<n> calls since todo_write'}`, so the transcript shows it and the next model request carries it; a later `turn/start` (which clears the projection), a rejected `todo_write`, an all-completed plan, or no projected plan stops the watch, `reminderCooldownMs` (default 90 s) bounds repetition, and the guard never calls `todo_write`, never changes a status, and never infers completion from edits.
+
+##### Reminder text
+
+```markdown
+Progress sync reminder: tool activity has continued while the todo list remained unchanged. Compare actual outputs with each todo, call todo_write now if a step has genuinely changed, and mark completed only with evidence. Do not infer completion from edits alone. If the current step is still in progress, keep it in_progress and continue working.
+```
+
+#### Token effect
+
+One reminder is about 360 characters, roughly 90 tokens, and arrives at most once per cooldown window for one live plan. Every other tool call adds no model input.
+
+#### KV Cache effect
+
+The reminder is appended after the tool result as a new user-role message. It leaves the existing prefix — system prompt, earlier messages, and the preceding tool result — unchanged, so a provider cache covering that prefix stays reusable and only the reminder and later content are fresh tokens.
+
 ## Known Limitations and Deferred Work
 
 - Recommendations are conservative text-based hints, not authoritative workflow-completion events; old or unloaded history is not searched.
+- The progress guard only advises. It does not make the model follow the reminder, and a deployment that needs a hard stage-completion guarantee must drive it from an acceptance event in its own workflow instead.
+- The status line observes what this view has rendered. A repeated write of the same plan does not reset its timer, and it cannot report the Host's write time.
 - Windows Electron interaction, browser discussion writeback, and external document-generation dependencies require end-to-end acceptance.
 
 ### Dev Note

@@ -31,6 +31,8 @@ kind: "package-reference"
 - 纯提示词按钮直接插入文本，不绑定 Skill。
 - 原生 DSH Host Settings 持久化带版本的 CodingAction JSON，包括可编辑的名称、提示词、启停状态、显示标记、排序和帮助文本。设置页面支持导入和导出。
 - 最新已完成对话明确显示下一步时，对应的启用按钮会高亮，并显示本地化的推荐说明。
+- Composer 上方保留一行状态提示：Agent 正在运行、Todo 仍有未完成项，且界面可见内容在 `todoStaleMs`（默认 90 秒）内未变化时，显示可能滞后的说明。监视期间始终保留该行高度，延迟出现的提示不会顶动 Composer；Agent 空闲或计划完成后隐藏。`todoStaleMs` 是 Launcher 自己的部署值，衡量的是当前界面观察到的时间，不是 Host 的 `todo_write` 时间，也与守卫的 `staleAfterMs` 相互独立。
+- 本包同时提供 Host 插件入口 `./todo-progress-guard`，标准 / PTC Agent 预设将它挂在 `todo_write` 旁边。它只读取 Session 的 `todos` 投影并追加模型可见上下文，不写入 Todo 状态、不修改状态、不编辑文件。
 - 除初始化外，每个内置操作都会向草稿加入接手要求。只有「修复审核问题」会附带上一段已完成对话的请求（最多 1,000 字符）和结果（最多 5,000 字符）作为汇总依据；截断会明确标记，摘录需与原始产物核对。其他按钮不复制对话内容，自定义操作不附加要求。由用户检查并发送草稿，Launcher 不会自动发送或执行。
 - 推荐只分析最新一组已完成的用户请求与助手回复；不可用或已禁用的按钮不会被推荐。对话中断和明确错误可以推荐 Bug 排查或继续。
 
@@ -74,13 +76,37 @@ Launcher 使用 Workspace 包名 `@deepseek-ai/dsh-client-ui-matt-skill-launcher
 
 Launcher 不改变已有的模型前缀。普通 Session 提交和 Skill 加载路径负责组装请求。
 
+### Todo 进度提醒
+
+#### 模型能看到什么
+
+标准 / PTC Agent 预设挂载 `@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard`（minimal 预设既不挂载守卫，也没有 `todo_write`）。它只读取 Session 的 `todos` 投影：一次成功提交的 `todo_write` 留下未完成项后开始计数，此后工具调用累计达到 `minToolCalls`（默认 5）次、且距离该次提交至少 `staleAfterMs`（默认 90 秒）时，向工具结果追加一条 user 角色的上下文消息。该消息以 `user/message` 事件记录，来源为 `{kind: 'matt-todo-progress-guard', form: 'notice', summary: '<n> calls since todo_write'}`，因此对话界面会显示它，下一次模型请求也会携带它。出现新的 `turn/start`（投影清空）、被拒绝的 `todo_write`、全部完成或没有投影计划时停止监视，`reminderCooldownMs`（默认 90 秒）限制重复提醒；守卫不会调用 `todo_write`、不修改任何状态，也不根据编辑推断完成。
+
+##### 提醒文本
+
+```markdown
+Progress sync reminder: tool activity has continued while the todo list remained unchanged. Compare actual outputs with each todo, call todo_write now if a step has genuinely changed, and mark completed only with evidence. Do not infer completion from edits alone. If the current step is still in progress, keep it in_progress and continue working.
+```
+
+#### Token 影响
+
+单条提醒约 360 个字符（约 90 Token），同一份计划每个冷却窗口最多出现一次；其他工具调用不增加模型输入。
+
+#### KV Cache 影响
+
+提醒作为新的 user 消息追加在工具结果之后，不改变已有前缀（系统提示词、更早消息和紧邻的工具结果），因此覆盖该前缀的服务商缓存仍可复用，只有提醒及其后的内容是新 Token。
+
 <a id="known-limitations-and-deferred-work"></a>
 ## 已知限制和延期工作
 
 - 推荐提示是基于文本的保守判断，不代表工作流阶段已被权威确认；不会搜索未加载或更早的历史消息。
+- 进度守卫只做提醒，不保证模型遵循；需要严格阶段完成保证时，应由部署自己的验收事件驱动。
+- 状态提示观察的是当前界面已渲染的内容：同内容重复写入不会重置计时，也无法报告 Host 的写入时间。
 - Windows Electron 交互、浏览器讨论结果写回、外部文档生成依赖均需要端到端验收。
 
 <a id="dev-note"></a>
 ### 开发备注
 
-本 Fork 独立于上游 Agent Loop 和 Session 存储维护此插件。
+本 Fork 独立于上游 Agent Loop 和 Session 存储维护此插件。守卫通过既有 Fork 包构建并随 Windows/Desktop 离线安装包交付，改动集中在 Fork 包及预设挂载行；上游同步时留意标准 / PTC 预设中新增的挂载行，以及 `tsconfig.base.json` 中的子路径别名。
+
+验证重点：`todo_write` 成功→连续操作→超过双阈值才提醒；反复提醒受冷却期约束；完成、失败写入或新轮次清空；提醒确实写入 `user/message` 事件并进入下一次模型请求；真实 Loader 能按预设行解析该子路径。

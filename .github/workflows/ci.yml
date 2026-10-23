@@ -59,6 +59,7 @@ jobs:
         run: >-
           pnpm exec vitest run
           packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts
+          packages/client/ui-matt-skill-launcher/tests/todo-progress-guard.host.spec.ts
           packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx
 
       - name: Build Windows workspace (Host, Client, Desktop, Web)

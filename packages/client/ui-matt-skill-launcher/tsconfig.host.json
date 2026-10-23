@@ -6,7 +6,9 @@
     "tsBuildInfoFile": "lib/tsconfig.host.tsbuildinfo"
   },
   "files": [
-    "src/index.ts"
+    "src/index.ts",
+    "src/config.ts",
+    "src/todo-progress-guard.ts"
   ],
   "references": [
     {
@@ -16,7 +18,25 @@
       "path": "../../../vendor/schemastery"
     },
     {
+      "path": "../../core/session"
+    },
+    {
+      "path": "../../core/tools"
+    },
+    {
+      "path": "../../host/webserver"
+    },
+    {
+      "path": "../../llm/llm"
+    },
+    {
+      "path": "../../session/session-projection"
+    },
+    {
       "path": "../../settings/settings"
+    },
+    {
+      "path": "../../todo/tool-todo"
     }
   ]
 }

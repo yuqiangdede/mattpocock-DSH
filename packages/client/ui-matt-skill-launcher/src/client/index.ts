@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import type {} from '@deepseek-ai/dsh-client-ui-session/client'
 import type {} from '@deepseek-ai/dsh-api-remotes/client'
 import type {} from '@deepseek-ai/dsh-api-session-controller/client'
+import { LAUNCHER_CONFIG_GLOBAL, LauncherDeploymentSchema } from '../config.ts'
 import { Launcher } from './Launcher.tsx'
 import { LauncherSettings } from './Settings.tsx'
 /** Host-persisted launcher configuration. */
@@ -17,10 +18,11 @@ export interface LauncherSettingsInjected {
   hooks: { actionForm: ConfigForm<ActionSettings> }
   saveActions: (json:string, revision?:number)=>Promise<boolean>
 }
-/** Launcher form and session-scoped Skill catalog access. */
+/** Launcher form, session-scoped Skill catalog access, and the Host's stale-plan threshold. */
 export interface LauncherInjected {
   hooks: { actionForm: ConfigForm<ActionSettings> }
   fetchSkillNames: ()=>Promise<readonly string[]>
+  todoStaleMs: number
 }
 declare module '@deepseek-ai/dsh-api-session-controller/client' {
   interface SessionReferenceSourceMap { mattSkillLauncher: unknown }
@@ -36,10 +38,16 @@ export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('mattSkillLauncher', { zh, en }), 'launcher dictionaries')
   const t = ctx.locale.bind('mattSkillLauncher')
   const form = ctx.configForms.get<ActionSettings>('ui-matt-skill-launcher')
+  // The page-global carries the Host-resolved policy; this read validates it
+  // against the same field schema the Host Config uses.
+  const deployment = LauncherDeploymentSchema(
+    (globalThis as { [LAUNCHER_CONFIG_GLOBAL]?: unknown })[LAUNCHER_CONFIG_GLOBAL] ?? {},
+  )
   ctx.slots.inject('conversation.input.dock', () => ctx.slots.register({
     name: 'conversation.input.dock', locale: 'mattSkillLauncher', id: 'matt-skill-launcher', order: 1,
     inject: (sessionId): LauncherInjected => ({
       hooks: { actionForm: form },
+      todoStaleMs: deployment.todoStaleMs,
       fetchSkillNames: async () => {
         if (ctx.sessions.binding(sessionId) === undefined) throw new Error('Session unavailable')
         return ctx.sessions.using(sessionId,{ source:'mattSkillLauncher' },async (ref)=>{
