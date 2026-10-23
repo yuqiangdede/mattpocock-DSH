@@ -33,20 +33,24 @@ node <skill-dir>/scripts/workflow-state.mjs resume <task-id>
 node <skill-dir>/scripts/workflow-state.mjs stage <task-id> S1 <evidence-file>
 node <skill-dir>/scripts/workflow-state.mjs stage <task-id> S2 <evidence-file>
 node <skill-dir>/scripts/workflow-state.mjs stage <task-id> S3 <evidence-file>
+node <skill-dir>/scripts/workflow-state.mjs checks <task-id> <checks-json>
 node <skill-dir>/scripts/workflow-state.mjs stage <task-id> S4 <evidence-file>
 node <skill-dir>/scripts/workflow-state.mjs review <task-id> <review-json>
 node <skill-dir>/scripts/workflow-state.mjs repair <task-id> <repair-evidence>
-node <skill-dir>/scripts/workflow-state.mjs verify <task-id> -- <real-build-or-test-command> [args...]
+node <skill-dir>/scripts/workflow-state.mjs verify <task-id> test -- <real-test-command> [args...]
+node <skill-dir>/scripts/workflow-state.mjs verify <task-id> build -- <real-build-command> [args...]
 node <skill-dir>/scripts/workflow-state.mjs commit <task-id> -- <exact-changed-path>...
 node <skill-dir>/scripts/workflow-state.mjs stage <task-id> S9 <delivery-report>
 \`\`\`
+
+Checks JSON must contain at least one real `test` and one real `build` command, e.g. `{"checks":[{"kind":"test","command":["pnpm","test"]},{"kind":"build","command":["pnpm","build"]}]}`. Every planned check must run successfully against the **same** reviewed diff. Renaming a no-op command as a test/build violates this Skill even if the helper cannot infer semantics from an arbitrary executable.
 
 Evidence files should be placed outside the target repository or in an existing user-approved documentation location, avoiding inclusion in an unrelated commit. JSON review report must include \`{"findings":[{"id":"F-1","severity":"P1","status":"open","file":"...","evidence":"..."}]}\`; use an empty array only after actually inspecting source/diff and requirements.
 
 ## Automatic execution
 
 1. Check user goal, current workspace and tooling. If the goal is unclear about business contract or permission boundary, request a focused answer before changing code. Begin with \`start\`; a dirty tree blocks automatic ownership. On clean \`main/master\` the helper creates a dedicated \`coding/<id>\` branch.
-2. Record task mode auto, explicitly resume it. S1: inspect requirements, evidence, constraints, acceptance criteria. S2: write reviewed specification. S3: implementation strategy and actual verification commands. Save artifacts and mark each stage using the helper.
+2. Record task mode auto, explicitly resume it. S1: inspect requirements, evidence, constraints, acceptance criteria. S2: write reviewed specification. S3: implementation strategy and actual verification commands. Save artifacts, mark each stage, then register the required test/build commands with `checks` **before** implementing.
 3. S4: implement minimal scoped change and run focused tests. Save code diff summary and task evidence; call \`stage ... S4\` only when tracked code has actually changed.
 4. S5: inspect real diff and requirement coverage with the \`code-review\` method. Write structured JSON report. Call \`review\`, which calculates the current diff fingerprint and routes to repair or verification. Do not invent clean reports.
 5. S6 (conditional): fix findings one by one with specific tests, write repair report, call \`repair\`, then perform **fresh** \`review\`. Stop when repair/no-progress limits hit.
