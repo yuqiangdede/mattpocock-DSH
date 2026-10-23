@@ -21,7 +21,7 @@ describe('mermaidSourceRequestsResources', () => {
     expect(mermaidSourceRequestsResources("flowchart TD\n  A\n  style A fill:url('https://evil.test/p.svg')")).toBe(true)
     expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:url("//evil.test/p.svg")')).toBe(true)
     // CSS escapes and comments are normalized before Mermaid renders its temporary DOM.
-    expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:u\\\\72l(https://evil.test/p.svg)')).toBe(true)
+    expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:u\\72l(https://evil.test/p.svg)')).toBe(true)
     expect(mermaidSourceRequestsResources('flowchart TD\n  A\n  style A fill:url/**/(https://evil.test/p.svg)')).toBe(true)
   })
 
