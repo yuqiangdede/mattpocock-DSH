@@ -91,6 +91,8 @@
 
 在**目标项目仓库**中运行现有 `/setup-matt-pocock-skills`。本 Fork 为其增加少量初始化规则，显式采用上游 `writing-for-agents` 方法，并生成纳入 Git 管理的 `docs/pocket/` 知识索引。Agent 仅保留简短入口指针，根据任务逐级读取相关文档，不要求 RAG。重要需求或架构变化后以及建议的每月人工巡检中，可运行 `/pocket-maintenance` 检查重复、失效、冲突资料并提出合并与归档方案。两项 Skill 均需用户主动发送，不会悄悄修改现有权威文档，也不创建定时后台任务。本 Fork 仅对导入的 `setup-matt-pocock-skills` 增加简短规则，具体模板放在 `.dsh/skills/_shared/POCKET_SETUP.md`，后续同步上游需要保留或重新应用这部分差异；其他上游 Skills 保持原样，旧目录的转换需要另外确认。
 
+如果此前用 `scripts/install-coding-skills.mjs` 安装过这些 Skill，使用 Pocket 前请加 `--overwrite` 重新安装：已存在的 Skill 目录默认会被跳过，而用户目录副本的优先级高于桌面内置副本，否则运行的仍是旧版初始化提示词。
+
 ## 源码构建与使用
 
 本仓库沿用 DSH 的构建工具链，需要符合 [`package.json`](package.json) 约束的 Node.js 与 pnpm。基础开发命令：

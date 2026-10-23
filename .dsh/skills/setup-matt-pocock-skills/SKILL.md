@@ -65,6 +65,8 @@ If a project already has `GLOSSARY.md`, `GLOSSARY-MAP.md`, `docs/adr/`, or other
 
 ### 3. Confirm and edit
 
+Call the model-invocable **`writing-for-agents` Skill** before drafting. Apply its pointer-writing, progressive disclosure, single-owner, and pruning guidance to the Agent instruction block, the Pocket index, and the domain-document pointers. When that Skill cannot be loaded, state the limitation instead of claiming it ran.
+
 Show the user a draft of:
 
 - The `## Agent skills` block to add to whichever of `CLAUDE.md` / `AGENTS.md` is being edited (see step 4 for selection rules)
@@ -74,8 +76,6 @@ Show the user a draft of:
 Let them edit before writing.
 
 ### 4. Write
-
-Call the model-invocable **`writing-for-agents` Skill** before composing the Agent instruction block, the Pocket index, or the domain-document pointers. Apply its pointer-writing, progressive disclosure, single-owner, and pruning guidance. When that Skill cannot be loaded, state the limitation instead of claiming it ran.
 
 **Pick the file to edit:**
 
@@ -106,7 +106,7 @@ The block:
 
 ### Project knowledge (Pocket)
 
-Before working on project requirements, design, or code, read `docs/pocket/README.md` and its task-specific pointers; see `docs/pocket/meta/knowledge-policy.md` for canonical ownership, update, and maintenance rules.
+Before working on project requirements, design, or code, read `docs/pocket/README.md` and its task-specific pointers; see `docs/pocket/meta/knowledge-policy.md` for canonical ownership, update, and maintenance rules. New or changed decisions belong under `docs/pocket/`, not solely in chat. If source, existing docs, or task instructions conflict, report the discrepancy rather than silently rewriting requirements.
 ```
 
 Include the `### Triage labels` sub-block, and write `docs/agents/triage-labels.md`, only when `triage` is installed and Section B ran. When it isn't, both are omitted.

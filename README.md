@@ -89,6 +89,8 @@ These links point to **this fork's own `SKILL.md` files**:
 
 Run the existing imported `/setup-matt-pocock-skills` in a **target project repository**. This fork extends its prompt with `writing-for-agents` guidance and a Git-tracked `docs/pocket/` knowledge map. Agent instructions carry a short pointer; the Agent follows task-specific links instead of loading all docs or requiring RAG. Run `/pocket-maintenance` after material changes or during a monthly manual review to propose safe consolidation and archiving. Both commands require user submission; neither silently changes an existing project's authoritative docs or schedules background work. The imported `setup-matt-pocock-skills` has a small Fork-specific addition referencing `.dsh/skills/_shared/POCKET_SETUP.md`; future upstream Skill syncs should reconcile this delta. Other imported Skills remain unchanged, so legacy output paths may require a separate migration.
 
+If you previously ran `scripts/install-coding-skills.mjs`, re-run it with `--overwrite` before using Pocket: existing skill directories are skipped by default, and an installed copy ranks above the Desktop bundle, so the old setup prompt would keep running.
+
 ## Build from source
 
 Use Node.js and pnpm versions compatible with [`package.json`](package.json). For local Desktop development:

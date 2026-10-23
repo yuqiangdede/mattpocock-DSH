@@ -2,15 +2,11 @@
 
 Copy and adapt only the relevant sections; paths below are **inside the target project repository**, not the mattpocock-DSH installation. This companion file is read by `/setup-matt-pocock-skills`; do not create another setup Skill. Use `writing-for-agents` to keep the always-loaded pointer small.
 
-## Root Agent instruction: add/update exactly one section
+## Root Agent instruction: one source
 
-```md
-## Project knowledge (Pocket)
+The Pocket pointer is the `### Project knowledge (Pocket)` sub-block of the `## Agent skills` block that `setup-matt-pocock-skills` writes in its step 4. Keep that text authoritative there, and do not add a separate `## Project knowledge (Pocket)` section, so one run cannot produce two competing instructions.
 
-Before changing requirements, design, or code, read `docs/pocket/README.md` to locate the currently authoritative knowledge. Always read applicable global constraints and the current task's acceptance criteria. Follow the README's task pointers to open only relevant documents; open referenced history/evidence when necessary. New or changed project decisions and requirements belong under `docs/pocket/`, not solely in chat. If source, existing docs, or task instructions conflict, report the discrepancy rather than silently rewriting requirements. See `docs/pocket/meta/knowledge-policy.md` for updates and maintenance.
-```
-
-Preserve `AGENTS.md` or `CLAUDE.md` according to the imported Matt setup's selection rules. Do not create two root instruction files. In an existing repo, integrate with its instructions rather than replacing them.
+Preserve `AGENTS.md` or `CLAUDE.md` according to the imported Matt setup's selection rules. Do not create two root instruction files or two Pocket headings. In an existing repo, integrate with its instructions rather than replacing them.
 
 ## `docs/pocket/README.md`
 
@@ -48,9 +44,9 @@ Review affected entries after requirement/design changes and significant PRs. Ru
 ```md
 # Knowledge ownership and maintenance
 
-- Canonical knowledge: `docs/pocket/**/*.md`; generated indexes and external issues are pointers, not second authoritative copies.
+- Canonical knowledge: `docs/pocket/**/*.md`, except legacy paths that the Pocket index lists as authoritative pending migration; those remain authoritative until an approved migration moves them. Generated indexes and external issues are pointers, not second authoritative copies.
 - Code, executable tests, tool configuration, and dependency lockfiles remain authoritative for actual implementation and installed versions. If they contradict a requirement or ADR, flag and resolve; do not change accepted requirements to match code without approval.
-- New docs should state status (pending/accepted/superseded/deprecated), scope/owner where useful, and links to related requirements, tasks, and ADRs. Keep one authoritative location per fact.
+- New docs should state status (pending/accepted/superseded/deprecated), scope/owner where useful, and links to related requirements, tasks, and ADRs. Keep one authoritative location per fact. The Pocket index (`docs/pocket/README.md`) and this policy are status-exempt meta files.
 - Use progressive disclosure: load this policy and relevant active documents, then referenced detail as needed. Do not load the whole knowledge directory by default.
 - Keep secrets, credentials, user data, and raw session transcripts out of committed knowledge.
 - Prefer links over copying content. Do not duplicate large configuration/code inventories easily discovered from the repository.
