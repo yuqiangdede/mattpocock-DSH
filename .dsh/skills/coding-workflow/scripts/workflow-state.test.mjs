@@ -29,7 +29,7 @@ const setup = () => {
 }
 const configure = (e, id) => {
   const checks = join(e.base, 'checks.json')
-  writeFileSync(checks, JSON.stringify({ checks: [
+  writeFileSync(checks, JSON.stringify({ allowedPaths: ['readme.txt'], checks: [
     { kind: 'test', command: [process.execPath, '--version'] },
     { kind: 'build', command: [process.execPath, '-p', '1+1'] },
   ] }))
