@@ -13,4 +13,5 @@
 
 /* The reserved line plus its padding keeps the composer dock's height stable
    while the delayed hint is still empty. */
-.progressWarning{min-height:17px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary);padding:3px 5px;border-left:2px solid var(--dsw-alias-border-l2);overflow-wrap:anywhere}
+.progressWarning{min-height:17px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary);padding:3px 5px;border-left:2px solid transparent;overflow-wrap:anywhere}
+.progressWarningActive{border-left-color:var(--dsw-alias-border-l2)}

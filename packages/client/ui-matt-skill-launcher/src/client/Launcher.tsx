@@ -93,7 +93,7 @@ export function Launcher({
       <div className={css.row}>{moreActions.map(render)}</div>
     </div>}
     {visibleRecommendation && <div className={css.hint} aria-live="polite">{t('recommendationHint').replace('{actions}', recommendedActions.map(action => action.label).join(t('recommendationSeparator'))).replace('{reason}', t(visibleRecommendation.reason))}</div>}
-    {watching && <div className={css.progressWarning} role="status">
+    {watching && <div className={`${css.progressWarning} ${planMayBeStale ? css.progressWarningActive : ''}`} role="status">
       {planMayBeStale ? t('todoStale').replace('{minutes}', String(unchangedMinutes)) : null}
     </div>}
     {(invalid || notice) && <div className={css.notice} role="alert">{invalid ? t('invalid') + invalid : notice}</div>}
