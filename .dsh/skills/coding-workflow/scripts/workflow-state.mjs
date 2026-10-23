@@ -77,6 +77,10 @@ const snapshot = root => {
   }
   return { fingerprint: sha(pieces.join('\u0001')), files }
 }
+const scoped = (task, changeSet) => {
+  ensure(Array.isArray(task.allowedPaths) && changeSet.files.every(f => task.allowedPaths.includes(f)),
+    'Changes exceed explicitly allowed task paths')
+}
 const checkpoint = (root, task) => {
   ensure(task.repositoryRoot === root, 'Wrong workspace')
   ensure(branch(root) === task.branch, 'Branch changed')
@@ -102,6 +106,7 @@ const invalidate = (task, stage) => {
   for (const id of steps.slice(index + 1)) {
     if (task.stages[id].status !== 'pending') task.stages[id] = { status: 'stale', attempts: task.stages[id].attempts }
   }
+  if (index <= 3) { task.checks = null; task.allowedPaths = null; task.checksEvidence = null }
   if (index <= 4) { task.review = null; task.verification = null }
   if (index <= 6) { task.verification = null; task.verificationRuns = [] }
 }
@@ -126,7 +131,7 @@ const start = () => {
     schemaVersion: 1, revision: 1, taskId: id, title, mode: 'manual',
     repositoryRoot: root, branch: currentBranch, baseCommit: head(root),
     status: 'ready', currentStage: 'S1', stages, repairRounds: 0,
-    review: null, verification: null, verificationRuns: [], checks: null, commitRef: null, blocker: null,
+    review: null, verification: null, verificationRuns: [], checks: null, allowedPaths: null, commitRef: null, blocker: null,
     noProgressRounds: 0, createdAt: now, updatedAt: now,
   }
   save(root, task)
@@ -187,6 +192,7 @@ const main = () => {
       if (task.stages[name].status === 'completed') invalidate(task, name)
       if (name === 'S4') {
         ensure(task.checks?.length >= 2, 'Test and build checks must be planned before implementation')
+        scoped(task, snapshot(root))
         ensure(changes(root).length > 0, 'Implementation has no code changes')
       }
       if (name === 'S9') ensure(task.commitRef, 'No commit reference')
@@ -211,6 +217,16 @@ const main = () => {
           check.command.length <= 32 && check.command.every(a => typeof a === 'string' && a.length >= 1 && a.length <= 500),
           'Invalid actual command')
       }
+      const allowed = plan.allowedPaths
+      ensure(Array.isArray(allowed) && allowed.length > 0 && allowed.length <= 500,
+        'Implementation plan requires 1-500 exact allowedPaths')
+      ensure(new Set(allowed).size === allowed.length && allowed.every(f =>
+        typeof f === 'string' && f.length < 500 && f.length > 0 &&
+        !f.includes('\\') && !path.posix.isAbsolute(f) && path.posix.normalize(f) === f &&
+        f !== '.' && f !== '..' && !f.startsWith('../') && !f.includes('\0') &&
+        !f.startsWith('.git/') && !f.startsWith('node_modules/')),
+        'Unsafe or duplicate allowed file paths')
+      task.allowedPaths = [...allowed].sort()
       task.checks = checks.map(c => ({ kind: c.kind, command: [...c.command] }))
       task.checksEvidence = proof
       task.verificationRuns = []
@@ -230,6 +246,7 @@ const main = () => {
       }
       const open = report.findings.filter(f => ['P0','P1'].includes(f.severity) && f.status !== 'resolved')
       const current = snapshot(root)
+      scoped(task, current)
       const findingIds = open.map(f => f.id).sort()
       const prior = task.review
       const sameFindings = prior?.blockers > 0 && JSON.stringify(prior.findingIds) === JSON.stringify(findingIds)
@@ -269,6 +286,7 @@ const main = () => {
       requirePrevious(task, 'S7')
       ensure(task.review?.blockers === 0, 'Unresolved blocking review findings')
       const current = snapshot(root)
+      scoped(task, current)
       ensure(task.review.fingerprint === current.fingerprint, 'Source changed after review')
       const kind = args.shift()
       ensure(args[0] === '--', 'Usage: verify <task> <check-kind> -- <command> [args]')
@@ -302,6 +320,7 @@ const main = () => {
     if (verb === 'commit') {
       requirePrevious(task, 'S8')
       const current = snapshot(root)
+      scoped(task, current)
       ensure(task.review?.fingerprint === current.fingerprint, 'Review is stale')
       ensure(task.verification?.passed && task.verification.fingerprint === current.fingerprint, 'Verification is stale')
       ensure(task.checks.every(c => task.verificationRuns.some(r => r.kind === c.kind &&
