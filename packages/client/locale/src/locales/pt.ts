@@ -41,6 +41,7 @@ export const pt = {
   'truncated': 'Truncado',
   'json.label': 'JSON',
   'markdown.footnotes': 'Notas de rodapé',
+  'markdown.mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
   'markdown.truncatedCharacters': '… truncado em {total} caracteres',
   'number.thousand': '{value}K',
   'number.million': '{value}M',

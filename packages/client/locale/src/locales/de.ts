@@ -41,6 +41,7 @@ export const de = {
   'truncated': 'Abgeschnitten',
   'json.label': 'JSON',
   'markdown.footnotes': 'Fußnoten',
+  'markdown.mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
   'markdown.truncatedCharacters': '… nach {total} Zeichen abgeschnitten',
   'number.thousand': '{value}K',
   'number.million': '{value}M',

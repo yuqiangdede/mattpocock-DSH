@@ -41,6 +41,7 @@ export const es = {
   'truncated': 'Truncado',
   'json.label': 'JSON',
   'markdown.footnotes': 'Notas a pie de página',
+  'markdown.mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
   'markdown.truncatedCharacters': '… truncado a {total} caracteres',
   'number.thousand': '{value}K',
   'number.million': '{value}M',

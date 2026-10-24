@@ -41,6 +41,7 @@ export const ru = {
   'truncated': 'Усечено',
   'json.label': 'JSON',
   'markdown.footnotes': 'Сноски',
+  'markdown.mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
   'markdown.truncatedCharacters': '… обрезано до {total} символов',
   'number.thousand': '{value}K',
   'number.million': '{value}M',

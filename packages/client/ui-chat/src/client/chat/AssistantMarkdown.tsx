@@ -90,7 +90,6 @@ export const AssistantMarkdown = memo(function AssistantMarkdown({
             labels={labels}
             fileMentions={mentions}
             pathImages={pathImages}
-            textInteractionSource={textInteractionSource}
           />,
         )
         break

@@ -20,7 +20,7 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies, unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import * as ToolTodo from '@deepseek-ai/dsh-tool-todo'
-import { defineContentToolFixture } from '@deepseek-ai/dsh-tools'
+import { defineContentToolFixture, executeModelToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import * as GuardBySubpath from '@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard'
 import * as Guard from '../src/todo-progress-guard.ts'
 import { MockAdapter, textResponse, toolCallResponse } from '../../../core/agent-loop/tests/mock-adapter.ts'
@@ -165,7 +165,7 @@ describe('shipped Loader composition', () => {
     const id = SessionId('todo-guard-loader-agent')
     const session = Session.create(id)
     const value: Agent = {
-      id, options: {}, session, inbox: unsupportedInbox(),
+      id, options: {}, session, inbox: unsupportedInbox(), model: { current: () => undefined, select: () => {} },
       status: 'idle', ctx: scope.ctx,
       followup: () => {}, steer: () => {}, inject: () => {}, send: () => {}, cancel() {},
       runMaintenance: task => task(new AbortController().signal),
@@ -186,15 +186,15 @@ describe('shipped Loader composition', () => {
     const owner = await owningAgent(ctx)
     const signal = new AbortController().signal
 
-    await ctx.tools.execute({
+    await executeModelToolFixture(ctx, {
       signal, callId: ToolCallId('sync'), name: 'todo_write', arguments: { todos: OPEN_PLAN }, agent: owner,
     })
     clock.advance(60_000)
-    const first = await ctx.tools.execute({
+    const first = await executeModelToolFixture(ctx, {
       signal, callId: ToolCallId('probe-1'), name: 'probe', arguments: {}, agent: owner,
     })
     expect(first.additionalContexts).toBeUndefined()
-    const second = await ctx.tools.execute({
+    const second = await executeModelToolFixture(ctx, {
       signal, callId: ToolCallId('probe-2'), name: 'probe', arguments: {}, agent: owner,
     })
     expect(second.additionalContexts).toHaveLength(1)

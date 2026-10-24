@@ -185,6 +185,7 @@ export const guideEs = {
   guideCopy: 'Copiar',
   guideCopied: 'Copiado',
   guideFootnotes: 'Notas a pie de página',
+  guideMermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
   guideStandardIntro: 'Elija el modo Estándar al iniciar una nueva tarea. Describe lo que quieres lograr, señala los archivos relevantes y explica cómo verificar el resultado.',
   guideStandardExplanation: [
     '### Cómo funciona',
@@ -260,6 +261,7 @@ export const guideFr = {
   guideCopy: 'Copier',
   guideCopied: 'Copié',
   guideFootnotes: 'Notes de bas de page',
+  guideMermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
   guideStandardIntro: 'Choisissez le mode Standard lorsque vous démarrez une nouvelle tâche. Décrivez ce que vous souhaitez accomplir, pointez vers les fichiers pertinents et expliquez comment vérifier le résultat.',
   guideStandardExplanation: [
     '### Comment ça marche',
@@ -335,6 +337,7 @@ export const guideDe = {
   guideCopy: 'Kopieren',
   guideCopied: 'Kopiert',
   guideFootnotes: 'Fußnoten',
+  guideMermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
   guideStandardIntro: 'Wählen Sie den Standardmodus, wenn Sie eine neue Aufgabe starten. Beschreiben Sie, was Sie erreichen möchten, zeigen Sie auf die relevanten Dateien und erklären Sie, wie Sie das Ergebnis überprüfen können.',
   guideStandardExplanation: [
     '### Wie es funktioniert',
@@ -410,6 +413,7 @@ export const guideRu = {
   guideCopy: 'Копировать',
   guideCopied: 'Скопировано',
   guideFootnotes: 'Сноски',
+  guideMermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
   guideStandardIntro: 'Выбирайте стандартный режим при запуске новой задачи. Опишите, чего вы хотите добиться, укажите соответствующие файлы и объясните, как проверить результат.',
   guideStandardExplanation: [
     '### Как это работает',
@@ -485,6 +489,7 @@ export const guidePt = {
   guideCopy: 'Copiar',
   guideCopied: 'Copiado',
   guideFootnotes: 'Notas de rodapé',
+  guideMermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
   guideStandardIntro: 'Escolha o modo Padrão ao iniciar uma nova tarefa. Descreva o que você deseja realizar, indique os arquivos relevantes e explique como verificar o resultado.',
   guideStandardExplanation: [
     '### Como funciona',

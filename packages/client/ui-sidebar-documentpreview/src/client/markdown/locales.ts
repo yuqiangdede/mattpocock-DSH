@@ -32,6 +32,7 @@ export const ja = {
   'code.copy': 'コピー',
   'code.copied': 'コピーしました',
   'footnotes': '脚注',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -40,6 +41,7 @@ export const es = {
   'code.copy': 'Copiar',
   'code.copied': 'Copiado',
   'footnotes': 'Notas a pie de página',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -48,6 +50,7 @@ export const fr = {
   'code.copy': 'Copier',
   'code.copied': 'Copié',
   'footnotes': 'Notes de bas de page',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -56,6 +59,7 @@ export const de = {
   'code.copy': 'Kopieren',
   'code.copied': 'Kopiert',
   'footnotes': 'Fußnoten',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -64,6 +68,7 @@ export const ru = {
   'code.copy': 'Копировать',
   'code.copied': 'Скопировано',
   'footnotes': 'Сноски',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -72,4 +77,5 @@ export const pt = {
   'code.copy': 'Copiar',
   'code.copied': 'Copiado',
   'footnotes': 'Notas de rodapé',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>

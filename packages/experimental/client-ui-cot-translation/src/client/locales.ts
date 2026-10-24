@@ -88,6 +88,7 @@ export const ja = {
   'wrap': '折り返し',
   'unwrap': '折り返しを解除',
   'footnotes': '脚注',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** Spanish dictionary, checked against the English keys. */
@@ -106,6 +107,7 @@ export const es = {
   unavailable: 'Las preferencias de traducción no están disponibles.', readOnly: 'Esta implementación almacena configuraciones de solo lectura.',
   saveFailed: 'El despliegue no aceptó estos valores; quedaron para que usted los corrigiera.', save: 'Guardar', saving: 'Guardando…',
   copy: 'Copiar', copied: 'Copiado', codeTitle: 'Bloque de código', wrap: 'Ajustar líneas', unwrap: 'Desenvolver líneas', footnotes: 'Notas a pie de página',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** French dictionary, checked against the English keys. */
@@ -124,6 +126,7 @@ export const fr = {
   unavailable: 'Les préférences de traduction ne sont pas disponibles.', readOnly: 'Ce déploiement stocke les paramètres en lecture seule.',
   saveFailed: "Le déploiement n'a pas accepté ces valeurs ; ils vous ont été laissés à corriger.", save: 'Enregistrer', saving: 'Sauvegarde…',
   copy: 'Copier', copied: 'Copié', codeTitle: 'Bloc de code', wrap: 'Activer le retour à la ligne', unwrap: 'Dérouler les lignes', footnotes: 'Notes de bas de page',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** German dictionary, checked against the English keys. */
@@ -142,6 +145,7 @@ export const de = {
   unavailable: 'Übersetzungseinstellungen sind nicht verfügbar.', readOnly: 'Diese Bereitstellung speichert Einstellungen schreibgeschützt.',
   saveFailed: 'Die Bereitstellung hat diese Werte nicht akzeptiert. Sie mussten sie korrigieren.', save: 'Speichern', saving: 'Speichern…',
   copy: 'Kopieren', copied: 'Kopiert', codeTitle: 'Codeblock', wrap: 'Zeilen umbrechen', unwrap: 'Zeilen abwickeln', footnotes: 'Fußnoten',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** Russian dictionary, checked against the English keys. */
@@ -160,6 +164,7 @@ export const ru = {
   unavailable: 'Настройки перевода недоступны.', readOnly: 'В этом развертывании параметры сохраняются только для чтения.',
   saveFailed: 'Развертывание не приняло эти значения; их оставили вам на исправление.', save: 'Сохранить', saving: 'Сохранение…',
   copy: 'Копировать', copied: 'Скопировано', codeTitle: 'Блок кода', wrap: 'Переносить строки', unwrap: 'Развернуть линии', footnotes: 'Сноски',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>
 
 /** Portuguese dictionary, checked against the English keys. */
@@ -178,4 +183,5 @@ export const pt = {
   unavailable: 'As preferências de tradução não estão disponíveis.', readOnly: 'Esta implantação armazena configurações somente leitura.',
   saveFailed: 'A implantação não aceitou esses valores; eles foram deixados para você corrigir.', save: 'Salvar', saving: 'Salvando…',
   copy: 'Copiar', copied: 'Copiado', codeTitle: 'Bloco de código', wrap: 'Quebrar linhas', unwrap: 'Desembrulhar linhas', footnotes: 'Notas de rodapé',
+  mermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<keyof typeof en, string>

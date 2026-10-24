@@ -41,6 +41,7 @@ export const ja = {
   'truncated': '切り詰め済み',
   'json.label': 'JSON',
   'markdown.footnotes': '脚注',
+  'markdown.mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
   'markdown.truncatedCharacters': '… {total}文字で切り捨て',
   'number.thousand': '{value}K',
   'number.million': '{value}M',
