@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/mattpocock/skills",
+  "revision": "5beb35b040e3de97e54fa9e386d7e42d15c295c2",
+  "skills": [
+    "ask-matt",
+    "implement",
+    "prototype",
+    "improve-codebase-architecture",
+    "research",
+    "retro",
+    "domain-modeling",
+    "codebase-design",
+    "writing-for-agents",
+    "pr",
+    "grilling",
+    "grill-with-docs",
+    "to-spec",
+    "to-tickets",
+    "tdd",
+    "code-review",
+    "diagnosing-bugs",
+    "setup-matt-pocock-skills",
+    "handoff"
+  ]
+}

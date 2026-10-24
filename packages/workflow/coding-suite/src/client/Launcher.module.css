@@ -1,0 +1,32 @@
+.root{box-sizing:border-box;width:calc(100% - 2 * var(--dsh-composer-side-clearance));max-width:var(--dsh-composer-card-max-width);margin:0 auto;display:flex;flex-direction:column;gap:5px;padding:2px 0}
+.row{display:flex;align-items:center;flex-wrap:wrap;gap:5px;min-height:26px}
+.morePanel{max-height:30dvh;overflow:auto;padding:2px;--dsh-scrollbar-thumb:var(--dsw-alias-scrollbar-bg-l2);--dsh-scrollbar-thumb-hover:var(--dsw-alias-scrollbar-hover-l2)}
+.action{border:0.5px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-input-major);color:var(--dsw-alias-label-primary);padding:4px 9px;font-size:12px;line-height:19px;white-space:nowrap;cursor:pointer}
+.action:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}
+.action[aria-expanded='true']{border-color:var(--dsw-alias-label-secondary);background:var(--dsw-alias-interactive-bg-hover)}
+.action:disabled{opacity:.48;cursor:not-allowed}
+.action:focus-visible,.recommended:focus-visible{outline:2px solid var(--dsw-alias-border-l2);outline-offset:2px}
+.notice{font-size:12px;color:var(--dsw-alias-state-error-primary);padding:3px;overflow-wrap:anywhere}
+
+.recommended{composes:action;border-color:var(--dsw-alias-border-l2);box-shadow:0 0 0 1px var(--dsw-alias-border-l2);font-weight:500}
+.hint{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
+
+.workflowPanel{display:flex;flex-direction:column;gap:5px;padding:5px 6px;border:0.5px solid var(--dsw-alias-border-l2);border-radius:6px}
+.workflowHead{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
+.workflowTitle{font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary)}
+.workflowMeta{font-size:11px;color:var(--dsw-alias-label-secondary)}
+.stageRow{display:flex;flex-wrap:wrap;gap:3px}
+.stageChip{font-size:10px;line-height:16px;padding:0 4px;border-radius:4px;border:0.5px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary)}
+.stageDone{font-weight:600;color:var(--dsw-alias-label-primary);background:var(--dsw-alias-interactive-bg-hover)}
+.stagePending{opacity:.7}
+.stageBlocked{color:var(--dsw-alias-state-error-primary);border-color:var(--dsw-alias-state-error-primary)}
+.stageStale{opacity:.7;text-decoration:line-through}
+.stageSkipped{opacity:.55}
+.workflowBlocker{font-size:11px;overflow-wrap:anywhere;color:var(--dsw-alias-state-error-primary)}
+.workflowActions{display:flex;align-items:center;flex-wrap:wrap;gap:5px}
+.workflowInput{min-width:160px;font:inherit;font-size:12px;padding:2px 6px;border:0.5px solid var(--dsw-alias-border-l2);border-radius:6px;background:var(--dsw-specific-input-major);color:var(--dsw-alias-label-primary)}
+.workflowInput:focus-visible{outline:2px solid var(--dsw-alias-border-l2);outline-offset:1px}
+/* The reserved line plus its padding keeps the composer dock's height stable
+   while the delayed hint is still empty. */
+.progressWarning{min-height:17px;font-size:11px;line-height:17px;color:var(--dsw-alias-label-secondary);padding:3px 5px;border-left:2px solid transparent;overflow-wrap:anywhere}
+.progressWarningActive{border-left-color:var(--dsw-alias-border-l2)}

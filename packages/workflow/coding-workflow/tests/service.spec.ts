@@ -103,7 +103,14 @@ async function boot(
   sessionId: string,
   pool: MemoryMediaPool = new MemoryMediaPool(),
   sandboxMode: SandboxMode = 'workspace-write',
-): Promise<{ ctx: Context; agent: Agent; service: CodingWorkflowService; pool: MemoryMediaPool; shell: WorkflowTestShell; approvalRequests: unknown[] }> {
+): Promise<{
+  ctx: Context
+  agent: Agent
+  service: CodingWorkflowService
+  pool: MemoryMediaPool
+  shell: WorkflowTestShell
+  approvalRequests: unknown[]
+}> {
   const ctx = new Context()
   await ctx.plugin(WorkflowTestShell)
   const sandboxPolicy: SandboxExecutionPolicy = { mode: sandboxMode, workspaceRoot: root }
@@ -120,6 +127,7 @@ async function boot(
   const session = ctx.sessions.create(SessionId(sessionId))
   const agent: Agent = {
     id: session.id,
+    model: { current: () => undefined, select: () => {} },
     options: {},
     session,
     inbox: createInboxStub(),
@@ -167,7 +175,7 @@ async function plan(service: CodingWorkflowService, agent: Agent, evidence: stri
 describe('coding workflow service over real storage and Git', { timeout: 180_000 }, () => {
   it('does not spawn verification commands while stopped', async () => {
     const { root, evidence } = repository()
-    const { ctx, agent, service } = await boot(root, 'service-stopped-verification')
+    const { ctx, agent, service, shell } = await boot(root, 'service-stopped-verification')
     try {
       await service.start(agent, 'Stopped verification')
       await plan(service, agent, evidence)
@@ -187,7 +195,7 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
       ]) {
         const stopped = await stop()
         await expect(service.verify(agent, { kind: 'test', command })).rejects.toThrow(/Task is stopped/)
-        expect(ctx.shell.specs).toHaveLength(0)
+        expect(shell.specs).toHaveLength(0)
         expect(service.get(agent)).toEqual(stopped)
         if (stopped.status === 'waiting_approval') {
           await service.approve(agent, stopped.taskId, stopped.revision, 'Approved: run the registered verification')
@@ -196,8 +204,8 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
         }
       }
       await service.verify(agent, { kind: 'test', command })
-      expect(ctx.shell.specs).toHaveLength(1)
-      expect(ctx.shell.specs[0]?.sandboxPolicy).toEqual({ mode: 'workspace-write', workspaceRoot: root })
+      expect(shell.specs).toHaveLength(1)
+      expect(shell.specs[0]?.sandboxPolicy).toEqual({ mode: 'workspace-write', workspaceRoot: root })
     } finally {
       await ctx.fiber.dispose()
     }
