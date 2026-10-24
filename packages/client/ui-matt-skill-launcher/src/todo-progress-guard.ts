@@ -112,8 +112,8 @@ function reminderText(): string {
  * @param todos - the projected plan, or undefined when the unit is unmounted.
  * @returns true only for a live plan with an unfinished item.
  */
-function hasOpenTodos(todos: readonly TodoItem[] | null | undefined): boolean {
-  return todos !== null && todos !== undefined && todos.some(todo => todo.status !== 'completed')
+function hasOpenTodos(todos: unknown): todos is readonly TodoItem[] {
+  return Array.isArray(todos) && todos.some((todo: TodoItem) => todo.status !== 'completed')
 }
 
 /**

@@ -40,6 +40,7 @@ export interface DetailDocumentCopy {
   readonly wrap: string
   readonly unwrap: string
   readonly footnotes: string
+  readonly mermaidFailure?: string
 }
 
 /**
@@ -50,8 +51,9 @@ export interface DetailDocumentCopy {
 export function useDetailDocumentLabels(copy: DetailDocumentCopy): DetailDocumentLabels {
   const { title, loading, retry, footnotes } = copy
   const { copy: copyLabel, copied: copiedLabel, codeBlock: codeLabel, wrap: wrapLabel, unwrap: unwrapLabel } = copy
-  const markdown = useMemo(() => ({ code: { copyLabel, copiedLabel, toolbarLabels: { codeLabel, wrapLabel, unwrapLabel } }, footnotes }),
-    [copyLabel, copiedLabel, codeLabel, wrapLabel, unwrapLabel, footnotes])
+  const mermaidFailure = copy.mermaidFailure ?? 'Mermaid diagram failed to render'
+  const markdown = useMemo(() => ({ code: { copyLabel, copiedLabel, toolbarLabels: { codeLabel, wrapLabel, unwrapLabel } }, footnotes, mermaidFailure }),
+    [copyLabel, copiedLabel, codeLabel, wrapLabel, unwrapLabel, footnotes, mermaidFailure])
   return useMemo(() => ({ title, loading, retry, markdown }), [title, loading, retry, markdown])
 }
 
