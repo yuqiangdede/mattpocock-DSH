@@ -12,6 +12,7 @@ function readSelection(root: HTMLElement, selection: Selection | null) {
 const markdownLabels = {
   code: { copyLabel: 'Copy', copiedLabel: 'Copied' },
   footnotes: 'Footnotes',
+  mermaidFailure: 'Mermaid diagram could not be rendered.',
 }
 
 afterEach(() => {

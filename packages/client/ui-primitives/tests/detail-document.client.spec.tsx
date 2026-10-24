@@ -7,7 +7,7 @@ afterEach(cleanup)
 
 const LABELS: DetailDocumentLabels = {
   title: 'Details', loading: 'Reading details', retry: 'Retry',
-  markdown: { code: { copyLabel: 'Copy', copiedLabel: 'Copied' }, footnotes: 'Footnotes' },
+  markdown: { code: { copyLabel: 'Copy', copiedLabel: 'Copied' }, footnotes: 'Footnotes', mermaidFailure: 'Mermaid diagram could not be rendered.' },
 }
 
 it('shows a placeholder, the document with resolved images, or a failure with a retry, and nothing without a document', () => {
