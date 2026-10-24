@@ -25,3 +25,57 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
     documentMarkdown: MarkdownPreviewKey
   }
 }
+
+/** Japanese copy, checked against the English keys. */
+export const ja = {
+  'viewer.label': 'Markdown',
+  'code.copy': 'コピー',
+  'code.copied': 'コピーしました',
+  'footnotes': '脚注',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
+} satisfies Record<keyof typeof en, string>
+
+/** Spanish dictionary, checked against the English keys. */
+export const es = {
+  'viewer.label': 'Markdown',
+  'code.copy': 'Copiar',
+  'code.copied': 'Copiado',
+  'footnotes': 'Notas a pie de página',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
+} satisfies Record<keyof typeof en, string>
+
+/** French dictionary, checked against the English keys. */
+export const fr = {
+  'viewer.label': 'Markdown',
+  'code.copy': 'Copier',
+  'code.copied': 'Copié',
+  'footnotes': 'Notes de bas de page',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
+} satisfies Record<keyof typeof en, string>
+
+/** German dictionary, checked against the English keys. */
+export const de = {
+  'viewer.label': 'Markdown',
+  'code.copy': 'Kopieren',
+  'code.copied': 'Kopiert',
+  'footnotes': 'Fußnoten',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
+} satisfies Record<keyof typeof en, string>
+
+/** Russian dictionary, checked against the English keys. */
+export const ru = {
+  'viewer.label': 'Markdown',
+  'code.copy': 'Копировать',
+  'code.copied': 'Скопировано',
+  'footnotes': 'Сноски',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
+} satisfies Record<keyof typeof en, string>
+
+/** Portuguese dictionary, checked against the English keys. */
+export const pt = {
+  'viewer.label': 'Markdown',
+  'code.copy': 'Copiar',
+  'code.copied': 'Copiado',
+  'footnotes': 'Notas de rodapé',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
+} satisfies Record<keyof typeof en, string>

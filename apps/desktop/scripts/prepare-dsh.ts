@@ -27,7 +27,7 @@ import { smokePreparedRuntime } from './smoke-prepared-runtime.ts'
 import { prepareRuntimeManifests } from './prepare-runtime-manifests.ts'
 import { materializeModules } from './materialize-modules.ts'
 import { prepareRuntimePatches, verifyRuntimePatches } from './prepare-runtime-patches.ts'
-import { writeDesktopRuntime, verifyDesktopRuntime } from '../src/runtime-tree.ts'
+import { writeDesktopRuntime, writeDesktopRuntimeAsync, verifyDesktopRuntime } from '../src/runtime-tree.ts'
 import {
   resolveDesktopAppId,
   resolveMacOSSigningEnvironment,
@@ -211,8 +211,11 @@ async function main(): Promise<void> {
     }
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:manifests', () => prepareRuntimeManifests(DSH_OUTPUT_ROOT))
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:primary-smoke', async () => smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime')))
-    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name),
-      ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, BUNDLED_DESKTOP_OPERATOR.name, DESKTOP_OPERATOR_PRESET_BUNDLE] : [])], target))
+    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => {
+      const writeRuntime = target.platform === 'win32' ? writeDesktopRuntimeAsync : writeDesktopRuntime
+      return writeRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name),
+        ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, BUNDLED_DESKTOP_OPERATOR.name, DESKTOP_OPERATOR_PRESET_BUNDLE] : [])], target)
+    })
     const descriptor = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-before-smoke', () => verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target))
     if (!process.argv.includes('--defer-runtime-smoke')) {
       await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:smoke', () => smokePreparedRuntime(DSH_OUTPUT_ROOT, NODE, RUNTIME_ROOT, descriptor))
