@@ -778,7 +778,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
           ]))
         }
         const signal = new AbortController().signal
-        const listed = await copyCtx.tools.execute({
+        const listed = await executeModelToolFixture(copyCtx, {
           callId: ToolCallId('copied-preset-inspect-list'),
           name: 'cordis_inspect_list',
           arguments: {},
@@ -793,7 +793,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
         // The `Tool` provider is the one built over the host context: it
         // answers with the shared registry's view of the REQUESTING agent,
         // so the copy sees its own preset's tools, not the host's empty set.
-        const queried = await copyCtx.tools.execute({
+        const queried = await executeModelToolFixture(copyCtx, {
           callId: ToolCallId('copied-preset-inspect-tools'),
           name: 'cordis_inspect_query',
           arguments: { platform: 'host', provider: 'Tool', method: 'listTools' },
@@ -815,7 +815,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
         type ConfigRow = { id: string; patchId: string; name: string; status: string }
         type ConfigPage = { data: { entries: ConfigRow[]; total: number; nextOffset: number | null } }
         const listConfigs = async (input: Record<string, string | number>, callId: string): Promise<ConfigPage['data']> => {
-          const page = await copyCtx.tools.execute({
+          const page = await executeModelToolFixture(copyCtx, {
             callId: ToolCallId(callId),
             name: 'cordis_inspect_query',
             arguments: { platform: 'host', provider: 'Config', method: 'listConfigs', input },
@@ -834,7 +834,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
         const firstPage = await listConfigs({ limit: 5 }, 'copied-preset-inspect-page')
         expect(firstPage.entries).toHaveLength(5)
         expect(firstPage.nextOffset).toBe(5)
-        const projected = await copyCtx.tools.execute({
+        const projected = await executeModelToolFixture(copyCtx, {
           callId: ToolCallId('copied-preset-inspect-config'),
           name: 'cordis_inspect_query',
           arguments: { platform: 'host', provider: 'Config', method: 'listConfigs', input: { entry: toolsRow!.id } },
