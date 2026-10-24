@@ -61,7 +61,7 @@ export const inject = ['locale', 'slots','sessions','remote','remote.skills','re
 export function apply(ctx: ClientContext): void {
   ctx.effect(() => ctx.locale.register('mattSkillLauncher', { zh, en }), 'launcher dictionaries')
   const t = ctx.locale.bind('mattSkillLauncher')
-  const form = ctx.configForms.get<ActionSettings>('ui-matt-skill-launcher')
+  const form = ctx.configForms.get<ActionSettings>('coding-suite')
   // The page-global carries the Host-resolved policy; this read validates it
   // against the same field schema the Host Config uses.
   const deployment = LauncherDeploymentSchema(
