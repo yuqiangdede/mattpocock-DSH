@@ -20,6 +20,7 @@ import {
   applyChecks,
   applyRepair,
   applyReview,
+  applySkip,
   applyStage,
   applyVerification,
   approve,
@@ -87,6 +88,14 @@ export interface StageRequest {
   readonly stage: Extract<StageId, 'S1' | 'S2' | 'S3' | 'S4' | 'S9'>
   /** Workspace-relative or absolute evidence path. */
   readonly evidencePath: string
+}
+
+/** Request to skip one eligible stage with an explicit reason. */
+export interface SkipRequest {
+  /** Stage to skip ('S1' | 'S2'). */
+  readonly stage: Extract<StageId, 'S1' | 'S2'>
+  /** Concrete reason for skipping this stage. */
+  readonly reason: string
 }
 
 /** Implementation plan accepted between S3 and S4. */
@@ -242,6 +251,22 @@ export class CodingWorkflowService extends TypertRemoteService {
       item,
       request.stage,
       this.evidence(root, request.evidencePath),
+      snapshot,
+      this.now(),
+    ))
+  }
+
+  /**
+   * Skip one eligible stage (S1 or S2) with an explicit reason.
+   * @param agent - live owning Agent.
+   * @param request - stage to skip and concrete reason.
+   * @returns the next record.
+   */
+  async skip(agent: Agent, request: SkipRequest): Promise<WorkItem> {
+    return this.transition(agent, (item, _root, snapshot) => applySkip(
+      item,
+      request.stage,
+      request.reason,
       snapshot,
       this.now(),
     ))

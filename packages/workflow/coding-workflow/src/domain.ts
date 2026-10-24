@@ -72,6 +72,12 @@ function stageIndex(stage: StageId): number {
   return WORKFLOW_STAGES.indexOf(stage)
 }
 
+/** Whether a stage finished successfully or was explicitly skipped. */
+function completedOrSkipped(item: WorkItem, stage: StageId): boolean {
+  const status = item.stages[stage].status
+  return status === 'completed' || status === 'skipped'
+}
+
 /** Whether a stage finished successfully. */
 function completed(item: WorkItem, stage: StageId): boolean {
   return item.stages[stage].status === 'completed'
@@ -107,7 +113,7 @@ export function requireCheckpoint(item: WorkItem, snapshot: RepositorySnapshot):
 }
 
 /**
- * Require every earlier stage to be complete (S6 may be skipped).
+ * Require every earlier stage to be complete or explicitly skipped.
  * @param item - current record.
  * @param stage - stage whose prerequisites are checked.
  */
@@ -115,8 +121,7 @@ export function requirePrevious(item: WorkItem, stage: StageId): void {
   const index = stageIndex(stage)
   ensure(index > 0, 'Unknown or reserved stage', 'WORKFLOW_INVALID_STAGE')
   for (const previous of WORKFLOW_STAGES.slice(0, index)) {
-    if (previous === 'S6' && item.stages.S6.status === 'skipped') continue
-    ensure(completed(item, previous), `Prerequisite ${previous} not completed`, 'WORKFLOW_STAGE_ORDER')
+    ensure(completedOrSkipped(item, previous), `Prerequisite ${previous} not completed or skipped`, 'WORKFLOW_STAGE_ORDER')
   }
 }
 
@@ -283,6 +288,39 @@ export function applyStage(
     stages: stageState(base, stage, { status: 'completed', attempts: base.stages[stage].attempts + 1, evidence }),
     currentStage: following,
     status: stage === 'S9' ? 'completed' : 'ready',
+  }, now)
+}
+
+/**
+ * Skip one eligible early stage (S1 or S2) with an explicit reason.
+ * @param item - current record.
+ * @param stage - stage to skip ('S1' | 'S2').
+ * @param reason - reason why this stage is skipped (e.g. bugfix, minor change).
+ * @param snapshot - current repository facts.
+ * @param now - ISO-8601 mutation time.
+ * @returns the next record.
+ */
+export function applySkip(
+  item: WorkItem,
+  stage: Extract<StageId, 'S1' | 'S2'>,
+  reason: string,
+  snapshot: RepositorySnapshot,
+  now: string,
+): WorkItem {
+  requireCheckpoint(item, snapshot)
+  requireWritable(item)
+  requirePrevious(item, stage)
+  ensure(reason.trim().length >= 4, 'Skip reason must be at least 4 characters', 'WORKFLOW_INVALID_REASON')
+  const index = stageIndex(stage)
+  const following = WORKFLOW_STAGES[index + 1] ?? stage
+  return next(item, {
+    stages: stageState(item, stage, {
+      status: 'skipped',
+      attempts: item.stages[stage].attempts + 1,
+      reason: reason.trim(),
+    }),
+    currentStage: following,
+    status: 'ready',
   }, now)
 }
 

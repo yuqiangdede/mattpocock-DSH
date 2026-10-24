@@ -7,6 +7,7 @@ import {
   applyChecks,
   applyRepair,
   applyReview,
+  applySkip,
   applyStage,
   applyVerification,
   approve,
@@ -139,6 +140,27 @@ describe('coding workflow record lifecycle', () => {
       .toThrow(/Branch changed/)
     expect(() => applyStage(created(), 'S1', evidence(), snapshot({ head: 'b'.repeat(40) }), now))
       .toThrow(/HEAD changed/)
+  })
+
+  it('allows explicitly skipping S1 and S2 for bugfix workflows', () => {
+    const start = created()
+    const skippedS1 = applySkip(start, 'S1', 'Bugfix: skipping requirements analysis', snapshot(), now)
+    expect(skippedS1.currentStage).toBe('S2')
+    expect(skippedS1.stages.S1.status).toBe('skipped')
+    expect(skippedS1.stages.S1.reason).toContain('Bugfix')
+
+    const skippedS2 = applySkip(skippedS1, 'S2', 'Bugfix: skipping spec document', snapshot(), now)
+    expect(skippedS2.currentStage).toBe('S3')
+    expect(skippedS2.stages.S2.status).toBe('skipped')
+
+    const plannedS3 = applyStage(skippedS2, 'S3', evidence('3'), snapshot(), now)
+    const planned = applyChecks(plannedS3, { checks: CHECKS, allowedPaths: ['a.ts'] }, evidence(), now)
+    expect(planned.currentStage).toBe('S4')
+  })
+
+  it('rejects skipping with an insufficient reason', () => {
+    expect(() => applySkip(created(), 'S1', 'no', snapshot(), now))
+      .toThrow(/Skip reason must be at least 4 characters/)
   })
 })
 

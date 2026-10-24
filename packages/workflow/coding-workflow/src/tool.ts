@@ -15,7 +15,7 @@ import type { CodingWorkflowService } from './index.ts'
 
 /** Verbs the model may invoke. */
 const ACTIONS = [
-  'start', 'status', 'stage', 'checks', 'review', 'repair', 'verify', 'commit',
+  'start', 'status', 'stage', 'skip', 'checks', 'review', 'repair', 'verify', 'commit',
   'mode', 'pause', 'resume', 'approval', 'approve', 'block', 'cancel',
 ] as const
 
@@ -45,8 +45,8 @@ function nextStep(item: WorkItem): string {
   if (item.status === 'waiting_approval') return 'wait for the scoped human decision'
   if (item.status === 'paused') return 'wait for an explicit mode change or resume'
   switch (item.currentStage) {
-    case 'S1': return 'stage S1 (requirements evidence)'
-    case 'S2': return 'stage S2 (specification evidence)'
+    case 'S1': return 'stage S1 (requirements evidence) or skip S1 with reason'
+    case 'S2': return 'stage S2 (specification evidence) or skip S2 with reason'
     case 'S3': return 'stage S3 (implementation plan evidence)'
     case 'S4': return item.checks === null ? 'checks (planned commands and allowed paths)' : 'stage S4 (implementation evidence)'
     case 'S5': return 'review (evidence plus structured findings)'
@@ -192,6 +192,16 @@ export function codingWorkflowTool(service: CodingWorkflowService): ToolDefiniti
           stage: required(args.stage, 'stage'),
           evidencePath: required(args.evidencePath, 'evidencePath'),
         }))
+        case 'skip': {
+          const stage = required(args.stage, 'stage')
+          if (stage !== 'S1' && stage !== 'S2') {
+            throw new Error(`coding_workflow: stage "${String(stage)}" cannot be skipped; only S1 and S2 may be skipped`)
+          }
+          return toValue(await service.skip(agent, {
+            stage,
+            reason: required(args.reason, 'reason'),
+          }))
+        }
         case 'checks': return toValue(await service.checks(agent, {
           evidencePath: required(args.evidencePath, 'evidencePath'),
           checks: required(args.checks, 'checks') as CheckPlan[],

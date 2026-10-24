@@ -258,6 +258,35 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
     await expect(service.resume(agent, item.taskId, paused.revision)).resolves.toMatchObject({ status: 'ready' })
   })
 
+  it('runs a bugfix flow with skipped S1 and S2 stages', async () => {
+    const { root, evidence } = repository()
+    const { agent, service } = await boot(root, 'service-e2e-bugfix')
+    await service.start(agent, 'Bugfix login leak')
+    const skippedS1 = await service.skip(agent, { stage: 'S1', reason: 'Bugfix: no requirements analysis needed' })
+    expect(skippedS1.currentStage).toBe('S2')
+    expect(skippedS1.stages.S1.status).toBe('skipped')
+
+    const skippedS2 = await service.skip(agent, { stage: 'S2', reason: 'Bugfix: no spec document needed' })
+    expect(skippedS2.currentStage).toBe('S3')
+    expect(skippedS2.stages.S2.status).toBe('skipped')
+
+    await service.stage(agent, { stage: 'S3', evidencePath: evidenceFile(evidence, 'S3.md', 'plan') })
+    await service.checks(agent, {
+      evidencePath: evidenceFile(evidence, 'plan.md', 'plan'),
+      checks: CHECKS,
+      allowedPaths: ['src/a.ts'],
+    })
+    writeFileSync(join(root, 'src/a.ts'), 'fixed bug\n')
+    await service.stage(agent, { stage: 'S4', evidencePath: evidenceFile(evidence, 'S4.md', 'fixed') })
+    await service.review(agent, { evidencePath: evidenceFile(evidence, 'review.md', '{}'), findings: [] })
+    await service.verify(agent, { kind: 'test', command: TEST_COMMAND })
+    await service.verify(agent, { kind: 'build', command: BUILD_COMMAND })
+    const committed = await service.commit(agent, { files: ['src/a.ts'] })
+    expect(committed.currentStage).toBe('S9')
+    expect(committed.stages.S1.status).toBe('skipped')
+    expect(committed.stages.S2.status).toBe('skipped')
+  })
+
   it('refuses a workspace that is not a Git repository', async () => {
     const base = mkdtempSync(join(tmpdir(), 'coding-workflow-svn-'))
     temporary.push(base)
