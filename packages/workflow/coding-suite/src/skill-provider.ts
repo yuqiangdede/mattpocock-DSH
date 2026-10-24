@@ -20,7 +20,7 @@ export interface CodingSuiteSkillConfig {
 }
 
 function parseSkill(raw: string, path: string): { description: string; content: string } {
-  const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u.exec(raw)
+  const frontmatter = /^---\\r?\\n([\\s\\S]*?)\\r?\\n---(?:\\r?\\n|$)/u.exec(raw)
   if (frontmatter?.[1] === undefined) throw new Error(`coding-suite: ${path} has no YAML frontmatter`)
   const metadata: unknown = parseYaml(frontmatter[1])
   const description = typeof metadata === 'object' && metadata !== null && 'description' in metadata
@@ -37,41 +37,49 @@ function parseSkill(raw: string, path: string): { description: string; content: 
  * @param ctx - Context carrying the skill registry (`ctx.skills`).
  * @param config - Optional configuration for custom asset roots.
  * @returns Disposer function.
+ * @throws If the asset directory or any visible skill asset is missing or invalid.
  */
 export function registerCodingSuiteSkills(ctx: Context, config: CodingSuiteSkillConfig = {}): () => void {
   const assetRoot = config.assetRoot ?? fileURLToPath(new URL('../assets/skills/', import.meta.url))
   if (!isAbsolute(assetRoot)) throw new Error('coding-suite: assetRoot must be an absolute directory')
+  if (!existsSync(assetRoot)) throw new Error(`coding-suite: skill asset directory does not exist: ${assetRoot}`)
 
-  if (!existsSync(assetRoot)) {
-    return () => {}
+  let entries: ReturnType<typeof readdirSync<typeof import('node:fs').Dirent>>
+  try {
+    entries = readdirSync(assetRoot, { withFileTypes: true })
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error)
+    throw new Error(`coding-suite: failed to read skill asset directory ${assetRoot}: ${detail}`, { cause: error })
   }
-
-  const entries = readdirSync(assetRoot, { withFileTypes: true })
   const candidates: SkillCandidate[] = []
 
   for (const entry of entries) {
     if (!entry.isDirectory()) continue
     if (entry.name.startsWith('_') || entry.name.startsWith('.')) continue
     const skillPath = join(assetRoot, entry.name, 'SKILL.md')
-    if (!existsSync(skillPath)) continue
+    if (!existsSync(skillPath)) throw new Error(`coding-suite: required skill file is missing: ${skillPath}`)
 
+    let raw: string
+    let description: string
     try {
-      const raw = readFileSync(skillPath, 'utf8')
-      const { description } = parseSkill(raw, skillPath)
-      candidates.push({
-        name: entry.name,
-        description,
-        invocation: { modelInvocable: true, userInvocable: true },
-        provider: 'coding-suite',
-        source: 'bundled',
-        rank: BUNDLED_SKILL_RANK,
-        resourceBase: { kind: 'directory', path: join(assetRoot, entry.name).split(sep).join('/') },
-        locator: skillPath,
-      })
-    } catch {
-      // Continue for skills that might fail to parse during development
+      raw = readFileSync(skillPath, 'utf8')
+      ;({ description } = parseSkill(raw, skillPath))
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error)
+      throw new Error(`coding-suite: failed to load skill asset ${skillPath}: ${detail}`, { cause: error })
     }
+    candidates.push({
+      name: entry.name,
+      description,
+      invocation: { modelInvocable: true, userInvocable: true },
+      provider: 'coding-suite',
+      source: 'bundled',
+      rank: BUNDLED_SKILL_RANK,
+      resourceBase: { kind: 'directory', path: join(assetRoot, entry.name).split(sep).join('/') },
+      locator: skillPath,
+    })
   }
+  if (candidates.length === 0) throw new Error(`coding-suite: no skill directories found in ${assetRoot}`)
 
   const provider: SkillProvider = {
     name: 'coding-suite',
