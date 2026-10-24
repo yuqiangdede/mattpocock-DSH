@@ -6,6 +6,7 @@
  */
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import type { Dirent } from 'node:fs'
 import { readFile } from 'node:fs/promises'
 import { isAbsolute, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -44,7 +45,7 @@ export function registerCodingSuiteSkills(ctx: Context, config: CodingSuiteSkill
   if (!isAbsolute(assetRoot)) throw new Error('coding-suite: assetRoot must be an absolute directory')
   if (!existsSync(assetRoot)) throw new Error(`coding-suite: skill asset directory does not exist: ${assetRoot}`)
 
-  let entries: ReturnType<typeof readdirSync<typeof import('node:fs').Dirent>>
+  let entries: Dirent[]
   try {
     entries = readdirSync(assetRoot, { withFileTypes: true })
   } catch (error) {
@@ -63,7 +64,7 @@ export function registerCodingSuiteSkills(ctx: Context, config: CodingSuiteSkill
     let description: string
     try {
       raw = readFileSync(skillPath, 'utf8')
-      ;({ description } = parseSkill(raw, skillPath))
+      description = parseSkill(raw, skillPath).description
     } catch (error) {
       const detail = error instanceof Error ? error.message : String(error)
       throw new Error(`coding-suite: failed to load skill asset ${skillPath}: ${detail}`, { cause: error })
