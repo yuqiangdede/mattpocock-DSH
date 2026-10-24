@@ -322,6 +322,23 @@ it.each([undefined, '2'])('passes macOS pack concurrency %s only to workspace pa
   expect(withMacOSNotarizationProxy).not.toHaveBeenCalled()
 })
 
+it.each([undefined, '1', '6'])('passes Windows pack concurrency %s to workspace packing', async (concurrency) => {
+  const { run } = supervisor()
+  await packageTarget(parseDesktopPackageInvocation(['win-x64', '--unsigned'], 'win32', 'x64'), {
+    ...environment, DSH_DESKTOP_WINDOWS_PACK_CONCURRENCY: concurrency,
+  }, run)
+  const packs = run.run.mock.calls.filter(call => call[0].startsWith('run release:pack'))
+  expect(packs).toHaveLength(2)
+  for (const call of packs) expect(call[2].slice(-2)).toEqual(['--concurrency', concurrency ?? '4'])
+})
+
+it('refuses an invalid Windows pack concurrency before building', async () => {
+  const { run, stages } = supervisor()
+  await expect(packageTarget(parseDesktopPackageInvocation(['win-x64', '--unsigned'], 'win32', 'x64'),
+    { ...environment, DSH_DESKTOP_WINDOWS_PACK_CONCURRENCY: '0' }, run)).rejects.toThrow('must be a positive integer')
+  expect(stages).toEqual([])
+})
+
 it.each([false, true])('scopes the Apple proxy around notarization (directory=%s)', async (directory) => {
   const { run } = supervisor()
   await packageTarget(parseDesktopPackageInvocation(['mac-arm64', ...(directory ? ['--dir'] : [])], 'darwin', 'arm64'), {

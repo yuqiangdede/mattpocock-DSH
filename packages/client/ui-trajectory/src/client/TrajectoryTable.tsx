@@ -254,6 +254,7 @@ function markdownLabels(t: TrajectoryTranslate): MarkdownLabels {
   return {
     code: { copyLabel: t('copy'), copiedLabel: t('copied') },
     footnotes: t('markdown.footnotes'),
+    mermaidFailure: t('markdown.mermaidFailure'),
   }
 }
 

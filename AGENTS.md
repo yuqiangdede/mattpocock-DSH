@@ -166,6 +166,10 @@ Real-API tests/demos read `DEEPSEEK_API_KEY`, optional `DEEPSEEK_BASE_URL`, and 
 - TODO markers: `FIXME`/`TODO`/`XXX` by urgency ([semantics](docs/development.md)).
 - Files end with exactly one trailing newline; `git diff --cached --check` (pre-commit) gates it.
 
+## Agent skills
+
+Engineering skills read their configuration from three files: the [issue tracker](docs/agents/issue-tracker.md) (GitHub Issues via `gh`), the [triage labels](docs/agents/triage-labels.md) (five operational labels), and the [domain docs](docs/agents/domain.md) (single-context glossary and Agent Notes). Read the matching file before running `to-spec`, `to-tickets`, `triage`, or `domain-modeling`.
+
 ## Defensive patterns
 
 Read [docs/defensive-patterns/README.md](docs/defensive-patterns/README.md) before changing a package surface, remote service, client component or state, conversation or Session behavior, or lifecycle, concurrency, subprocess, and teardown code. Its [review principles](docs/defensive-patterns/README.md#why-these-rules) apply per artifact.

@@ -175,6 +175,7 @@ function QuestionFlow({ pending, t, useStore, useQuestionCard, actions }: Questi
   const markdownLabels = useMemo(() => ({
     code: { copyLabel: t('copy'), copiedLabel: t('copied'), toolbarLabels: { codeLabel: t('codeBlock.title'), wrapLabel: t('codeBlock.wrap'), unwrapLabel: t('codeBlock.unwrap') } },
     footnotes: t('markdown.footnotes'),
+    mermaidFailure: t('markdown.mermaidFailure'),
   }), [t])
   const initialDrafts = useMemo<QuestionDraftAnswer[]>(() => {
     // Recorded answers echo the question ids rather than their order.

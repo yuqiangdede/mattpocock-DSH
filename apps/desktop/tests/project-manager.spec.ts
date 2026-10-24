@@ -3,9 +3,12 @@ import { tmpdir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveDesktopPaths } from '../src/paths.ts'
+import { BUNDLED_SIDE_CHAT, BUNDLED_LLM_RETRY, BUNDLED_DESKTOP_OPERATOR, DESKTOP_OPERATOR_PRESET_BUNDLE, WINDOWS_OPERATOR_BUNDLES } from '../src/bundled-plugins.ts'
 import { DesktopProjectManager } from '../src/project-manager.ts'
-import { readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
+import { createPluginProfile } from '../src/project-manager.ts'
+import { createRuntimeResolution, loadProfileDirectory, readProfilePlugins } from '@deepseek-ai/dsh-app-boot'
 import { runtimeFixture } from './runtime-fixture.ts'
+import * as atomicWrite from '@deepseek-ai/dsh-atomic-write'
 
 const roots: string[] = []
 function temporaryRoot(): string {
@@ -36,13 +39,249 @@ function setup(): { root: string; manager: DesktopProjectManager } {
   const root = temporaryRoot()
   const dsh = join(root, 'resources', 'dsh')
   runtimeFixture(dsh)
+  if (process.platform === 'win32') {
+    const adapter = join(dsh, 'node_modules', ...DESKTOP_OPERATOR_PRESET_BUNDLE.split('/'))
+    mkdirSync(adapter, { recursive: true })
+    writeFileSync(join(adapter, 'package.json'), JSON.stringify({
+      name: DESKTOP_OPERATOR_PRESET_BUNDLE, version: BUNDLED_DESKTOP_OPERATOR.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(adapter, 'cordis.patch.yml'), '[]\n')
+    const retry = join(dsh, 'node_modules', BUNDLED_LLM_RETRY.name)
+    mkdirSync(retry, { recursive: true })
+    writeFileSync(join(retry, 'package.json'), JSON.stringify({
+      name: BUNDLED_LLM_RETRY.name, version: BUNDLED_LLM_RETRY.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(retry, 'cordis.patch.yml'),
+      "- insert:\n    - id: llm-retry-settings\n      name: 'dsh-llm-retry-settings'\n")
+  }
   return { root, manager: new DesktopProjectManager(resolveDesktopPaths(join(root, '.dsh')), { dsh }) }
 }
 afterEach(() => {
+  vi.restoreAllMocks()
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
 describe('desktop external plugin profile', () => {
+  it.skipIf(process.platform !== 'win32').each([
+    ['dsh-side-chat-plus', '.bundled-side-chat-v1', []],
+    ['dsh-llm-retry-settings', '.bundled-llm-retry-v1', ['.bundled-side-chat-v1']],
+    [DESKTOP_OPERATOR_PRESET_BUNDLE, '.bundled-desktop-operator-v1', ['.bundled-side-chat-v1', '.bundled-llm-retry-v1']],
+  ] as const)('preserves the complete manifest and retries %s when atomic publication fails', async (bundle, marker, previous) => {
+    const { manager } = setup()
+    const profile = manager.paths.profile
+    mkdirSync(profile, { recursive: true })
+    const file = join(profile, 'package.json')
+    const original = JSON.stringify({ private: true, dependencies: {},
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } } })
+    writeFileSync(file, original)
+    for (const name of previous) writeFileSync(join(profile, name), 'completed\n')
+    const write = vi.spyOn(atomicWrite, 'writeFileAtomic').mockRejectedValueOnce(new Error('publication failed'))
+    await expect(manager.applyRelease()).rejects.toThrow('publication failed')
+    expect(readFileSync(file, 'utf8')).toBe(original)
+    expect(existsSync(join(profile, marker))).toBe(false)
+    expect(existsSync(join(profile, 'lock'))).toBe(false)
+    write.mockRestore()
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(file, 'utf8')) as { dsh: { profile: { bundles: string[] } } }).dsh.profile.bundles).toContain(bundle)
+    expect(existsSync(join(profile, marker))).toBe(true)
+  })
+
+  it('enables the offline side chat on first launch without installing packages', async () => {
+    const { manager } = setup()
+    await manager.applyRelease()
+    const manifest = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
+      dependencies: Record<string, string>
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(manifest.dsh.profile.bundles).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app',
+      ...(process.platform === 'win32' ? [BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, ...WINDOWS_OPERATOR_BUNDLES] : []),
+    ])
+    expect(manifest.dependencies).not.toHaveProperty(BUNDLED_SIDE_CHAT.name)
+    expect(manifest.dependencies).not.toHaveProperty(BUNDLED_LLM_RETRY.name)
+    expect(existsSync(join(manager.paths.profile, 'node_modules'))).toBe(false)
+    if (process.platform === 'win32') {
+      expect(readFileSync(join(manager.paths.profile, '.bundled-desktop-operator-v1'), 'utf8'))
+        .toBe(BUNDLED_DESKTOP_OPERATOR.version + '\n')
+    }
+    if (process.platform === 'win32') {
+      expect(readFileSync(join(manager.paths.profile, '.bundled-side-chat-v1'), 'utf8')).toBe(BUNDLED_SIDE_CHAT.version + '\n')
+      expect(readFileSync(join(manager.paths.profile, '.bundled-llm-retry-v1'), 'utf8')).toBe(BUNDLED_LLM_RETRY.version + '\n')
+    } else {
+      expect(existsSync(join(manager.paths.profile, '.bundled-side-chat-v1'))).toBe(false)
+    }
+    await manager.disableAllPlugins()
+    await manager.applyRelease()
+    const disabled = JSON.parse(readFileSync(join(manager.paths.profile, 'package.json'), 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(disabled.dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
+    expect(disabled.dsh.profile.bundles).not.toContain(BUNDLED_LLM_RETRY.name)
+    expect(disabled.dsh.profile.bundles).not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
+  })
+
+  it.skipIf(process.platform !== 'win32')('resolves bundled extensions through the Desktop release manifest without profile installation', async () => {
+    const { root, manager } = setup()
+    const dsh = manager.runtime.dsh
+    const manifestPath = join(dsh, 'package.json')
+    writeFileSync(manifestPath, JSON.stringify({
+      name: '@deepseek-ai/dsh-desktop-runtime',
+      version: '1.0.0', type: 'module',
+      dependencies: {
+        '@deepseek-ai/dsh': '1.0.0',
+        [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version,
+        [BUNDLED_LLM_RETRY.name]: BUNDLED_LLM_RETRY.version,
+        ...(process.platform === 'win32' ? {
+          [DESKTOP_OPERATOR_PRESET_BUNDLE]: BUNDLED_DESKTOP_OPERATOR.version,
+        } : {}),
+      },
+    }))
+    const bundled = join(dsh, 'node_modules', BUNDLED_SIDE_CHAT.name)
+    mkdirSync(bundled, { recursive: true })
+    writeFileSync(join(bundled, 'package.json'), JSON.stringify({
+      name: BUNDLED_SIDE_CHAT.name, version: BUNDLED_SIDE_CHAT.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(bundled, 'cordis.patch.yml'), '- insert:\n    - id: sidechat\n      name: dsh-side-chat-plus\n')
+    await createPluginProfile(manager.paths.profile)
+    const profile = loadProfileDirectory('dsh', manager.paths.profile, manifestPath)
+    expect(profile.skippedBundles).toEqual([])
+    expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_SIDE_CHAT.name)
+    expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_LLM_RETRY.name)
+    const runtime = await createRuntimeResolution({ installAnchor: manifestPath, profile, home: root })
+    expect(runtime.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({ name: BUNDLED_LLM_RETRY.name, scope: 'installation' }),
+      expect.objectContaining({ name: BUNDLED_SIDE_CHAT.name, scope: 'installation' }),
+    ]))
+    const oldAnchor = join(dsh, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+    const legacy = await createRuntimeResolution({ installAnchor: oldAnchor, profile, home: root })
+    expect(legacy.entries.some(entry => entry.name === BUNDLED_SIDE_CHAT.name)).toBe(false)
+    expect(legacy.entries.some(entry => entry.name === BUNDLED_LLM_RETRY.name)).toBe(false)
+  })
+
+  it.skipIf(process.platform !== 'win32')('resolves a bundled plugin from the installation without local dependency installation', async () => {
+    const { manager } = setup()
+    const pluginRoot = join(manager.runtime.dsh, 'node_modules', BUNDLED_SIDE_CHAT.name)
+    mkdirSync(pluginRoot, { recursive: true })
+    writeFileSync(join(pluginRoot, 'package.json'), JSON.stringify({
+      name: BUNDLED_SIDE_CHAT.name, version: BUNDLED_SIDE_CHAT.version,
+      dsh: { bundle: { patch: './cordis.patch.yml' } },
+    }))
+    writeFileSync(join(pluginRoot, 'cordis.patch.yml'), '[]\n')
+    await manager.applyRelease()
+    const profile = loadProfileDirectory('dsh', manager.paths.profile,
+      join(manager.runtime.dsh, 'node_modules/@deepseek-ai/dsh/package.json'))
+    expect(profile.skippedBundles).toEqual([])
+    expect(profile.layers.map(layer => layer.packageName)).toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+  it.skipIf(process.platform !== 'win32')('adds the side chat to an existing profile once and preserves custom bundles', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { 'my-plugin': '1.0.0' },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin'] } },
+    }))
+    await manager.applyRelease()
+    const updated = JSON.parse(readFileSync(path, 'utf8')) as {
+      dependencies: Record<string, string>
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(updated.dependencies).toEqual({ 'my-plugin': '1.0.0' })
+    expect(updated.dsh.profile.bundles).toEqual([
+      '@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin', BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name,
+      ...(process.platform === 'win32' ? WINDOWS_OPERATOR_BUNDLES : []),
+    ])
+    updated.dsh.profile.bundles = updated.dsh.profile.bundles.filter(name => name !== BUNDLED_SIDE_CHAT.name)
+    writeFileSync(path, JSON.stringify(updated))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(path, 'utf8')) as typeof updated).dsh.profile.bundles)
+      .not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+
+  it.skipIf(process.platform === 'win32')('keeps non-Windows profiles free from Windows-only offline bundles, including upgrades', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { 'my-plugin': '1.0.0' },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin'] } },
+    }))
+    await manager.applyRelease()
+    const updated = JSON.parse(readFileSync(path, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    expect(updated.dsh.profile.bundles).toEqual(['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', 'my-plugin'])
+    expect(existsSync(join(manager.paths.profile, '.bundled-side-chat-v1'))).toBe(false)
+    expect(existsSync(join(manager.paths.profile, '.bundled-desktop-operator-v1'))).toBe(false)
+    expect(existsSync(join(manager.paths.profile, '.bundled-llm-retry-v1'))).toBe(false)
+  })
+
+  it.skipIf(process.platform !== 'win32')('never re-enables a disabled bundled Computer Use preset', async () => {
+    const { manager } = setup()
+    await manager.applyRelease()
+    const file = join(manager.paths.profile, 'package.json')
+    const manifest = JSON.parse(readFileSync(file, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(
+      name => name !== DESKTOP_OPERATOR_PRESET_BUNDLE)
+    writeFileSync(file, JSON.stringify(manifest))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(file, 'utf8')) as typeof manifest).dsh.profile.bundles)
+      .not.toContain(DESKTOP_OPERATOR_PRESET_BUNDLE)
+  })
+
+  it.skipIf(process.platform !== 'win32')('respects an older manually installed and disabled side chat', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { [BUNDLED_SIDE_CHAT.name]: BUNDLED_SIDE_CHAT.version },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } },
+    }))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(path, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }).dsh.profile.bundles).not.toContain(BUNDLED_SIDE_CHAT.name)
+  })
+
+  it.skipIf(process.platform !== 'win32')('keeps the retry settings card disabled after explicit opt-out', async () => {
+    const { manager } = setup()
+    await manager.applyRelease()
+    const path = join(manager.paths.profile, 'package.json')
+    const manifest = JSON.parse(readFileSync(path, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }
+    manifest.dsh.profile.bundles = manifest.dsh.profile.bundles.filter(name => name !== BUNDLED_LLM_RETRY.name)
+    writeFileSync(path, JSON.stringify(manifest))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(path, 'utf8')) as typeof manifest).dsh.profile.bundles)
+      .not.toContain(BUNDLED_LLM_RETRY.name)
+  })
+
+  it.skipIf(process.platform !== 'win32')('respects a manually installed but disabled retry settings plugin', async () => {
+    const { manager } = setup()
+    mkdirSync(manager.paths.profile, { recursive: true })
+    const path = join(manager.paths.profile, 'package.json')
+    writeFileSync(path, JSON.stringify({
+      name: 'old-desktop-profile', private: true,
+      dependencies: { [BUNDLED_LLM_RETRY.name]: BUNDLED_LLM_RETRY.version },
+      dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app'] } },
+    }))
+    await manager.applyRelease()
+    expect((JSON.parse(readFileSync(path, 'utf8')) as {
+      dsh: { profile: { bundles: string[] } }
+    }).dsh.profile.bundles).not.toContain(BUNDLED_LLM_RETRY.name)
+  })
+
   it('preserves installed packages, profile state, and the lockfile when preparing a launch', async () => {
     const { manager } = setup()
     await manager.applyRelease()

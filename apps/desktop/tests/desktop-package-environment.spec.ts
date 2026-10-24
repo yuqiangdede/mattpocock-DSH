@@ -164,6 +164,15 @@ describe('Desktop local packaging configuration', () => {
     }
   })
 
+  it('defaults Windows pack concurrency to four and rejects invalid values', () => {
+    expect(resolveWindowsPackageSettings({}).packConcurrency).toBe(4)
+    expect(resolveWindowsPackageSettings({ DSH_DESKTOP_WINDOWS_PACK_CONCURRENCY: '1' }).packConcurrency).toBe(1)
+    for (const value of ['', '0', '-1', '1.5', '01', 'two']) {
+      expect(() => resolveWindowsPackageSettings({ DSH_DESKTOP_WINDOWS_PACK_CONCURRENCY: value }))
+        .toThrow('must be a positive integer')
+    }
+  })
+
   it('selects the platform file, preserves literal secrets, and excludes stale ambient release settings', async () => {
     await withDirectory(async (directory) => {
       await writeFile(join(directory, '.env.windows'), '\uFEFFDSH_DESKTOP_APP_ID=com.example.windows\r\nDSH_DESKTOP_WINDOWS_TOKEN_PIN=" #!$%&literal "\r\nDSH_DESKTOP_WINDOWS_CER_FILE="keys/public certificate.cer"\r\n')

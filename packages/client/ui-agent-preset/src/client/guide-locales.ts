@@ -7,6 +7,7 @@ export const guideEn = {
   guideCopy: 'Copy',
   guideCopied: 'Copied',
   guideFootnotes: 'Footnotes',
+  guideMermaidFailure: 'Mermaid diagram could not be rendered. Showing its source.',
   guideStandardIntro: 'Choose Standard mode when starting a new task. Describe what you want to accomplish, point to the relevant files, and explain how to check the result.',
   guideStandardExplanation: [
     '### How it works',
@@ -85,6 +86,7 @@ export const guideZh: Record<PresetGuideKey, string> = {
   guideCopy: '复制',
   guideCopied: '已复制',
   guideFootnotes: '脚注',
+  guideMermaidFailure: 'Mermaid 图表无法渲染，已显示源代码',
   guideStandardIntro: '新建任务时选择「标准模式」，说明要完成什么、相关文件在哪里，以及怎样判断任务完成。',
   guideStandardExplanation: [
     '### 工作方式',

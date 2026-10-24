@@ -60,6 +60,7 @@ function GuideUsage({ text, t }: {
   const labels = {
     code: { copyLabel: t('guideCopy'), copiedLabel: t('guideCopied'), toolbarLabels: { codeLabel: t('codeBlock.title'), wrapLabel: t('codeBlock.wrap'), unwrapLabel: t('codeBlock.unwrap') } },
     footnotes: t('guideFootnotes'),
+    mermaidFailure: t('guideMermaidFailure'),
   }
   return text.split(/(?=^### )/m).map((section) => {
     const headingEnd = section.indexOf('\n')
@@ -149,6 +150,7 @@ export function PresetGuideDialog({ guide, initialPage, t, onClose }: {
                   labels={{
                     code: { copyLabel: t('guideCopy'), copiedLabel: t('guideCopied'), toolbarLabels: { codeLabel: t('codeBlock.title'), wrapLabel: t('codeBlock.wrap'), unwrapLabel: t('codeBlock.unwrap') } },
                     footnotes: t('guideFootnotes'),
+                    mermaidFailure: t('guideMermaidFailure'),
                   }}
                 />
               )}

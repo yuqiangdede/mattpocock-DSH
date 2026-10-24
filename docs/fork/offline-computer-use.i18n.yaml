@@ -1,0 +1,16 @@
+# Bilingual-pair consistency record for offline-computer-use.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write docs/fork/offline-computer-use.md
+/bundled-computer-use-in-offline-windows-installers:
+  en: 8e4c14090f30abca
+  zh: ea7c1a4f65b47a31
+/bundled-computer-use-in-offline-windows-installers/build-and-version-upgrades:
+  en: 6069a75402f396b2
+  zh: f8e6b49ac3db9f20
+/bundled-computer-use-in-offline-windows-installers/behavior:
+  en: 0677ab21dbd1544f
+  zh: 50663e4b2f4b87e8
+/bundled-computer-use-in-offline-windows-installers/required-acceptance-on-a-physical-windows-machine:
+  en: 815d3fdcd00d63af
+  zh: f7ead1a5af6b6413

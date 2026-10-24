@@ -4,6 +4,7 @@ export const zh = {
   'code.copy': '复制',
   'code.copied': '已复制',
   'footnotes': '脚注',
+  'mermaidFailure': 'Mermaid 图表无法渲染，已显示源代码',
 } satisfies Record<string, string>
 
 /** Markdown namespace keys. */
@@ -15,6 +16,7 @@ export const en = {
   'code.copy': 'Copy',
   'code.copied': 'Copied',
   'footnotes': 'Footnotes',
+  'mermaidFailure': 'Mermaid diagram could not be rendered. Showing its source.',
 } satisfies Record<MarkdownPreviewKey, string>
 
 declare module '@deepseek-ai/dsh-client-ui-slots' {

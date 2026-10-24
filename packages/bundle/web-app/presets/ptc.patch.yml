@@ -114,6 +114,13 @@
             name: '@deepseek-ai/dsh-tool-todo'
             config:
               allowParallelInProgress: true
+          # Fork-only advisory guard; never writes todo state.
+          - id: matt-todo-progress-guard
+            name: '@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard'
+            config:
+              minToolCalls: 5
+              staleAfterMs: 90000
+              reminderCooldownMs: 90000
           - id: tool-web
             name: '@deepseek-ai/dsh-tool-web'
             config:

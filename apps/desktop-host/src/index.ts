@@ -8,6 +8,7 @@ import type {} from '@deepseek-ai/dsh-client-connection'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import type {} from '@deepseek-ai/dsh-deepseek-account'
 import { resolveDshHome } from '@deepseek-ai/dsh-home-paths'
+import * as desktopCodingSkills from './coding-skills.ts'
 import * as desktopOffice from './office.ts'
 import { localDragResource } from './file-drag.ts'
 
@@ -19,8 +20,14 @@ import { installOfficeEngineResolution } from './office-engine.ts'
 async function main(): Promise<void> {
   const runtimeDir = process.argv[2] as string
   const projectDir = process.argv[3] as string
+  const primaryRuntime = process.argv[4] ?? join(runtimeDir, '..', 'runtime', 'primary-runtime')
   installOfficeEngineResolution(runtimeDir)
-  const installAnchor = join(runtimeDir, 'node_modules', '@deepseek-ai', 'dsh', 'package.json')
+  // Desktop's release manifest is the installation root: it declares the full
+  // signed DSH closure AND the version-pinned offline third-party plugins.
+  // Anchoring on @deepseek-ai/dsh instead hides those extra dependencies from
+  // createRuntimeResolution, so Loader finds the bundle YAML but cannot import
+  // its plugin module from the external Desktop profile.
+  const installAnchor = join(runtimeDir, 'package.json')
   const profile = loadProfileDirectory('dsh', projectDir, installAnchor)
   reportSkippedBundles('dsh', profile)
   const application = runProfile({
@@ -127,9 +134,10 @@ async function main(): Promise<void> {
   control.quitInspection = installDesktopQuitInspection(ctx)
   await ctx.plugin(desktopOffice, {
     runtimeDir,
-    source: process.argv[4] ?? join(runtimeDir, '..', 'runtime', 'primary-runtime'),
+    source: primaryRuntime,
     root: join(resolveDshHome(), 'dsh-runtimes', 'dsh-primary-runtime'),
   })
+  await ctx.plugin(desktopCodingSkills, { source: primaryRuntime })
   installPlatformSessionPublisher(ctx, (session) => {
     if (process.connected) process.send?.({ type: 'platform-session', session })
   })

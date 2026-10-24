@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-23-mermaid-source-resource-refusal.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-23-mermaid-source-resource-refusal.md
+/agent-note-refuse-mermaid-sources-that-request-resources:
+  en: 9e09bd345936584b
+  zh: 77e1a0af02b0c782
+/agent-note-refuse-mermaid-sources-that-request-resources/problem:
+  en: 61452ace06c70de8
+  zh: edaea2547f8a2c87
+/agent-note-refuse-mermaid-sources-that-request-resources/decision:
+  en: d89e5469c6cd868c
+  zh: 29fc60fc0e5e4b66
+/agent-note-refuse-mermaid-sources-that-request-resources/verification:
+  en: 2b1351869c7989b6
+  zh: 5ad749baf1b40dee
+/agent-note-refuse-mermaid-sources-that-request-resources/alternatives-considered:
+  en: 52312e551b9ffc58
+  zh: 7a02def7f1aa3c96
+/agent-note-refuse-mermaid-sources-that-request-resources/consequences:
+  en: 544d4c4f47ed91f6
+  zh: 472dc466e292875c

@@ -157,6 +157,11 @@ export class DesktopHostProcess {
   })
   private exitPromise: Promise<void> | undefined
   private stderr = ''
+
+  /** Build-smoke diagnostics only: recent captured Host errors, no added logging in production. */
+  getRecentStderr(): string {
+    return this.stderr
+  }
   private failureReported = false
   private stopping = false
   private shutdownCompleted = false

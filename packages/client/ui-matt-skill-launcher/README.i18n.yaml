@@ -1,0 +1,58 @@
+# Bilingual-pair consistency record for README.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write packages/client/ui-matt-skill-launcher/README.md
+/:
+  en: c087fe3929f2f8a4
+  zh: c087fe3929f2f8a4
+/mattpocock-dsh-skill-launcher:
+  en: fc0721a5f08f6a31
+  zh: c1517296b3f7e834
+/mattpocock-dsh-skill-launcher/summary:
+  en: 4ddd34e46c6720c5
+  zh: c2307616ea79389b
+/mattpocock-dsh-skill-launcher/table-of-contents:
+  en: 39924a0d8465a66e
+  zh: 34920e240c161d86
+/mattpocock-dsh-skill-launcher/behavior:
+  en: 4894d7edc25a1059
+  zh: 75a1938c58f70cba
+/mattpocock-dsh-skill-launcher/behavior/build-and-run:
+  en: 0966d946b4c61bcf
+  zh: cdd4763722a5f1cf
+/mattpocock-dsh-skill-launcher/model-experience:
+  en: 215e7ba838619b7b
+  zh: a311da3843709f90
+/mattpocock-dsh-skill-launcher/model-experience/user-submitted-action-text:
+  en: 040c2954bfc29e6b
+  zh: a8cd10b0ce19cbe6
+/mattpocock-dsh-skill-launcher/model-experience/user-submitted-action-text/what-the-model-sees:
+  en: 83b92b98d8005718
+  zh: 3b4f0c41af11966c
+/mattpocock-dsh-skill-launcher/model-experience/user-submitted-action-text/token-effect:
+  en: 289cdee90a2eeae8
+  zh: 380ebd38bde78817
+/mattpocock-dsh-skill-launcher/model-experience/user-submitted-action-text/kv-cache-effect:
+  en: 588a5fe6e3aae2f1
+  zh: a5c4f5269ce697ad
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder:
+  en: a130682f51bfb8a8
+  zh: 6bbc59d531b5c51c
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/what-the-model-sees:
+  en: b9e98fcf08e01dc9
+  zh: 9577e2e1fd4148e6
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/what-the-model-sees/reminder-text:
+  en: 66e25d9891568e89
+  zh: babacf0b1f7fa484
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/token-effect:
+  en: 92756804e8419bad
+  zh: 70bc5bd094564451
+/mattpocock-dsh-skill-launcher/model-experience/todo-progress-reminder/kv-cache-effect:
+  en: 3a8a1220dc8da0b8
+  zh: f4f578142da23324
+/mattpocock-dsh-skill-launcher/known-limitations-and-deferred-work:
+  en: fcba4c47a0654781
+  zh: a2f62dcff42922ad
+/mattpocock-dsh-skill-launcher/known-limitations-and-deferred-work/dev-note:
+  en: a7255b2c586c012d
+  zh: 0ce3b86ecef0a6a6

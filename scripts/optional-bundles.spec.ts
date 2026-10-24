@@ -12,6 +12,7 @@ import { bundlePatchPaths, composeEntries, initProfile, readProfileManifest } fr
 import { OPTIONAL_BUNDLES, PROFILE_TEMPLATES } from '../packages/util/official-bundles/src/bundles.ts'
 import type { DshBundleManifest } from '../packages/util/package-manifest/src/types.ts'
 import { createPluginProfile } from '../apps/desktop/src/project-manager.ts'
+import { BUNDLED_SIDE_CHAT, BUNDLED_LLM_RETRY, WINDOWS_OPERATOR_BUNDLES } from '../apps/desktop/src/bundled-plugins.ts'
 
 const root = resolve(import.meta.dirname, '..')
 
@@ -49,21 +50,22 @@ function flattenRows(entries: EntryOptions[]): EntryOptions[] {
   return entries.flatMap(entry => [entry, ...entry.group && Array.isArray(entry.config) ? flattenRows(entry.config as EntryOptions[]) : []])
 }
 
-function profileLayers(surface: 'web' | 'desktop'): ReturnType<typeof loadOverlayPatches>[] {
+async function profileLayers(surface: 'web' | 'desktop'): Promise<ReturnType<typeof loadOverlayPatches>[]> {
   const directory = mkdtempSync(join(tmpdir(), 'dsh-bundle-compatibility-'))
   onTestFinished(() => { rmSync(directory, { recursive: true, force: true }) })
-  if (surface === 'desktop') createPluginProfile(directory)
+  if (surface === 'desktop') await createPluginProfile(directory)
   else initProfile(directory, PROFILE_TEMPLATES.web!.bundles)
   const names = readProfileManifest('test', directory).dsh?.profile?.bundles
   if (names === undefined) throw new Error(`${surface} profile has no bundle list`)
-  return names.map(name => bundle(name).patches)
+  const external = new Set<string>([BUNDLED_SIDE_CHAT.name, BUNDLED_LLM_RETRY.name, ...WINDOWS_OPERATOR_BUNDLES])
+  return names.filter(name => !external.has(name)).map(name => bundle(name).patches)
 }
 
 describe.each(['web', 'desktop'] as const)('%s optional bundle overrides', (surface) => {
   const selectedNames = ['@deepseek-ai/dsh-experimental-badge-skill-bundle', '@deepseek-ai/dsh-experimental-ralph-bundle']
 
-  it('keeps established selectors for later configuration and disabled overrides', () => {
-    const shipped = profileLayers(surface)
+  it('keeps established selectors for later configuration and disabled overrides', async () => {
+    const shipped = await profileLayers(surface)
     const config = { subagentProvider: 'spawn', maxRounds: 3 }
     const warnings: string[] = []
     const entries = composeEntries([...shipped, ...selectedNames.map(name => bundle(name).patches), [
@@ -77,9 +79,9 @@ describe.each(['web', 'desktop'] as const)('%s optional bundle overrides', (surf
     expect(entries.find(row => row.id === 'optional-ralph')?.isolate).toEqual({ workflowEngine: true })
   })
 
-  it('does not select absent bundles through enable-only row overrides', () => {
+  it('does not select absent bundles through enable-only row overrides', async () => {
     const warnings: string[] = []
-    const entries = composeEntries([...profileLayers(surface), [
+    const entries = composeEntries([...await profileLayers(surface), [
       { id: 'skill-badge', disabled: false },
       { id: 'tool-ralph', disabled: false },
     ]], warning => warnings.push(warning))
