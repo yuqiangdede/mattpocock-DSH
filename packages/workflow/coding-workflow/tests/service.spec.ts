@@ -127,7 +127,6 @@ async function boot(
   const session = ctx.sessions.create(SessionId(sessionId))
   const agent: Agent = {
     id: session.id,
-    model: { current: () => undefined, select: () => {} },
     options: {},
     session,
     inbox: createInboxStub(),
