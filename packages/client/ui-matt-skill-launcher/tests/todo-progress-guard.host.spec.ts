@@ -20,6 +20,7 @@ import AgentLoop from '@deepseek-ai/dsh-agent-loop'
 import { mountAgentLoopTestDependencies, unsupportedInbox } from '@deepseek-ai/dsh-agent-loop-testkit'
 import SessionProjectionRegistry from '@deepseek-ai/dsh-session-projection'
 import * as ToolTodo from '@deepseek-ai/dsh-tool-todo'
+import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
 import { defineContentToolFixture, executeModelToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 import * as GuardBySubpath from '@deepseek-ai/dsh-client-ui-matt-skill-launcher/todo-progress-guard'
 import * as Guard from '../src/todo-progress-guard.ts'
@@ -122,6 +123,7 @@ describe('shipped Loader composition', () => {
       "- name: '@deepseek-ai/dsh-agent'",
       "- name: '@deepseek-ai/dsh-system-prompt'",
       "- name: '@deepseek-ai/dsh-tools'",
+      "- name: '@deepseek-ai/dsh-tool-executor-native'",
       "- name: '@deepseek-ai/dsh-session-projection'",
       "- name: '@deepseek-ai/dsh-tool-todo'",
       '  config:',
@@ -140,6 +142,7 @@ describe('shipped Loader composition', () => {
       ['@deepseek-ai/dsh-agent', (await import('@deepseek-ai/dsh-agent')).default],
       ['@deepseek-ai/dsh-system-prompt', (await import('@deepseek-ai/dsh-system-prompt')).default],
       ['@deepseek-ai/dsh-tools', (await import('@deepseek-ai/dsh-tools')).default],
+      ['@deepseek-ai/dsh-tool-executor-native', NativeToolExecutor],
       ['@deepseek-ai/dsh-session-projection', SessionProjectionRegistry],
       ['@deepseek-ai/dsh-tool-todo', ToolTodo],
       // The shipped YAML names this subpath; the source alias and the Loader
