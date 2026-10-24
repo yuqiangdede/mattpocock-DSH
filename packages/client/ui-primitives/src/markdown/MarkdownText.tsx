@@ -192,14 +192,16 @@ export const MarkdownText = memo(function MarkdownText({
 }) {
   const streamRef = useRef<StreamingRenderer | null>(null)
   const streamLabelsRef = useRef<MarkdownLabels>(labels)
+  const streamOmitHtmlRef = useRef(omitHtml)
   const children = useMemo(() => {
     if (!streaming) {
       streamRef.current = null
       return renderSettled(text, labels, fileMentions, pathImages, omitHtml)
     }
-    if (streamRef.current === null || streamLabelsRef.current !== labels) {
+    if (streamRef.current === null || streamLabelsRef.current !== labels || streamOmitHtmlRef.current !== omitHtml) {
       streamRef.current = new StreamingRenderer(labels, omitHtml)
       streamLabelsRef.current = labels
+      streamOmitHtmlRef.current = omitHtml
     }
     return streamRef.current.render(text)
   }, [text, streaming, labels, fileMentions, pathImages, omitHtml])

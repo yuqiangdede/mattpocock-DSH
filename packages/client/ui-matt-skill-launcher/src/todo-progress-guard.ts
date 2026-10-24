@@ -21,7 +21,6 @@ import type { Session } from '@deepseek-ai/dsh-session'
 // Type-only: resolves the required ctx.sessionProjections service declaration.
 import type {} from '@deepseek-ai/dsh-session-projection'
 // Type-only: declares the `todos` projection key this guard reads.
-import type { TodoItem } from '@deepseek-ai/dsh-tool-todo'
 
 declare module '@deepseek-ai/dsh-llm' {
   interface MessageSourceMap {
@@ -112,8 +111,9 @@ function reminderText(): string {
  * @param todos - the projected plan, or undefined when the unit is unmounted.
  * @returns true only for a live plan with an unfinished item.
  */
-function hasOpenTodos(todos: unknown): todos is readonly TodoItem[] {
-  return Array.isArray(todos) && todos.some((todo: TodoItem) => todo.status !== 'completed')
+function hasOpenTodos(todos: unknown): boolean {
+  return Array.isArray(todos) && todos.some((todo: unknown) => typeof todo === 'object'
+    && todo !== null && 'status' in todo && (todo.status === 'pending' || todo.status === 'in_progress'))
 }
 
 /**
