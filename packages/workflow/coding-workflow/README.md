@@ -36,7 +36,7 @@ Mount the package wherever a Session should be able to claim a coding task. It r
 |---|---|---|
 | `verificationTimeoutMs` | 1800000 | Deadline of one registered verification command. |
 
-The service requires `storageDomain`, `agents`, and `workingDirectory`; the storage rows (`dsh-storage`, a backend, `dsh-storage-domain`) must be mounted before it activates.
+The service requires `storageDomain`, `agents`, `workingDirectory`, a sandboxing `shell`, and `sandboxPolicy`; mount these services before it activates. Verification runs only through that shell. Under a `read-only` session policy, the service requests a one-time `workspace-write` approval before a planned command runs; unavailable or rejected approval fails closed.
 
 ### Task lifecycle
 
@@ -46,7 +46,7 @@ The service requires `storageDomain`, `agents`, and `workingDirectory`; the stor
 
 A stage that no longer matches the repository (`Branch changed`, `HEAD changed outside workflow`) refuses to continue rather than guessing. Two consecutive reviews reporting the same blocking findings stop the task, as does a fourth repair round. A verification that fails, or that observes a changed source, blocks the task at S7. Mode changes pause the task; resuming re-checks the branch and HEAD.
 
-Paused, blocked, and waiting-approval tasks reject verification before spawning a command and reject commits before staging files. Resume the task, or approve its pending decision, before retrying.
+Verification checks the stage order, branch, HEAD, allowed paths, and review fingerprint before starting a process, then repeats the repository checks after it exits. Paused, blocked, and waiting-approval tasks reject verification before execution and reject commits before staging files. A pending human approval remains pending across pause and mode changes; only the Client approval action clears it.
 
 -----
 
@@ -54,7 +54,7 @@ Paused, blocked, and waiting-approval tasks reject verification before spawning 
 ## Understand the implementation
 
 - [`src/domain.ts`](src/domain.ts) is the pure state machine: `applyStage`, `applyReview`, `applyRepair`, `applyVerification`, `recordCommit`, and the human-decision verbs. It takes a `RepositorySnapshot` and returns a new record, so every rule is testable without Git.
-- [`src/repository.ts`](src/repository.ts) owns the repository effects: snapshots and fingerprints, evidence hashing, verification runs, and the single exact-file commit.
+- [`src/repository.ts`](src/repository.ts) owns Git snapshots and fingerprints, evidence hashing, and the single exact-file commit. Verification uses the configured sandboxing shell and session policy.
 - [`src/spec.ts`](src/spec.ts) declares the durable `coding-workflow` domain (`workItems`, one record per task) with the zod schemas that validate the stored format.
 - [`src/index.ts`](src/index.ts) is the service: it opens the domain, resolves the Session directory, applies one transition per call, and emits `coding-workflow/changed` after each accepted mutation.
 - [`src/tool.ts`](src/tool.ts) is the model-facing `coding_workflow` tool; every verb delegates to the service.
@@ -71,7 +71,7 @@ The durable record is product state, not session history: it lives in the shared
 
 #### What the model sees
 
-One tool, `coding_workflow`, with a flat verb schema (`start`, `status`, `stage`, `checks`, `review`, `repair`, `verify`, `commit`, `mode`, `pause`, `resume`, `approval`, `approve`, `block`, `cancel`). Each result carries the task identity, revision, status, current stage, mode, branch, commit reference, blocker, the ten stage statuses, and the next expected verb.
+One tool, `coding_workflow`, with a flat verb schema (`start`, `status`, `stage`, `skip`, `checks`, `review`, `repair`, `verify`, `commit`, `mode`, `pause`, `resume`, `approval`, `block`, `cancel`). Human approval is a Client Remote action and is not exposed as a model verb. Each result carries the task identity, revision, status, current stage, mode, branch, commit reference, blocker, the ten stage statuses, and the next expected verb.
 
 #### Token effect
 

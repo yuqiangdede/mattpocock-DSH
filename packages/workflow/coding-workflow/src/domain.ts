@@ -588,7 +588,7 @@ export function requireCommitReady(item: WorkItem, snapshot: RepositorySnapshot,
 export function setMode(item: WorkItem, mode: WorkflowMode, now: string): WorkItem {
   requireNonterminal(item)
   ensure(mode === 'manual' || mode === 'auto', 'Expected manual or auto', 'WORKFLOW_INVALID_MODE')
-  return next(item, { mode, status: 'paused' }, now)
+  return next(item, { mode, status: item.status === 'waiting_approval' ? 'waiting_approval' : 'paused' }, now)
 }
 
 /**
@@ -599,7 +599,7 @@ export function setMode(item: WorkItem, mode: WorkflowMode, now: string): WorkIt
  */
 export function pause(item: WorkItem, now: string): WorkItem {
   requireNonterminal(item)
-  return next(item, { status: 'paused' }, now)
+  return next(item, { status: item.status === 'waiting_approval' ? 'waiting_approval' : 'paused' }, now)
 }
 
 /**
@@ -658,6 +658,7 @@ export function approve(item: WorkItem, decision: string, now: string): WorkItem
  */
 export function block(item: WorkItem, reason: string, now: string): WorkItem {
   requireNonterminal(item)
+  ensure(item.status !== 'waiting_approval', 'Pending approval cannot be replaced by a blocker', 'WORKFLOW_APPROVAL_REQUIRED')
   const text = reason.trim()
   ensure(text.length >= 10, 'Give a concrete reason and proposed recovery', 'WORKFLOW_REASON_TOO_SHORT')
   return next(item, {

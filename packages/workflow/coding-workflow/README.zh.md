@@ -36,7 +36,7 @@ kind: "package-reference"
 |---|---|---|
 | `verificationTimeoutMs` | 1800000 | 单条已登记验证命令的时限。 |
 
-该服务依赖 `storageDomain`、`agents` 与 `workingDirectory`；存储行（`dsh-storage`、某个后端、`dsh-storage-domain`）必须先于它挂载。
+该服务依赖 `storageDomain`、`agents`、`workingDirectory`、提供沙箱能力的 `shell` 与 `sandboxPolicy`；这些服务必须先于它挂载。验证命令只通过该 Shell 执行。Session 处于 `read-only` 策略时，执行计划命令前会请求一次性的 `workspace-write` 审批；审批不可用或被拒绝时会停止执行。
 
 ### 任务生命周期
 
@@ -46,7 +46,7 @@ kind: "package-reference"
 
 与仓库不再匹配的阶段（`Branch changed`、`HEAD changed outside workflow`）会拒绝继续而不是猜测。连续两次走读报告相同阻断问题会停止任务，第 4 轮修复同样停止。验证失败或观察到源码变化会在 S7 阻塞任务。切换模式会暂停任务；恢复时会重新校验分支与 HEAD。
 
-已暂停、已阻塞或等待审批的任务会在启动命令前拒绝验证，在暂存文件前拒绝提交。重试前须恢复任务，或批准其待决事项。
+验证在启动进程前先校验阶段顺序、分支、HEAD、允许路径与走读指纹，进程结束后再校验仓库。已暂停、已阻塞或等待审批的任务会在执行前拒绝验证，在暂存文件前拒绝提交。待处理的人工作业审批会在暂停或切换模式后继续保留；只有 Client 审批操作可以清除它。
 
 -----
 
@@ -54,7 +54,7 @@ kind: "package-reference"
 ## 理解实现
 
 - [`src/domain.ts`](src/domain.ts) 是纯状态机：`applyStage`、`applyReview`、`applyRepair`、`applyVerification`、`recordCommit` 以及人工决策动词。它接收 `RepositorySnapshot` 并返回新记录，因此每条规则都能脱离 Git 测试。
-- [`src/repository.ts`](src/repository.ts) 负责仓库副作用：快照与指纹、证据哈希、验证运行，以及唯一一次精确文件提交。
+- [`src/repository.ts`](src/repository.ts) 负责 Git 快照与指纹、证据哈希以及唯一一次精确文件提交。验证命令通过已配置的沙箱 Shell 和 Session 策略运行。
 - [`src/spec.ts`](src/spec.ts) 声明持久化 `coding-workflow` 域（`workItems`，每个任务一条记录）以及校验存储格式的 zod schema。
 - [`src/index.ts`](src/index.ts) 是服务：打开域、解析 Session 目录、每次调用应用一次变更，并在每次被接受的变更后发出 `coding-workflow/changed`。
 - [`src/tool.ts`](src/tool.ts) 是面向模型的 `coding_workflow` 工具；每个动词都委托给服务。
@@ -71,7 +71,7 @@ kind: "package-reference"
 
 #### 模型看到什么
 
-一个工具 `coding_workflow`，使用扁平动词 schema（`start`、`status`、`stage`、`checks`、`review`、`repair`、`verify`、`commit`、`mode`、`pause`、`resume`、`approval`、`approve`、`block`、`cancel`）。每次结果携带任务标识、`revision`、状态、当前阶段、模式、分支、提交引用、阻塞原因、十个阶段状态以及下一步预期动词。
+一个工具 `coding_workflow`，使用扁平动词 schema（`start`、`status`、`stage`、`skip`、`checks`、`review`、`repair`、`verify`、`commit`、`mode`、`pause`、`resume`、`approval`、`block`、`cancel`）。人工作业审批通过 Client Remote 操作，不向模型暴露审批动词。每次结果携带任务标识、`revision`、状态、当前阶段、模式、分支、提交引用、阻塞原因、十个阶段状态以及下一步预期动词。
 
 #### Token 影响
 

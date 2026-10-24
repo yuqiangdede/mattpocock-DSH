@@ -30,6 +30,7 @@ import type { GenerateOptions, LlmResolvedModelInfo, StreamChunk } from '@deepse
 import type {} from '@deepseek-ai/dsh-compaction-basic'
 import type {} from '@deepseek-ai/dsh-skill'
 import type {} from '@deepseek-ai/dsh-tools'
+import { executeModelToolFixture } from '@deepseek-ai/dsh-tool-testkit'
 // Type-only: resolves `ctx.get('sessionProjections')` and `ctx.get('tokenMeter')`.
 import type {} from '@deepseek-ai/dsh-session-projection'
 import type {} from '@deepseek-ai/dsh-token-meter'
@@ -619,7 +620,7 @@ describe('the shipped Web composition', () => {
       expect(scoped).toContain('project-proof')
 
       // The preset's own loader tool resolves the global-layer skill.
-      const loaded = await ctx.tools.execute({
+      const loaded = await executeModelToolFixture(ctx, {
         callId: ToolCallId('preset-skills-load'),
         name: 'skill',
         arguments: { name: 'dsh-badge' },
@@ -777,7 +778,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
           ]))
         }
         const signal = new AbortController().signal
-        const listed = await copyCtx.tools.execute({
+        const listed = await executeModelToolFixture(copyCtx, {
           callId: ToolCallId('copied-preset-inspect-list'),
           name: 'cordis_inspect_list',
           arguments: {},
@@ -792,7 +793,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
         // The `Tool` provider is the one built over the host context: it
         // answers with the shared registry's view of the REQUESTING agent,
         // so the copy sees its own preset's tools, not the host's empty set.
-        const queried = await copyCtx.tools.execute({
+        const queried = await executeModelToolFixture(copyCtx, {
           callId: ToolCallId('copied-preset-inspect-tools'),
           name: 'cordis_inspect_query',
           arguments: { platform: 'host', provider: 'Tool', method: 'listTools' },
@@ -814,7 +815,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
         type ConfigRow = { id: string; patchId: string; name: string; status: string }
         type ConfigPage = { data: { entries: ConfigRow[]; total: number; nextOffset: number | null } }
         const listConfigs = async (input: Record<string, string | number>, callId: string): Promise<ConfigPage['data']> => {
-          const page = await copyCtx.tools.execute({
+          const page = await executeModelToolFixture(copyCtx, {
             callId: ToolCallId(callId),
             name: 'cordis_inspect_query',
             arguments: { platform: 'host', provider: 'Config', method: 'listConfigs', input },
@@ -833,7 +834,7 @@ describe('a user preset declared from the shipped cordis rows', () => {
         const firstPage = await listConfigs({ limit: 5 }, 'copied-preset-inspect-page')
         expect(firstPage.entries).toHaveLength(5)
         expect(firstPage.nextOffset).toBe(5)
-        const projected = await copyCtx.tools.execute({
+        const projected = await executeModelToolFixture(copyCtx, {
           callId: ToolCallId('copied-preset-inspect-config'),
           name: 'cordis_inspect_query',
           arguments: { platform: 'host', provider: 'Config', method: 'listConfigs', input: { entry: toolsRow!.id } },
@@ -888,7 +889,8 @@ describe('a forked session', () => {
       meta: { agentPreset: 'minimal' },
       setup: agentCtx => ctx.agentPresets.mount(agentCtx, 'minimal').then(() => undefined),
     })
-    const inherited = ctx.sessionProjections.stateOf(parent.agent.session, 'agentPreset') ?? undefined
+    const projectedPreset = ctx.sessionProjections.stateOf(parent.agent.session, 'agentPreset')
+    const inherited = typeof projectedPreset === 'string' ? projectedPreset : undefined
     const child = await ctx.agents.create({
       sessionId: SessionId('preset-fork-child'),
       seed: [],
@@ -943,7 +945,7 @@ describe('a delegated child', () => {
       ] as const
       for (const [name, args] of calls) {
         expect(toolNames(ctx, child.agent)).toContain(name)
-        const result = await ctx.tools.execute({
+        const result = await executeModelToolFixture(ctx, {
           callId: ToolCallId(`child-${name}`), signal: new AbortController().signal,
           name, arguments: args, agent: child.agent,
         })

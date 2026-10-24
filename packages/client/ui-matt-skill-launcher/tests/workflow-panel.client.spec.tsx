@@ -103,6 +103,21 @@ describe('coding workflow panel', () => {
     expect(onAction).toHaveBeenCalledWith('resume')
   })
 
+  it.each(['ready', 'paused', 'blocked'] as const)('requires a cancellation reason for a %s task', (status) => {
+    const onAction = vi.fn()
+    const { rerender } = render(<WorkflowPanel item={task(status)} decision="" pending={false}
+      onDecision={() => {}} onAction={onAction} t={t} />)
+    expect(screen.getByRole('textbox', { name: 'workflowCancelReason' })).toBeDefined()
+    const cancel = screen.getByRole('button', { name: 'workflowCancel' }) as HTMLButtonElement
+    expect(cancel.disabled).toBe(true)
+    rerender(<WorkflowPanel item={task(status)} decision="Cancelled: duplicate task" pending={false}
+      onDecision={() => {}} onAction={onAction} t={t} />)
+    const enabled = screen.getByRole('button', { name: 'workflowCancel' }) as HTMLButtonElement
+    expect(enabled.disabled).toBe(false)
+    fireEvent.click(enabled)
+    expect(onAction).toHaveBeenCalledWith('cancel')
+  })
+
   it('offers no commands for a finished task', () => {
     renderPanel(task('completed'))
     expect(screen.queryByRole('button', { name: 'workflowPause' })).toBeNull()

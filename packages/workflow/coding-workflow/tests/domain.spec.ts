@@ -142,6 +142,18 @@ describe('coding workflow record lifecycle', () => {
       .toThrow(/HEAD changed/)
   })
 
+  it('keeps a pending human approval authoritative through pause and mode changes', () => {
+    const pending = requestApproval(created(), 'Confirm the requested security-sensitive change', now)
+    const paused = pause(pending, now)
+    expect(paused.status).toBe('waiting_approval')
+    expect(() => resume(paused, snapshot(), now)).toThrow(/Approval required/)
+    const switched = setMode(paused, 'auto', now)
+    expect(switched.status).toBe('waiting_approval')
+    expect(switched.approval).toBeNull()
+    expect(() => block(pending, 'Change the approval state', now)).toThrow(/Pending approval cannot be replaced/)
+    expect(approve(switched, 'Approved: continue this scoped change', now).status).toBe('ready')
+  })
+
   it('allows explicitly skipping S1 and S2 for bugfix workflows', () => {
     const start = created()
     const skippedS1 = applySkip(start, 'S1', 'Bugfix: skipping requirements analysis', snapshot(), now)

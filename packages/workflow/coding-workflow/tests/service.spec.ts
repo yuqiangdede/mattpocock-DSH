@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -9,11 +9,55 @@ import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import Storage from '@deepseek-ai/dsh-storage'
 import { DomainFacility } from '@deepseek-ai/dsh-storage-domain'
+import { ToolCallId } from '@deepseek-ai/dsh-llm'
+import { ShellExecutor } from '@deepseek-ai/dsh-shell'
+import type { ShellExecRequest, ShellExecSpec, ShellExecution, ShellProcessRead } from '@deepseek-ai/dsh-shell'
+import type { SandboxExecutionPolicy, SandboxMode } from '@deepseek-ai/dsh-sandbox'
 import CodingWorkflowService from '../src/index.ts'
 import type { WorkItem } from '../src/types.ts'
 import { MemoryMediaPool, MemoryStorageBackend } from '../../../storage/storage-domain/tests/helpers/memory-backend.ts'
 
 const temporary: string[] = []
+
+/** Canned sandboxing shell used to prove verification reaches the configured execution seam. */
+class WorkflowTestShell extends ShellExecutor {
+  readonly specs: ShellExecSpec[] = []
+
+  override get sandboxMode(): SandboxMode {
+    return 'workspace-write'
+  }
+
+  override resolve(request: ShellExecRequest): ShellExecSpec {
+    return {
+      command: request.command,
+      workdir: request.workdir ?? process.cwd(),
+      timeoutMs: request.timeoutMs ?? 30_000,
+      onExpiry: request.onExpiry ?? 'kill',
+      stdoutMaxBytes: request.stdoutMaxBytes ?? 64_000,
+      sandboxPolicy: request.sandboxPolicy,
+      ...request.signal === undefined ? {} : { signal: request.signal },
+    }
+  }
+
+  override async execute(spec: ShellExecSpec): Promise<ShellExecution> {
+    this.specs.push(spec)
+    const silent = { readFrom: (fromByte: number) => ({ text: '', nextOffset: fromByte, lossy: false }) }
+    const output: ShellProcessRead = { delta: '', lossy: false }
+    return {
+      status: 'completed',
+      exitCode: 0,
+      signal: null,
+      done: Promise.resolve(),
+      readOutput: () => output,
+      observed: { stdout: silent, stderr: silent },
+      kill: () => false,
+      result: async () => ({
+        exitCode: 0, signal: null, timedOut: false, aborted: false, timeoutMs: spec.timeoutMs,
+        stdout: { text: 'ok', truncated: false }, stderr: { text: '', truncated: false },
+      }),
+    }
+  }
+}
 
 /** Remove one temporary tree; Windows releases child-process handles late. */
 function removeTree(path: string): void {
@@ -58,8 +102,14 @@ async function boot(
   root: string,
   sessionId: string,
   pool: MemoryMediaPool = new MemoryMediaPool(),
-): Promise<{ ctx: Context; agent: Agent; service: CodingWorkflowService; pool: MemoryMediaPool }> {
+  sandboxMode: SandboxMode = 'workspace-write',
+): Promise<{ ctx: Context; agent: Agent; service: CodingWorkflowService; pool: MemoryMediaPool; shell: WorkflowTestShell; approvalRequests: unknown[] }> {
   const ctx = new Context()
+  await ctx.plugin(WorkflowTestShell)
+  const sandboxPolicy: SandboxExecutionPolicy = { mode: sandboxMode, workspaceRoot: root }
+  const approvalRequests: unknown[] = []
+  ctx.provide('sandboxPolicy', { resolve: () => sandboxPolicy })
+  ctx.provide('approval', { request: async (request: unknown) => { approvalRequests.push(request); return 'allowed-once' } })
   await ctx.plugin(SessionStore)
   await ctx.plugin(Storage)
   ctx.storage.backend.register('memory', new MemoryStorageBackend(pool))
@@ -85,7 +135,7 @@ async function boot(
   }
   ctx.provide('agents', { get: (id: SessionId) => id === agent.id ? agent : undefined })
   await ctx.plugin(CodingWorkflowService)
-  return { ctx, agent, service: ctx.codingWorkflow, pool }
+  return { ctx, agent, service: ctx.codingWorkflow, pool, shell: ctx.shell as WorkflowTestShell, approvalRequests }
 }
 
 /** Write one evidence file and return its path. */
@@ -121,8 +171,7 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
     try {
       await service.start(agent, 'Stopped verification')
       await plan(service, agent, evidence)
-      const marker = join(evidence, 'spawned.txt')
-      const command = [process.execPath, '-e', `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'ran')`]
+      const command = TEST_COMMAND
       await service.checks(agent, {
         evidencePath: evidenceFile(evidence, 'plan.md', 'plan'),
         checks: [{ kind: 'test', command }, { kind: 'build', command: BUILD_COMMAND }],
@@ -138,7 +187,7 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
       ]) {
         const stopped = await stop()
         await expect(service.verify(agent, { kind: 'test', command })).rejects.toThrow(/Task is stopped/)
-        expect(existsSync(marker)).toBe(false)
+        expect(ctx.shell.specs).toHaveLength(0)
         expect(service.get(agent)).toEqual(stopped)
         if (stopped.status === 'waiting_approval') {
           await service.approve(agent, stopped.taskId, stopped.revision, 'Approved: run the registered verification')
@@ -147,7 +196,8 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
         }
       }
       await service.verify(agent, { kind: 'test', command })
-      expect(existsSync(marker)).toBe(true)
+      expect(ctx.shell.specs).toHaveLength(1)
+      expect(ctx.shell.specs[0]?.sandboxPolicy).toEqual({ mode: 'workspace-write', workspaceRoot: root })
     } finally {
       await ctx.fiber.dispose()
     }
@@ -258,6 +308,53 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
     await expect(service.resume(agent, item.taskId, paused.revision)).resolves.toMatchObject({ status: 'ready' })
   })
 
+  it('asks for workspace-write approval before verifying under a read-only policy', async () => {
+    const { root, evidence } = repository()
+    const { ctx, agent, service, shell, approvalRequests } = await boot(root, 'service-readonly-verification', undefined, 'read-only')
+    try {
+      await service.start(agent, 'Sandboxed verification')
+      await plan(service, agent, evidence)
+      await service.checks(agent, {
+        evidencePath: evidenceFile(evidence, 'plan.md', 'plan'),
+        checks: CHECKS,
+        allowedPaths: ['src/a.ts'],
+      })
+      writeFileSync(join(root, 'src/a.ts'), 'changed\n')
+      await service.stage(agent, { stage: 'S4', evidencePath: evidenceFile(evidence, 'S4.md', 'implementation') })
+      await service.review(agent, { evidencePath: evidenceFile(evidence, 'review.md', '{}'), findings: [] })
+      await service.verify(agent, { kind: 'test', command: TEST_COMMAND, callId: ToolCallId('verification-call') })
+      expect(approvalRequests).toHaveLength(1)
+      expect(shell.specs[0]?.sandboxPolicy?.mode).toBe('workspace-write')
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
+  it('refuses to launch verification before S7 or against a changed review fingerprint', async () => {
+    const { root, evidence } = repository()
+    const { ctx, agent, service, shell } = await boot(root, 'service-verification-preconditions')
+    try {
+      await service.start(agent, 'Verification ordering')
+      await plan(service, agent, evidence)
+      await service.checks(agent, {
+        evidencePath: evidenceFile(evidence, 'plan.md', 'plan'),
+        checks: CHECKS,
+        allowedPaths: ['src/a.ts'],
+      })
+      await expect(service.verify(agent, { kind: 'test', command: TEST_COMMAND })).rejects.toThrow(/Prerequisite S4/)
+      expect(shell.specs).toHaveLength(0)
+
+      writeFileSync(join(root, 'src/a.ts'), 'changed\n')
+      await service.stage(agent, { stage: 'S4', evidencePath: evidenceFile(evidence, 'S4.md', 'implementation') })
+      await service.review(agent, { evidencePath: evidenceFile(evidence, 'review.md', '{}'), findings: [] })
+      writeFileSync(join(root, 'src/a.ts'), 'changed after review\n')
+      await expect(service.verify(agent, { kind: 'test', command: TEST_COMMAND })).rejects.toThrow(/current, clean review/)
+      expect(shell.specs).toHaveLength(0)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('runs a bugfix flow with skipped S1 and S2 stages', async () => {
     const { root, evidence } = repository()
     const { agent, service } = await boot(root, 'service-e2e-bugfix')
@@ -316,6 +413,7 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
     // The hook stages an extra edit, so the committed tree cannot match the planned one.
     const hook = join(root, '.git', 'hooks', 'pre-commit')
     writeFileSync(hook, '#!/bin/sh\necho "hook edit" >> src/a.ts\ngit add src/a.ts\n')
+    chmodSync(hook, 0o755)
     await expect(service.commit(agent, { files: ['src/a.ts'] }))
       .rejects.toThrow(/hooks changed the staged tree|Post-commit changes/)
   })

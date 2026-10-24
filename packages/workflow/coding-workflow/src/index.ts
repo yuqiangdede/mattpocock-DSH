@@ -11,6 +11,11 @@ import { randomUUID } from 'node:crypto'
 import { Context, Service } from '@deepseek-ai/cordis'
 import type { Agent } from '@deepseek-ai/dsh-agent'
 import { brandString } from '@deepseek-ai/dsh-brand'
+import type { ToolCallId } from '@deepseek-ai/dsh-llm'
+import { approveEscalation } from '@deepseek-ai/dsh-sandbox'
+import type { ShellRunResult } from '@deepseek-ai/dsh-shell'
+import type {} from '@deepseek-ai/dsh-sandbox-policy'
+import type {} from '@deepseek-ai/dsh-user-approval'
 import type { KvTable } from '@deepseek-ai/dsh-storage-domain'
 import { Remote, TypertRemoteService } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@deepseek-ai/dsh-working-directory'
@@ -31,6 +36,9 @@ import {
   recordCommit,
   requestApproval,
   requireCommitReady,
+  requireCheckpoint,
+  requirePrevious,
+  requireScoped,
   requireWritable,
   resume,
   setMode,
@@ -62,6 +70,13 @@ import type {
   WorkItem,
   WorkflowMode,
 } from './types.ts'
+
+/** Quote one argv item for the composed POSIX shell or PowerShell executor. */
+function quoteShellArgument(argument: string): string {
+  return process.platform === 'win32'
+    ? `'${argument.replaceAll("'", "''")}'`
+    : `'${argument.replaceAll("'", "'\\''")}'`
+}
 
 /** Deployment settings of the workflow service. */
 export interface Config {
@@ -122,6 +137,8 @@ export interface VerifyRequest {
   readonly kind: CheckKind
   /** Exact planned command. */
   readonly command: readonly string[]
+  /** Tool call that owns any sandbox escalation prompt. */
+  readonly callId?: ToolCallId
 }
 
 /** Local commit request. */
@@ -132,7 +149,7 @@ export interface CommitRequest {
 
 /** Coding-workflow service (`ctx.codingWorkflow`). */
 export class CodingWorkflowService extends TypertRemoteService {
-  static inject = ['storageDomain', 'agents', 'workingDirectory']
+  static inject = ['storageDomain', 'agents', 'workingDirectory', 'shell', 'sandboxPolicy']
 
   static Config: z<Config> = z.object({
     verificationTimeoutMs: z.number().default(30 * 60 * 1000),
@@ -148,6 +165,9 @@ export class CodingWorkflowService extends TypertRemoteService {
    */
   constructor(ctx: Context, config: Config = {}) {
     super(ctx, 'codingWorkflow')
+    if (ctx.shell.sandboxMode === undefined) {
+      throw new Error('coding-workflow requires a sandboxing shell executor for verification commands')
+    }
     const timeout = config.verificationTimeoutMs ?? 30 * 60 * 1000
     if (!Number.isSafeInteger(timeout) || timeout < 1000) {
       throw new Error('coding-workflow: verificationTimeoutMs must be an integer of at least 1000 ms')
@@ -330,11 +350,23 @@ export class CodingWorkflowService extends TypertRemoteService {
     requireWritable(item)
     const root = item.workspaceRoot
     const before = await readSnapshot(this.runner, root)
+    requireCheckpoint(item, before)
+    requirePrevious(item, 'S7')
+    requireScoped(item, before)
+    if (item.review === null || item.review.blockers !== 0 || item.review.fingerprint !== before.fingerprint) {
+      throw new WorkflowError('A current, clean review is required before verification', 'WORKFLOW_REVIEW_STALE')
+    }
     const planned = item.checks?.find(check => check.kind === request.kind)
     if (planned === undefined || JSON.stringify(planned.command) !== JSON.stringify(request.command)) {
       throw new WorkflowError('Command is not part of the approved implementation plan', 'WORKFLOW_UNPLANNED_CHECK')
     }
-    const result = await runVerification(this.runner, root, request.command, this.resolved.verificationTimeoutMs, signal)
+    const result = await runVerification(
+      (workdir, command, options) => this.runSandboxed(agent, workdir, command, options, request.callId),
+      root,
+      request.command,
+      this.resolved.verificationTimeoutMs,
+      signal,
+    )
     const after = await readSnapshot(this.runner, root)
     const run: VerificationRun = {
       kind: request.kind,
@@ -496,14 +528,54 @@ export class CodingWorkflowService extends TypertRemoteService {
     return this.updateCurrent(agent, item => cancel(item, reason, this.now()))
   }
 
-  /**
-   * Approve the current task's pending human decision from the model path.
-   * @param agent - live owning Agent.
-   * @param decision - scoped decision text.
-   * @returns the approved record.
-   */
-  async approveCurrent(agent: Agent, decision: string): Promise<WorkItem> {
-    return this.updateCurrent(agent, item => approve(item, decision, this.now()))
+  /** Run one planned command through the composed shell and its sandbox policy. */
+  private async runSandboxed(
+    agent: Agent,
+    root: string,
+    command: readonly string[],
+    options: { readonly signal?: AbortSignal; readonly timeoutMs?: number },
+    callId?: ToolCallId,
+  ) {
+    const standing = this.ctx.sandboxPolicy.resolve({ session: agent.session })
+    let policy = standing
+    if (standing.mode === 'read-only') {
+      if (callId === undefined) {
+        throw new WorkflowError('A live tool call id is required for sandbox approval', 'WORKFLOW_APPROVAL_REQUIRED')
+      }
+      policy = {
+        ...standing,
+        mode: await approveEscalation({
+          requestedMode: 'workspace-write',
+          effectiveMode: standing.mode,
+          justification: 'Run the planned test/build command within the task workspace',
+          subject: 'command',
+        }, {
+          approver: this.ctx.get('approval'),
+          agent,
+          callId,
+          toolName: 'coding_workflow',
+          ...options.signal === undefined ? {} : { signal: options.signal },
+        }),
+      }
+    }
+    try {
+      const execution = await this.ctx.shell.execute(this.ctx.shell.resolve({
+        command: command.map(argument => quoteShellArgument(argument)).join(' '),
+        workdir: root,
+        ...options.timeoutMs === undefined ? {} : { timeoutMs: options.timeoutMs },
+        ...options.signal === undefined ? {} : { signal: options.signal },
+        sandboxPolicy: policy,
+      }))
+      const result: ShellRunResult = await execution.result()
+      return {
+        exitCode: result.exitCode,
+        stdout: result.stdout.text,
+        stderr: result.stderr.text,
+        error: result.aborted ? 'verification command was aborted' : '',
+      }
+    } catch (error) {
+      return { exitCode: null, stdout: '', stderr: '', error: error instanceof Error ? error.message : String(error) }
+    }
   }
 
   /** Current Session record or a definite error. */

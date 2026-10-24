@@ -19,8 +19,6 @@ const MAX_EVIDENCE_BYTES = 5 * 1024 * 1024
 const MAX_OUTPUT_BYTES = 16 * 1024 * 1024
 /** Default deadline for one Git command. */
 const GIT_TIMEOUT_MS = 120_000
-/** Deadline for one registered verification command. */
-const VERIFICATION_TIMEOUT_MS = 30 * 60 * 1000
 
 /** Executables a verification gate must never use. */
 const FORBIDDEN_EXECUTABLE = /^(?:git|svn|ssh|scp|curl|wget)(?:[.]exe)?$/i
@@ -59,14 +57,6 @@ export interface RepositoryRunner {
    */
   git(root: string, args: readonly string[]): Promise<string>
 
-  /**
-   * Run one arbitrary verification command.
-   * @param root - working directory.
-   * @param command - executable and arguments.
-   * @param options - optional abort signal and deadline.
-   * @returns the observed outcome.
-   */
-  run(root: string, command: readonly string[], options?: RunOptions): Promise<CommandResult>
 }
 
 /** Spawn a child process and capture bounded output. */
@@ -120,7 +110,7 @@ function spawnCaptured(
 /** Runner backed by the Host's own Git and process facilities. */
 export class LocalRepositoryRunner implements RepositoryRunner {
   async git(root: string, args: readonly string[]): Promise<string> {
-    const result = await this.run(root, ['git', ...args], { timeoutMs: GIT_TIMEOUT_MS })
+    const result = await spawnCaptured(root, ['git', ...args], false, GIT_TIMEOUT_MS)
     if (result.exitCode !== 0) {
       throw new WorkflowError(
         (result.stderr || result.stdout || result.error || 'git command failed').slice(0, 1800),
@@ -130,16 +120,6 @@ export class LocalRepositoryRunner implements RepositoryRunner {
     return result.stdout
   }
 
-  async run(
-    root: string,
-    command: readonly string[],
-    options: { readonly signal?: AbortSignal; readonly timeoutMs?: number } = {},
-  ): Promise<CommandResult> {
-    const [executable] = command
-    const needsShell = process.platform === 'win32' && executable !== undefined
-      && (/[.]cmd$|[.]bat$/i.test(executable) || /^(?:pnpm|npm|npx|yarn)$/i.test(executable))
-    return spawnCaptured(root, command, needsShell, options.timeoutMs ?? VERIFICATION_TIMEOUT_MS, options.signal)
-  }
 }
 
 /**
@@ -222,7 +202,7 @@ export function verifyEvidence(evidence: EvidenceRef): void {
  * @returns the observed outcome.
  */
 export async function runVerification(
-  runner: RepositoryRunner,
+  execute: (root: string, command: readonly string[], options: RunOptions) => Promise<CommandResult>,
   root: string,
   command: readonly string[],
   timeoutMs: number,
@@ -238,7 +218,7 @@ export async function runVerification(
   if (windowsShell && command.some(argument => SHELL_METACHARACTER.test(argument))) {
     throw new WorkflowError('Unsafe shell metacharacters in Windows build command', 'WORKFLOW_FORBIDDEN_COMMAND')
   }
-  return runner.run(root, command, { timeoutMs, ...signal === undefined ? {} : { signal } })
+  return execute(root, command, { timeoutMs, ...signal === undefined ? {} : { signal } })
 }
 
 /**

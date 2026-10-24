@@ -34,6 +34,7 @@ function renderSettled(
   labels: MarkdownLabels,
   fileMentions: MarkdownFileMentions | undefined,
   pathImages: MarkdownPathImages | undefined,
+  omitHtml: boolean,
 ): ReactNode[] {
   const root = parseGfmWithMath(text)
   const targets = createReferenceTargets()
@@ -41,6 +42,7 @@ function renderSettled(
   const context: MarkdownRenderContext = {
     streaming: false,
     labels,
+    omitHtml,
     fileMentions,
     pathImages,
     targets,
@@ -77,7 +79,7 @@ class StreamingRenderer {
   private lastRendered: ReactNode[] = []
 
   /** @param labels - Localized Markdown chrome baked into cached elements; the owner replaces the renderer when it changes. */
-  constructor(private readonly labels: MarkdownLabels) {}
+  constructor(private readonly labels: MarkdownLabels, private readonly omitHtml: boolean) {}
 
   /**
    * Render the current accumulated text. Idempotent per text value, so React
@@ -110,6 +112,7 @@ class StreamingRenderer {
       const frozenContext: MarkdownRenderContext = {
         streaming: true,
         labels: this.labels,
+        omitHtml: this.omitHtml,
         fileMentions: undefined,
         pathImages: undefined,
         targets: frameTargets,
@@ -129,6 +132,7 @@ class StreamingRenderer {
     const tailContext: MarkdownRenderContext = {
       streaming: true,
       labels: this.labels,
+      omitHtml: this.omitHtml,
       fileMentions: undefined,
       pathImages: undefined,
       targets: frameTargets,
@@ -176,28 +180,31 @@ class StreamingRenderer {
  * absolute HTTP(S) images render directly.
  */
 export const MarkdownText = memo(function MarkdownText({
-  text, streaming = false, labels, fileMentions, pathImages, variant = 'body',
+  text, streaming = false, labels, fileMentions, pathImages, variant = 'body', omitHtml = false,
 }: {
   text: string
   streaming?: boolean
   labels: MarkdownLabels
   fileMentions?: MarkdownFileMentions | undefined
   pathImages?: MarkdownPathImages | undefined
+  omitHtml?: boolean
   variant?: 'body' | 'compact'
 }) {
   const streamRef = useRef<StreamingRenderer | null>(null)
   const streamLabelsRef = useRef<MarkdownLabels>(labels)
+  const streamOmitHtmlRef = useRef(omitHtml)
   const children = useMemo(() => {
     if (!streaming) {
       streamRef.current = null
-      return renderSettled(text, labels, fileMentions, pathImages)
+      return renderSettled(text, labels, fileMentions, pathImages, omitHtml)
     }
-    if (streamRef.current === null || streamLabelsRef.current !== labels) {
-      streamRef.current = new StreamingRenderer(labels)
+    if (streamRef.current === null || streamLabelsRef.current !== labels || streamOmitHtmlRef.current !== omitHtml) {
+      streamRef.current = new StreamingRenderer(labels, omitHtml)
       streamLabelsRef.current = labels
+      streamOmitHtmlRef.current = omitHtml
     }
     return streamRef.current.render(text)
-  }, [text, streaming, labels, fileMentions, pathImages])
+  }, [text, streaming, labels, fileMentions, pathImages, omitHtml])
   return <div className={clsx(css.markdown, variant === 'compact' && css.compact)}
     data-markdown-variant={variant === 'compact' ? variant : undefined}>{children}</div>
 })

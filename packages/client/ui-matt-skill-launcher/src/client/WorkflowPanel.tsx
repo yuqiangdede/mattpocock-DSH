@@ -80,6 +80,9 @@ export function WorkflowPanel({ item, decision, pending, onDecision, onAction, t
         <button type="button" className={css.action} disabled={pending || !decisionReady}
           onClick={() => { onAction('approve') }}>{t('workflowApprove')}</button>
       </>}
+      {OPEN_STATUSES.has(item.status) && item.status !== 'waiting_approval' &&
+        <input className={css.workflowInput} value={decision} onChange={(event) => { onDecision(event.target.value) }}
+          placeholder={t('workflowCancelReason')} aria-label={t('workflowCancelReason')} disabled={pending} />}
       {item.status === 'ready' && <button type="button" className={css.action} disabled={pending}
         onClick={() => { onAction('pause') }}>{t('workflowPause')}</button>}
       {(item.status === 'paused' || item.status === 'blocked') &&

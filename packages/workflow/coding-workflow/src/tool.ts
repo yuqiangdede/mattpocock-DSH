@@ -16,7 +16,7 @@ import type { CodingWorkflowService } from './index.ts'
 /** Verbs the model may invoke. */
 const ACTIONS = [
   'start', 'status', 'stage', 'skip', 'checks', 'review', 'repair', 'verify', 'commit',
-  'mode', 'pause', 'resume', 'approval', 'approve', 'block', 'cancel',
+  'mode', 'pause', 'resume', 'approval', 'block', 'cancel',
 ] as const
 
 /** Stage arguments the model may submit directly. */
@@ -139,7 +139,6 @@ export function codingWorkflowTool(service: CodingWorkflowService): ToolDefiniti
       files: { type: 'array', items: { type: 'string' }, description: 'commit: exact changed files to commit.' },
       mode: { type: 'string', enum: ['manual', 'auto'], description: 'mode: switch without resuming.' },
       reason: { type: 'string', description: 'approval/block/cancel: concrete reason and recovery.' },
-      decision: { type: 'string', description: 'approve: scoped decision text.' },
     },
     output: {
       schema: {
@@ -215,6 +214,7 @@ export function codingWorkflowTool(service: CodingWorkflowService): ToolDefiniti
         case 'verify': return toValue(await service.verify(agent, {
           kind: required(args.kind, 'kind') as CheckKind,
           command: required(args.command, 'command'),
+          callId: exec.callId,
         }, exec.signal))
         case 'commit': return toValue(await service.commit(agent, { files: required(args.files, 'files') }))
         case 'mode': return toValue(await service.updateMode(agent, required(args.mode, 'mode')))
@@ -223,7 +223,6 @@ export function codingWorkflowTool(service: CodingWorkflowService): ToolDefiniti
         case 'approval': return toValue(await service.requestApproval(agent, required(args.reason, 'reason')))
         case 'block': return toValue(await service.block(agent, required(args.reason, 'reason')))
         case 'cancel': return toValue(await service.cancelCurrent(agent, required(args.reason, 'reason')))
-        case 'approve': return toValue(await service.approveCurrent(agent, required(args.decision, 'decision')))
         default: throw new Error(`coding_workflow: unknown action "${String(action)}"`)
       }
     },

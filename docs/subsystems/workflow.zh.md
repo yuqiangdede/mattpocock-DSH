@@ -176,6 +176,14 @@ inspect(agent: Agent): WorkItem | null
 async stage(agent: Agent, request: StageRequest): Promise<WorkItem>
 
 /**
+ * Skip one eligible stage (S1 or S2) with an explicit reason.
+ * @param agent - live owning Agent.
+ * @param request - stage to skip and concrete reason.
+ * @returns the next record.
+ */
+async skip(agent: Agent, request: SkipRequest): Promise<WorkItem>
+
+/**
  * Accept the implementation plan's checks and allowed paths.
  * @param agent - live owning Agent.
  * @param request - plan evidence, checks, and allowed paths.
@@ -309,14 +317,6 @@ async resumeCurrent(agent: Agent): Promise<WorkItem>
  * @returns the cancelled record.
  */
 async cancelCurrent(agent: Agent, reason: string): Promise<WorkItem>
-
-/**
- * Approve the current task's pending human decision from the model path.
- * @param agent - live owning Agent.
- * @param decision - scoped decision text.
- * @returns the approved record.
- */
-async approveCurrent(agent: Agent, decision: string): Promise<WorkItem>
 ```
 
 Types: [Agent](core.zh.md)

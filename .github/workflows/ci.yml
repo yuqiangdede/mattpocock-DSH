@@ -53,6 +53,10 @@ jobs:
           $exists = Test-Path "packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts"
           "exists=$($exists.ToString().ToLowerInvariant())" >> $env:GITHUB_OUTPUT
 
+      - name: Build Windows workspace (Host, Client, Desktop, Web)
+        shell: pwsh
+        run: pnpm run build
+
       - name: Test Skill Launcher and DSH UI integration
         if: steps.launcher.outputs.exists == 'true'
         shell: pwsh
@@ -61,10 +65,6 @@ jobs:
           packages/client/ui-matt-skill-launcher/tests/actions.client.spec.ts
           packages/client/ui-matt-skill-launcher/tests/todo-progress-guard.host.spec.ts
           packages/client/ui-renderer/tests/scoped-slots.client.spec.tsx
-
-      - name: Build Windows workspace (Host, Client, Desktop, Web)
-        shell: pwsh
-        run: pnpm run build
 
       - name: Test offline Desktop bundled plugin defaults, Computer Use, and LLM retry
         shell: pwsh
