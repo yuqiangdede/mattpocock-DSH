@@ -11,14 +11,6 @@
 .recommended{composes:action;border-color:var(--dsw-alias-border-l2);box-shadow:0 0 0 1px var(--dsw-alias-border-l2);font-weight:500}
 .hint{font-size:11px;line-height:16px;color:var(--dsw-alias-label-secondary)}
 
-.modeRow{display:flex;align-items:center;gap:5px;min-height:26px}
-.modeLabel{font-size:11px;color:var(--dsw-alias-label-secondary);margin-right:4px}
-.modeButton,.modeActive{font:inherit;font-size:12px;padding:3px 9px;border:1px solid var(--dsw-alias-border-l2);border-radius:6px;cursor:pointer;background:transparent;color:var(--dsw-alias-label-primary)}
-.modeActive{background:var(--dsw-alias-interactive-bg-hover);font-weight:600}
-.modeButton:focus-visible,.modeActive:focus-visible{outline:2px solid var(--dsw-alias-border-l2);outline-offset:2px}
-.autoPanel{display:flex;align-items:center;flex-wrap:wrap;gap:8px;font-size:11px;color:var(--dsw-alias-label-secondary)}
-.autoNote{font-size:11px}
-
 .workflowPanel{display:flex;flex-direction:column;gap:5px;padding:5px 6px;border:0.5px solid var(--dsw-alias-border-l2);border-radius:6px}
 .workflowHead{display:flex;align-items:center;flex-wrap:wrap;gap:8px}
 .workflowTitle{font-size:12px;font-weight:600;color:var(--dsw-alias-label-primary)}

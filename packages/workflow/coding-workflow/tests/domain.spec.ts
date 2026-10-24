@@ -96,6 +96,15 @@ function throughVerification(): WorkItem {
 }
 
 describe('coding workflow record lifecycle', () => {
+  it('refuses verification and commit while stopped or terminal', () => {
+    for (const status of ['paused', 'blocked', 'waiting_approval', 'cancelled', 'completed'] as const) {
+      expect(() => applyVerification({ ...throughReview(), status }, run('test'), snapshot({ files: ['a.ts'] }), now))
+        .toThrow(/Task is stopped|Task is terminal/)
+      expect(() => requireCommitReady({ ...throughVerification(), status }, snapshot({ files: ['a.ts'] }), ['a.ts']))
+        .toThrow(/Task is stopped|Task is terminal/)
+    }
+  })
+
   it('starts at S1 with a completed S0 and manual mode', () => {
     const item = created()
     expect(item.revision).toBe(1)

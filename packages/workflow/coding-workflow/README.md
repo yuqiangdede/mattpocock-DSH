@@ -46,6 +46,8 @@ The service requires `storageDomain`, `agents`, and `workingDirectory`; the stor
 
 A stage that no longer matches the repository (`Branch changed`, `HEAD changed outside workflow`) refuses to continue rather than guessing. Two consecutive reviews reporting the same blocking findings stop the task, as does a fourth repair round. A verification that fails, or that observes a changed source, blocks the task at S7. Mode changes pause the task; resuming re-checks the branch and HEAD.
 
+Paused, blocked, and waiting-approval tasks reject verification before spawning a command and reject commits before staging files. Resume the task, or approve its pending decision, before retrying.
+
 -----
 
 <a id="understand-the-implementation"></a>

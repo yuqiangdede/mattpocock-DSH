@@ -46,6 +46,8 @@ kind: "package-reference"
 
 与仓库不再匹配的阶段（`Branch changed`、`HEAD changed outside workflow`）会拒绝继续而不是猜测。连续两次走读报告相同阻断问题会停止任务，第 4 轮修复同样停止。验证失败或观察到源码变化会在 S7 阻塞任务。切换模式会暂停任务；恢复时会重新校验分支与 HEAD。
 
+已暂停、已阻塞或等待审批的任务会在启动命令前拒绝验证，在暂存文件前拒绝提交。重试前须恢复任务，或批准其待决事项。
+
 -----
 
 <a id="understand-the-implementation"></a>

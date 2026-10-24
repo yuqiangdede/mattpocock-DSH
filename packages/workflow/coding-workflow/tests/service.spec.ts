@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -115,6 +115,44 @@ async function plan(service: CodingWorkflowService, agent: Agent, evidence: stri
 }
 
 describe('coding workflow service over real storage and Git', { timeout: 180_000 }, () => {
+  it('does not spawn verification commands while stopped', async () => {
+    const { root, evidence } = repository()
+    const { ctx, agent, service } = await boot(root, 'service-stopped-verification')
+    try {
+      await service.start(agent, 'Stopped verification')
+      await plan(service, agent, evidence)
+      const marker = join(evidence, 'spawned.txt')
+      const command = [process.execPath, '-e', `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'ran')`]
+      await service.checks(agent, {
+        evidencePath: evidenceFile(evidence, 'plan.md', 'plan'),
+        checks: [{ kind: 'test', command }, { kind: 'build', command: BUILD_COMMAND }],
+        allowedPaths: ['src/a.ts'],
+      })
+      writeFileSync(join(root, 'src/a.ts'), 'changed\n')
+      await service.stage(agent, { stage: 'S4', evidencePath: evidenceFile(evidence, 'S4.md', 'implementation') })
+      await service.review(agent, { evidencePath: evidenceFile(evidence, 'review.md', '{}'), findings: [] })
+      for (const stop of [
+        () => service.pauseCurrent(agent),
+        () => service.block(agent, 'Inspect the failed operation'),
+        () => service.requestApproval(agent, 'Confirm the verification scope'),
+      ]) {
+        const stopped = await stop()
+        await expect(service.verify(agent, { kind: 'test', command })).rejects.toThrow(/Task is stopped/)
+        expect(existsSync(marker)).toBe(false)
+        expect(service.get(agent)).toEqual(stopped)
+        if (stopped.status === 'waiting_approval') {
+          await service.approve(agent, stopped.taskId, stopped.revision, 'Approved: run the registered verification')
+        } else {
+          await service.resume(agent, stopped.taskId, stopped.revision)
+        }
+      }
+      await service.verify(agent, { kind: 'test', command })
+      expect(existsSync(marker)).toBe(true)
+    } finally {
+      await ctx.fiber.dispose()
+    }
+  })
+
   it('runs a clean task from start to one local commit', async () => {
     const { root, evidence } = repository()
     const { agent, service } = await boot(root, 'service-e2e-a')
@@ -149,6 +187,14 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
     const verified = await service.verify(agent, { kind: 'build', command: BUILD_COMMAND })
     expect(verified.currentStage).toBe('S8')
     expect(verified.verification?.passed).toBe(true)
+
+    const paused = await service.pause(agent, verified.taskId, verified.revision)
+    const beforeCommit = git(root, 'rev-parse', 'HEAD')
+    await expect(service.commit(agent, { files: ['src/a.ts'] })).rejects.toThrow(/Task is stopped/)
+    expect(git(root, 'rev-parse', 'HEAD')).toBe(beforeCommit)
+    expect(git(root, 'diff', '--cached', '--name-only')).toBe('')
+    expect(service.get(agent)).toEqual(paused)
+    await service.resume(agent, paused.taskId, paused.revision)
 
     const committed = await service.commit(agent, { files: ['src/a.ts'] })
     expect(committed.currentStage).toBe('S9')
@@ -210,5 +256,38 @@ describe('coding workflow service over real storage and Git', { timeout: 180_000
     expect(paused.status).toBe('paused')
     expect(paused.mode).toBe('auto')
     await expect(service.resume(agent, item.taskId, paused.revision)).resolves.toMatchObject({ status: 'ready' })
+  })
+
+  it('refuses a workspace that is not a Git repository', async () => {
+    const base = mkdtempSync(join(tmpdir(), 'coding-workflow-svn-'))
+    temporary.push(base)
+    mkdirSync(join(base, '.svn'))
+    writeFileSync(join(base, 'file.txt'), 'svn working copy\n')
+    const { agent, service } = await boot(base, 'service-e2e-svn')
+    // A Subversion working copy has no Git history to claim: start fails before any branch or commit exists.
+    await expect(service.start(agent, 'SVN workspace')).rejects.toThrow(/git command failed|not a git repository/)
+    expect(service.get(agent)).toBeNull()
+  })
+
+  it('detects a commit hook that changes the staged tree', async () => {
+    const { root, evidence } = repository()
+    const { agent, service } = await boot(root, 'service-e2e-hooks')
+    await service.start(agent, 'Hook guard')
+    await plan(service, agent, evidence)
+    await service.checks(agent, {
+      evidencePath: evidenceFile(evidence, 'plan.md', 'plan'),
+      checks: CHECKS,
+      allowedPaths: ['src/a.ts'],
+    })
+    writeFileSync(join(root, 'src/a.ts'), 'changed\n')
+    await service.stage(agent, { stage: 'S4', evidencePath: evidenceFile(evidence, 'S4.md', 'implementation') })
+    await service.review(agent, { evidencePath: evidenceFile(evidence, 'review.md', '{}'), findings: [] })
+    await service.verify(agent, { kind: 'test', command: TEST_COMMAND })
+    await service.verify(agent, { kind: 'build', command: BUILD_COMMAND })
+    // The hook stages an extra edit, so the committed tree cannot match the planned one.
+    const hook = join(root, '.git', 'hooks', 'pre-commit')
+    writeFileSync(hook, '#!/bin/sh\necho "hook edit" >> src/a.ts\ngit add src/a.ts\n')
+    await expect(service.commit(agent, { files: ['src/a.ts'] }))
+      .rejects.toThrow(/hooks changed the staged tree|Post-commit changes/)
   })
 })

@@ -456,6 +456,7 @@ export function applyVerification(
   snapshot: RepositorySnapshot,
   now: string,
 ): WorkItem {
+  requireWritable(item)
   requireCheckpoint(item, snapshot)
   requirePrevious(item, 'S7')
   ensure(item.review !== null && item.review.blockers === 0, 'Unresolved blocking review findings', 'WORKFLOW_REVIEW_BLOCKERS')
@@ -521,6 +522,7 @@ export function recordCommit(
  * @param files - exact files the caller wants to commit.
  */
 export function requireCommitReady(item: WorkItem, snapshot: RepositorySnapshot, files: readonly string[]): void {
+  requireWritable(item)
   requireCheckpoint(item, snapshot)
   requirePrevious(item, 'S8')
   requireScoped(item, snapshot)

@@ -30,6 +30,7 @@ import {
   recordCommit,
   requestApproval,
   requireCommitReady,
+  requireWritable,
   resume,
   setMode,
 } from './domain.ts'
@@ -301,6 +302,7 @@ export class CodingWorkflowService extends TypertRemoteService {
    */
   async verify(agent: Agent, request: VerifyRequest, signal?: AbortSignal): Promise<WorkItem> {
     const item = this.requireCurrent(agent)
+    requireWritable(item)
     const root = item.workspaceRoot
     const before = await readSnapshot(this.runner, root)
     const planned = item.checks?.find(check => check.kind === request.kind)
