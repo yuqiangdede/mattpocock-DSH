@@ -8,6 +8,8 @@ Service Definition：[dsh-workflow](../../packages/workflow/workflow)（`ctx.wor
 
 源码：浏览器安全词汇位于 [`packages/workflow/workflow/src/types.ts`](../../packages/workflow/workflow/src/types.ts)，Host 请求与活跃运行句柄位于 [`runtime-types.ts`](../../packages/workflow/workflow/src/runtime-types.ts)。
 
+本页同时记录 Fork 的分阶段编码工作流服务 [ctx.codingWorkflow](../../packages/workflow/coding-workflow/README.zh.md)。它不是编排引擎：一个 Host 服务为每个 Session 持有一个分阶段 Work Item，从需求直到一次本地提交，按真实仓库快照校验每次变更，并通过 Remote 暴露给 Launcher 的阶段面板。下面的生成小节描述其命令与 coding-workflow/changed 事件。
+
 ## 启动请求
 
 本节定义调用方启动一次运行时提交的请求。普通工作流工具会根据模型的 `{ script, meta, args }` 调用和发起调用的 agent 构建该请求；专用消费方还可以为本次运行选择引擎级 `subagentProvider`，并将 `maxTotalAgents` 调低，但脚本无法观察或替换这两项策略。`meta` 与 `args` 是普通 JSON 数据；引擎会用 schema 校验 `meta`，并在任何工作开始前明确报错并拒绝无效数据。引擎绝不会通过对脚本文本求值来获取它们。`parent` 是必填字段——脚本启动的每个子 agent 都归属于它，cwd、谱系与深度通过 [subagent seam](subagent.zh.md) 传递。
@@ -135,6 +137,192 @@ interface WorkflowRun {
 
 Generated from source by `scripts/gen-cordis-catalog.ts` (verified fresh by `pnpm run verify-cordis-catalog` in doc-sync; regenerate with `pnpm run gen-cordis-catalog`) — the language sides differ only in locale-specific paired document paths. Signature blocks use a `ts cordis-catalog` fence and keep the original source JSDoc; dispatch modes are defined in the [primer](../cordis-primer.zh.md#dispatch-modes), and the framework-inherited `ctx` API lives in [cordis-api/inherited.md](../cordis-api/inherited.md).
 
+<a id="ctxcodingworkflow--codingworkflowservice"></a>
+
+### `ctx.codingWorkflow` — `CodingWorkflowService`
+
+Coding-workflow service (`ctx.codingWorkflow`).
+
+```ts cordis-catalog
+/**
+ * Start one Work Item on a clean tree; a protected branch gets a new task branch.
+ * @param agent - live owning Agent.
+ * @param title - human task title.
+ * @returns the created record.
+ */
+async start(agent: Agent, title: string): Promise<WorkItem>
+
+/**
+ * Read the Session's current Work Item.
+ * @param agent - live owning Agent.
+ * @returns the newest unfinished record, else the newest record, else null.
+ */
+@Remote('get') get(agent: Agent): WorkItem | null
+
+/**
+ * Read the Session's current unfinished Work Item without validating liveness.
+ * The synchronous tool guard uses this path.
+ * @param agent - calling Agent.
+ * @returns the unfinished record, or null when the Session owns none.
+ */
+inspect(agent: Agent): WorkItem | null
+
+/**
+ * Complete one evidence-only stage.
+ * @param agent - live owning Agent.
+ * @param request - stage and evidence path.
+ * @returns the next record.
+ */
+async stage(agent: Agent, request: StageRequest): Promise<WorkItem>
+
+/**
+ * Skip one eligible stage (S1 or S2) with an explicit reason.
+ * @param agent - live owning Agent.
+ * @param request - stage to skip and concrete reason.
+ * @returns the next record.
+ */
+async skip(agent: Agent, request: SkipRequest): Promise<WorkItem>
+
+/**
+ * Accept the implementation plan's checks and allowed paths.
+ * @param agent - live owning Agent.
+ * @param request - plan evidence, checks, and allowed paths.
+ * @returns the next record.
+ */
+async checks(agent: Agent, request: ChecksRequest): Promise<WorkItem>
+
+/**
+ * Record one structured review and route the task onward.
+ * @param agent - live owning Agent.
+ * @param request - review evidence and findings.
+ * @returns the next record.
+ */
+async review(agent: Agent, request: ReviewRequest): Promise<WorkItem>
+
+/**
+ * Record one repair round after a failing review.
+ * @param agent - live owning Agent.
+ * @param evidencePath - repair evidence path.
+ * @returns the next record.
+ */
+async repair(agent: Agent, evidencePath: string): Promise<WorkItem>
+
+/**
+ * Run one planned verification command and fold its outcome.
+ * @param agent - live owning Agent.
+ * @param request - planned kind and exact command.
+ * @param signal - caller cancellation.
+ * @returns the next record.
+ */
+async verify(agent: Agent, request: VerifyRequest, signal?: AbortSignal): Promise<WorkItem>
+
+/**
+ * Stage exactly the listed files and create the task's single local commit.
+ * @param agent - live owning Agent.
+ * @param request - exact files to commit.
+ * @returns the record at S9.
+ */
+async commit(agent: Agent, request: CommitRequest): Promise<WorkItem>
+
+/**
+ * Pause further progress.
+ * @param agent - live owning Agent.
+ * @param taskId - task identity.
+ * @param revision - expected revision.
+ * @returns the paused record.
+ */
+@Remote('pause') pause(agent: Agent, taskId: TaskId, revision: number): Promise<WorkItem>
+
+/**
+ * Resume a paused, blocked, or ready task.
+ * @param agent - live owning Agent.
+ * @param taskId - task identity.
+ * @param revision - expected revision.
+ * @returns the runnable record.
+ */
+@Remote('resume') async resume(agent: Agent, taskId: TaskId, revision: number): Promise<WorkItem>
+
+/**
+ * Switch mode without resuming work.
+ * @param agent - live owning Agent.
+ * @param taskId - task identity.
+ * @param revision - expected revision.
+ * @param mode - requested mode.
+ * @returns the paused record with the new mode.
+ */
+@Remote('setMode') setMode(agent: Agent, taskId: TaskId, revision: number, mode: WorkflowMode): Promise<WorkItem>
+
+/**
+ * Record a scoped human approval.
+ * @param agent - live owning Agent.
+ * @param taskId - task identity.
+ * @param revision - expected revision.
+ * @param decision - scoped decision text.
+ * @returns the approved record.
+ */
+@Remote('approve') approve(agent: Agent, taskId: TaskId, revision: number, decision: string): Promise<WorkItem>
+
+/**
+ * Cancel a task permanently.
+ * @param agent - live owning Agent.
+ * @param taskId - task identity.
+ * @param revision - expected revision.
+ * @param reason - why the user cancelled.
+ * @returns the cancelled record.
+ */
+@Remote('cancel') cancel(agent: Agent, taskId: TaskId, revision: number, reason: string): Promise<WorkItem>
+
+/**
+ * Ask a human for a scoped decision from the model path.
+ * @param agent - live owning Agent.
+ * @param reason - concrete reason and proposed recovery.
+ * @returns the waiting record.
+ */
+async requestApproval(agent: Agent, reason: string): Promise<WorkItem>
+
+/**
+ * Stop a task on an unrecoverable condition from the model path.
+ * @param agent - live owning Agent.
+ * @param reason - concrete reason and proposed recovery.
+ * @returns the blocked record.
+ */
+async block(agent: Agent, reason: string): Promise<WorkItem>
+
+/**
+ * Switch the current task's mode from the model path.
+ * @param agent - live owning Agent.
+ * @param mode - requested mode.
+ * @returns the paused record with the new mode.
+ */
+async updateMode(agent: Agent, mode: WorkflowMode): Promise<WorkItem>
+
+/**
+ * Pause the current task from the model path.
+ * @param agent - live owning Agent.
+ * @returns the paused record.
+ */
+async pauseCurrent(agent: Agent): Promise<WorkItem>
+
+/**
+ * Resume the current task from the model path.
+ * @param agent - live owning Agent.
+ * @returns the runnable record.
+ */
+async resumeCurrent(agent: Agent): Promise<WorkItem>
+
+/**
+ * Cancel the current task from the model path.
+ * @param agent - live owning Agent.
+ * @param reason - why the task is cancelled.
+ * @returns the cancelled record.
+ */
+async cancelCurrent(agent: Agent, reason: string): Promise<WorkItem>
+```
+
+Types: [Agent](core.zh.md)
+
+Source: [`packages/workflow/coding-workflow/src/index.ts`](../../packages/workflow/coding-workflow/src/index.ts)
+
 <a id="ctxworkflowengine--workflowengine-abstract-seam"></a>
 
 ### `ctx.workflowEngine` — `WorkflowEngine` (abstract seam)
@@ -152,6 +340,27 @@ abstract start(request: WorkflowStartRequest): WorkflowRun
 ```
 
 Source: [`packages/workflow/workflow/src/index.ts`](../../packages/workflow/workflow/src/index.ts)
+
+<a id="coding-workflow-events"></a>
+
+### `coding-workflow/*` events
+
+<a id="coding-workflowchanged--emit"></a>
+
+#### `coding-workflow/changed` — emit
+
+One accepted Work Item mutation.
+
+```ts cordis-catalog
+/**
+ * One accepted Work Item mutation.
+ * @mode emit
+ * @param payload - session, task, and the new stage/status.
+ */
+'coding-workflow/changed'(payload: CodingWorkflowChanged): void
+```
+
+Source: [`packages/workflow/coding-workflow/src/types.ts`](../../packages/workflow/coding-workflow/src/types.ts)
 
 <a id="workflow-events"></a>
 

@@ -2,6 +2,18 @@
 /** Simplified Chinese copy. */
 export const zh = {
   'more': '更多',
+  'workflowMode': '编码模式',
+  'goalStatus': '自动任务 Goal 状态',
+  'goalNotStage': '阶段详细进度待接入',
+  'pauseFailed': '暂停自动任务失败，未切换模式：',
+  'pauseUnavailable': '会话仍在执行，但尚未建立可识别的自动任务 Goal。请先使用原生停止按钮，再切换手动模式。',
+  'manualMode': '手动',
+  'autoMode': '全自动',
+  'autoStages': '需求 → 固化 → 实现 → 走读 → 修复 → 验证 → 本地提交',
+  'autoPrepare': '准备全自动任务',
+  'autoInstruction': '按本次消息中的具体目标连续执行全自动编码工作流。默认仅异常需要人工确认，严格检查阶段证据，修复最多 3 轮，验证后只允许本地 Git commit；禁止 push、创建 PR、部署。若未提供开发目标，先询问用户，不要自行开发。',
+  'autoTooltip': '先把光标移到草稿开头，点击插入 workflow Skill；检查需求文本后手动发送才开始执行。',
+  'autoHelp': '先填写目标，光标移至开头后点准备；手动发送才授权开始。异常暂停，重启后不会自动继续。',
   'todoStale': '任务列表已持续 {minutes} 分钟未变化（按当前页面观察时间计算）；Agent 可能仍在工作，请核对进度。',
   'showButton': '显示在快捷栏',
   'defaultLocale': 'zh',
@@ -72,6 +84,25 @@ export const zh = {
   'reasonRepairReady': '建议对修复执行回归验证',
   'reasonBuildReady': '构建通过，可检查后提交',
   'reasonPreviousFailed': '上一操作存在失败或中断',
+  'workflowTask': '编码任务',
+  'workflowStages': '阶段进度',
+  'workflowModeLabel': '模式',
+  'workflowBranchLabel': '分支',
+  'workflowApprove': '批准继续',
+  'workflowDecision': '审批说明（必填）',
+  'workflowCancelReason': '取消原因（必填）',
+  'workflowPause': '暂停任务',
+  'workflowResume': '继续任务',
+  'workflowCancel': '取消任务',
+  'workflowActionFailed': '操作失败：',
+  'workflowStagePending': '待办',
+  'workflowStageRunning': '进行中',
+  'workflowStageWaitingApproval': '待审批',
+  'workflowStageCompleted': '完成',
+  'workflowStageFailed': '失败',
+  'workflowStageBlocked': '阻塞',
+  'workflowStageSkipped': '跳过',
+  'workflowStageStale': '失效',
 } as const
 
 /** Keys accepted by the launcher locale seat. */
@@ -80,6 +111,18 @@ export type LauncherLocaleKey = keyof typeof zh
 /** English copy with the same keys. */
 export const en: Record<LauncherLocaleKey, string> = {
   'more': 'More',
+  'workflowMode': 'Coding mode',
+  'goalStatus': 'Automatic task Goal status',
+  'goalNotStage': 'Detailed stage progress not yet available',
+  'pauseFailed': 'Unable to pause workflow; mode unchanged: ',
+  'pauseUnavailable': 'Session is still running without an identifiable workflow Goal. Stop the Agent using its native control before switching to manual.',
+  'manualMode': 'Manual',
+  'autoMode': 'Automatic',
+  'autoStages': 'Discuss → Spec → Implement → Review → Fix → Verify → Local commit',
+  'autoPrepare': 'Prepare automatic task',
+  'autoInstruction': 'Execute the end-to-end coding workflow for the objective in this message. Ask for human approval only on exceptions, require evidence for completed stages, allow at most three repair rounds, and commit locally only after verification. Never push, create a PR or deploy. If no objective was provided, ask before acting.',
+  'autoTooltip': 'Move the cursor to the beginning, insert the workflow Skill, review the draft and explicitly send to start.',
+  'autoHelp': 'Type the goal, move the cursor to the beginning, prepare then send. Restart never resumes automatically.',
   'todoStale': 'Task status has not changed for {minutes} min (observed in this view); the Agent may still be working. Review the plan.',
   'showButton': 'Show in launcher',
   'defaultLocale': 'en',
@@ -150,6 +193,25 @@ export const en: Record<LauncherLocaleKey, string> = {
   'reasonRepairReady': 'Run regression checks on the fix',
   'reasonBuildReady': 'Build passed; review before committing',
   'reasonPreviousFailed': 'The previous action failed or stopped',
+  'workflowTask': 'Coding task',
+  'workflowStages': 'Stage progress',
+  'workflowModeLabel': 'Mode',
+  'workflowBranchLabel': 'Branch',
+  'workflowApprove': 'Approve and continue',
+  'workflowDecision': 'Approval decision (required)',
+  'workflowCancelReason': 'Cancellation reason (required)',
+  'workflowPause': 'Pause task',
+  'workflowResume': 'Resume task',
+  'workflowCancel': 'Cancel task',
+  'workflowActionFailed': 'Action failed: ',
+  'workflowStagePending': 'Pending',
+  'workflowStageRunning': 'In progress',
+  'workflowStageWaitingApproval': 'Awaiting approval',
+  'workflowStageCompleted': 'Done',
+  'workflowStageFailed': 'Failed',
+  'workflowStageBlocked': 'Blocked',
+  'workflowStageSkipped': 'Skipped',
+  'workflowStageStale': 'Stale',
 }
 
 /** Receiving instructions inserted into user-editable action drafts, Chinese then English. */
@@ -174,10 +236,14 @@ export const receivingInstructions: Readonly<Record<string, readonly [string, st
   retro: ['接收原任务、决策、失败记录、审查问题和验证结果；区分事实、原因假设及改进建议，不把一次结果推广为事实。', 'Receive the original task, decisions, failures, findings and checks; distinguish facts, causal hypotheses and improvement proposals.'],
   handoff: ['交接目标、当前阶段、规格及工单链接、关键决策、代码状态、实际验证、问题编号、未完成项、阻塞和下一步；引用已有产物，不复制全文，移除敏感信息。', 'Hand off the goal, phase, spec and ticket links, decisions, code state, checks, finding IDs, pending work, blockers and next steps; reference existing artifacts and redact secrets.'],
   image: ['接收已确认页面需求、截图或设计文档、交互状态和视觉约束；保留资料来源及待确认项。', 'Receive confirmed screen requirements, screenshots or design docs, interaction states and visual constraints; retain sources and open questions.'],
+  'doc-supplement': ['接收本会话已确认的结论、未决问题和资料路径；只增量补充现有需求、总体设计、概要设计、数据库和接口文档，缺失文档只列出，数据库/接口须对照实际 SQL、迁移或源码核实，无法核实的标“待确认”；不改代码、不提交。', 'Receive this session\'s confirmed conclusions, open questions and document paths; supplement existing requirements, system design, high-level design, database and interface documents in place; list missing documents; verify database and interface claims against actual SQL, migrations or source; mark unverifiable content as pending; do not edit code or commit.'],
 }
 
 /** Receiving instructions shared by document actions, Chinese then English. */
 export const documentReceiving = ['接收目标读者、资料路径、已确认范围和输出要求；先读取原始产物，缺失内容标记待确认，交付时说明文件位置及校验结果。', 'Receive the audience, source paths, agreed scope and output requirements; read primary artifacts, flag missing facts and report output paths and validation.'] as const
+
+/** Document policy shared by the code-writing actions, Chinese then English. */
+export const codingDocPolicy = ['编码阶段不更新产品资料文档（需求、总体设计、概要设计、数据库设计、接口文档）；完成后只列出受影响的现有文档，并提示使用「补充文档」按钮；不自行更新。README 和 JSDoc 仍按仓库规则随代码更新。', 'Do not update product documents (requirements, system design, high-level design, database design or interface documents) during coding. After finishing, list the affected existing documents and point to the Supplement Docs button; do not update them yourself. README and JSDoc still follow repository rules.'] as const
 
 /** Localized framing for bounded conversation excerpts. */
 export const draftContextCopy = {

@@ -128,6 +128,21 @@ describe('Skill Launcher contextual recommendations', () => {
     expect(withEvidence('提交', null, 'commit', entries)).toContain('分类汇总')
     expect(withEvidence('自定义', null, 'custom', entries)).toBe('自定义')
   })
+  it('keeps coding entries from updating product documents and adds the supplement instruction', () => {
+    for (const actionId of ['execute', 'bug', 'tdd', 'review-fix']) {
+      const draft = withEvidence('任务', null, actionId)
+      expect(draft).toContain('不更新产品资料文档')
+      expect(draft).toContain('补充文档')
+    }
+    for (const actionId of ['compile', 'commit', 'review']) {
+      expect(withEvidence('任务', null, actionId)).not.toContain('不更新产品资料文档')
+    }
+    const supplement = withEvidence('补充', null, 'doc-supplement')
+    expect(supplement).toContain('增量补充')
+    expect(supplement).toContain('待确认')
+    expect(supplement).not.toContain('【上一阶段对话摘录')
+    expect(withEvidence('Task', null, 'execute', [], true)).toContain('Do not update product documents')
+  })
   it('marks truncated evidence, preserves receiving requirements and supports English', () => {
     const entries = [user('开始'), assistant('x'.repeat(6000))]
     const draft = withEvidence('fix', null, 'review-fix', entries, true)

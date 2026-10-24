@@ -1,0 +1,22 @@
+# Bilingual-pair consistency record for 2026-10-23-host-authoritative-coding-workflow.md (docs/i18n/README.md): per heading
+# section, a hash of its English and Chinese blocks outside code blocks and generated regions.
+# After editing either side, bring the other along and re-record with:
+#   pnpm run verify-translation-pairing --write .agents/notes/implemented/architecture/2026-10-23-host-authoritative-coding-workflow.md
+/agent-note-host-authoritative-coding-workflow:
+  en: 3e47734596760956
+  zh: 5e107b6a4ff0f280
+/agent-note-host-authoritative-coding-workflow/problem:
+  en: 2968141ee8179703
+  zh: 260d7807c37ebe9e
+/agent-note-host-authoritative-coding-workflow/decision:
+  en: a0a7bbc537618afb
+  zh: 83c91d65e48366c5
+/agent-note-host-authoritative-coding-workflow/verification:
+  en: f9c818b2ab56a064
+  zh: 9d60bdf8bec4a0e5
+/agent-note-host-authoritative-coding-workflow/consequences:
+  en: 6869e1d69db50546
+  zh: ecab18eb9c254647
+/agent-note-host-authoritative-coding-workflow/alternatives-considered:
+  en: 58013209d628a61d
+  zh: 8326aff55e86f62d
