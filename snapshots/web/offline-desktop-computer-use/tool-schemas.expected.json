@@ -2183,7 +2183,7 @@
     },
     {
       "name": "present",
-      "description": "Declare existing files as final deliverables for the user. Use it when the user needs a separate file, especially Office documents, spreadsheets, and slide decks; prefer your final response when that suffices. The user opens the current files; their contents are not copied.",
+      "description": "Declare existing files as final deliverables for the user. Hosts may show presented files only after your turn ends, so call it once the files are final. If the user needs to review files earlier, such as before a tool call that waits for their answer, link them in your message instead. Use it when the user needs a separate file, especially Office documents, spreadsheets, and slide decks; prefer your final response when that suffices. The user opens the current files; their contents are not copied.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -2626,7 +2626,7 @@
     },
     {
       "name": "subagent",
-      "description": "Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its id. The runtime notifies you when it finishes. The child reports results with `send_message`; use `send_message` to steer it while running or continue its conversation after it finishes.",
+      "description": "Delegate a self-contained task to a subagent (a separate agent that works in its own context) to offload focused, independent work — research, a scoped implementation, an analysis — so it does not consume this conversation's context. The subagent returns its result, not its intermediate steps. This tool starts an independently managed subagent and immediately returns its id. The runtime notifies you when it finishes. The child reports results with `send_message`; use `send_message` to steer it while running or continue its conversation after it finishes. Supply `provider` and `model` together. Omitted values use child defaults, falling back to compatible parent values. When the effective route changes, an omitted `reasoning_effort` uses the model's default.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -2641,6 +2641,18 @@
           "prompt": {
             "type": "string",
             "description": "The complete, self-contained task for the subagent. It does not share this conversation's context, so include everything it needs."
+          },
+          "provider": {
+            "type": "string",
+            "description": "Child LLM provider id."
+          },
+          "model": {
+            "type": "string",
+            "description": "Model id within that provider."
+          },
+          "reasoning_effort": {
+            "type": "string",
+            "description": "Model-specific reasoning effort id."
           }
         },
         "required": [
@@ -2771,25 +2783,6 @@
         },
         "required": [
           "url"
-        ]
-      }
-    },
-    {
-      "name": "web_search",
-      "description": "Search the web for current information. Returns an optional summary answer and a list of source URLs.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "queries": {
-            "type": "array",
-            "description": "1–4 search queries; their results are merged.",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "required": [
-          "queries"
         ]
       }
     },
