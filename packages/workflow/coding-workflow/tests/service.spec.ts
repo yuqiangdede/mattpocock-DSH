@@ -103,7 +103,14 @@ async function boot(
   sessionId: string,
   pool: MemoryMediaPool = new MemoryMediaPool(),
   sandboxMode: SandboxMode = 'workspace-write',
-): Promise<{ ctx: Context; agent: Agent; service: CodingWorkflowService; pool: MemoryMediaPool; shell: WorkflowTestShell; approvalRequests: unknown[] }> {
+): Promise<{
+  ctx: Context
+  agent: Agent
+  service: CodingWorkflowService
+  pool: MemoryMediaPool
+  shell: WorkflowTestShell
+  approvalRequests: unknown[]
+}> {
   const ctx = new Context()
   await ctx.plugin(WorkflowTestShell)
   const sandboxPolicy: SandboxExecutionPolicy = { mode: sandboxMode, workspaceRoot: root }
