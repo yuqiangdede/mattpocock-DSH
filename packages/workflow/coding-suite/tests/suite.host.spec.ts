@@ -14,7 +14,8 @@ import type { Agent } from '@deepseek-ai/dsh-agent'
 import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
 import Storage from '@deepseek-ai/dsh-storage'
 import { DomainFacility } from '@deepseek-ai/dsh-storage-domain'
-import SkillRegistry from '@deepseek-ai/dsh-skill'
+import { SkillRegistry } from '@deepseek-ai/dsh-skill'
+import { createInboxStub } from '@deepseek-ai/dsh-agent-loop-testkit'
 import { MemoryMediaPool, MemoryStorageBackend } from '../../../storage/storage-domain/tests/helpers/memory-backend.ts'
 import * as CodingSuite from '../src/index.ts'
 
@@ -57,6 +58,7 @@ describe('CodingSuite Host Loader composition', () => {
     ctx.loader.builtins.include = Include
     await ctx.plugin(AgentRegistry)
     await ctx.plugin(SessionStore)
+    await ctx.plugin(SkillRegistry)
     await ctx.plugin(Storage)
     ctx.storage.backend.register('memory', new MemoryStorageBackend(new MemoryMediaPool()))
     const facility = new DomainFacility(ctx, { backend: 'memory', routes: {} })
@@ -99,7 +101,7 @@ describe('CodingSuite Host Loader composition', () => {
       id: session.id,
       options: {},
       session,
-      inbox: { append: () => {}, drain: () => [], length: 0 } as never,
+      inbox: createInboxStub(),
       model: { current: () => undefined, select: () => {} },
       status: 'idle',
       ctx,
