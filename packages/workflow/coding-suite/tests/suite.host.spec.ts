@@ -1,7 +1,7 @@
 /** Loader composition proof for the unified Host Coding Suite entrypoint. */
 
 import { execFileSync } from 'node:child_process'
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
@@ -33,7 +33,7 @@ describe('CodingSuite Host Loader composition', () => {
   it('loads the shipped entry, skills, workflow service, and configured launcher settings', async () => {
     root = await mkdtemp(join(tmpdir(), 'dsh-coding-suite-loader-'))
     const repository = join(root, 'repo')
-    await import('node:fs/promises').then(({ mkdir }) => mkdir(repository))
+    await mkdir(repository)
     execFileSync('git', ['init', '-b', 'main'], { cwd: repository, stdio: 'ignore' })
     execFileSync('git', ['config', 'user.name', 'Loader Test'], { cwd: repository })
     execFileSync('git', ['config', 'user.email', 'loader@example.invalid'], { cwd: repository })
@@ -56,8 +56,8 @@ describe('CodingSuite Host Loader composition', () => {
     ctx.baseUrl = pathToFileURL(root).href + '/'
     await ctx.plugin(Loader)
     ctx.loader.builtins.include = Include
-    await ctx.plugin(AgentRegistry)
     await ctx.plugin(SessionStore)
+    await ctx.plugin(AgentRegistry)
     await ctx.plugin(SkillRegistry)
     await ctx.plugin(Storage)
     ctx.storage.backend.register('memory', new MemoryStorageBackend(new MemoryMediaPool()))
