@@ -1,7 +1,7 @@
 {
   "name": "@deepseek-ai/dsh-coding-suite",
   "description": "Integrated coding suite: Host authoritative workflow, staged evidence gates, built-in engineering skills, and interactive UI launcher",
-  "version": "0.2.1-rc.2",
+  "version": "0.2.1-rc.3",
   "publishConfig": {
     "access": "public"
   },
