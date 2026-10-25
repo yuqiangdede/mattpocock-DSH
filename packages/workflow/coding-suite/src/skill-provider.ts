@@ -21,7 +21,7 @@ export interface CodingSuiteSkillConfig {
 }
 
 function parseSkill(raw: string, path: string): { description: string; content: string } {
-  const frontmatter = /^---\\r?\\n([\\s\\S]*?)\\r?\\n---(?:\\r?\\n|$)/u.exec(raw)
+  const frontmatter = /^---\r?\n([\s\S]*?)\r?\n---(?:\r?\n|$)/u.exec(raw)
   if (frontmatter?.[1] === undefined) throw new Error(`coding-suite: ${path} has no YAML frontmatter`)
   const metadata: unknown = parseYaml(frontmatter[1])
   const description = typeof metadata === 'object' && metadata !== null && 'description' in metadata
