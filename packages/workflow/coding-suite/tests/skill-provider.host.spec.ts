@@ -85,7 +85,7 @@ describe('coding suite bundled skills provider', () => {
     writeFileSync(skillPath, '# missing frontmatter\n')
 
     expect(() => registerCodingSuiteSkills(ctx, { assetRoot: root }))
-      .toThrow(new RegExp(`failed to load skill asset .*broken-skill[/\\\\]SKILL\\.md: coding-suite: .*broken-skill[/\\\\]SKILL\\.md has no YAML frontmatter`))
+      .toThrow(`coding-suite: failed to load skill asset ${skillPath}: coding-suite: ${skillPath} has no YAML frontmatter`)
     await ctx.fiber.dispose()
   })
 })
